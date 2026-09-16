@@ -1,0 +1,28 @@
+[project]
+name = "mk-event-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Krishna", email = "krishnameya96@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "dj-database-url>=3.1.2",
+    "django>=6.1.1",
+    "django-cors-headers>=4.9.0",
+    "djangorestframework>=3.18.1",
+    "djangorestframework-simplejwt>=5.5.1",
+    "gunicorn>=26.2.0",
+    "pillow>=12.3.0",
+    "psycopg[binary]>=3.3.5",
+    "python-dotenv>=1.2.3",
+    "whitenoise>=6.12.0",
+]
+
+[project.scripts]
+mk-event-api = "mk_event_api:main"
+
+[build-system]
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"

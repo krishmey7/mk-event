@@ -25,6 +25,25 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
+# Derrière le proxy HTTPS Railway — requis pour cookies CSRF admin.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CSRF_TRUSTED_ORIGINS",
+        "https://*.up.railway.app,https://web-production-3e791.up.railway.app",
+    ).split(",")
+    if origin.strip()
+]
+
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SAMESITE = "Lax"
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -121,6 +140,10 @@ STORAGES = {
 }
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# studio_config peut contenir des images en data URL (JPEG compressés).
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("DATA_UPLOAD_MAX_MEMORY_SIZE", str(25 * 1024 * 1024)))
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("FILE_UPLOAD_MAX_MEMORY_SIZE", str(25 * 1024 * 1024)))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

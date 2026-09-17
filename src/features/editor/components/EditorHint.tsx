@@ -1,12 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useEditor } from '../EditorContext';
+import { fontFamilies } from '@/constants/theme';
+import { useStudioChrome } from '../useStudioChrome';
 
-/** Consigne courte en tête d’écran — une phrase, pas un mode d’emploi. */
+/** Consigne courte en tête d’écran — chrome app. */
 export function EditorHint({ children }: { children: string }) {
-  const { theme } = useEditor();
-  const c = theme.colors;
+  const c = useStudioChrome();
 
   return (
     <View style={[styles.row, { backgroundColor: c.chip }]}>
@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
   },
   text: {
     flex: 1,
-    fontFamily: 'Inter_400Regular',
+    fontFamily: fontFamilies.sans,
     fontSize: 13,
     lineHeight: 18,
   },

@@ -5,7 +5,8 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { useEditor } from '../EditorContext';
+import { fontFamilies } from '@/constants/theme';
+import { useStudioChrome } from '../useStudioChrome';
 
 export function FieldWithCounter({ label, value, maxLength, children }: {
   label: string;
@@ -13,8 +14,7 @@ export function FieldWithCounter({ label, value, maxLength, children }: {
   maxLength: number;
   children: ReactNode;
 }) {
-  const { theme } = useEditor();
-  const c = theme.colors;
+  const c = useStudioChrome();
 
   return (
     <View style={styles.wrap}>
@@ -32,6 +32,6 @@ export function FieldWithCounter({ label, value, maxLength, children }: {
 const styles = StyleSheet.create({
   wrap: { gap: 6 },
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  label: { fontFamily: 'Inter_500Medium', fontSize: 12.5 },
-  counter: { fontFamily: 'Inter_400Regular', fontSize: 11.5 },
+  label: { fontFamily: fontFamilies.sansMedium, fontSize: 12.5 },
+  counter: { fontFamily: fontFamilies.sans, fontSize: 11.5 },
 });

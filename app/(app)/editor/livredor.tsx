@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { EditorHeader } from '@/features/editor/components/EditorHeader';
-import { useEditor } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { goBackInEditor } from '@/features/editor/navigation';
 
 interface VoiceMessage {
@@ -33,8 +33,7 @@ const makeBars = (seed: number): number[] =>
 
 export default function LivredorScreen() {
   const router = useRouter();
-  const { theme } = useEditor();
-  const colors = theme.colors;
+  const colors = useStudioChrome();
   const [enabled, setEnabled] = useState(true);
   const [maxDuration, setMaxDuration] = useState<30 | 60>(30);
   const [messages, setMessages] = useState<VoiceMessage[]>(DEMO_MESSAGES);

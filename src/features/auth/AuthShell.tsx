@@ -1,5 +1,5 @@
 /**
- * Coquille auth — fond atelier, logo dominant, accents eucalyptus.
+ * Coquille auth — fond cream / plum, accents coral.
  */
 
 import { createContext, useContext, useState, type ReactNode } from 'react';
@@ -39,10 +39,10 @@ export function AuthShell({ tone = 'dark', title, subtitle, children, footer }: 
   const insets = useSafeAreaInsets();
   const [notice, setNotice] = useState<string | null>(null);
   const isDark = tone === 'dark';
-  const bg = isDark ? '#0F1419' : '#EEF1F4';
-  const text = isDark ? '#F2F4F7' : '#15181E';
-  const muted = isDark ? 'rgba(242, 244, 247, 0.58)' : '#5A6270';
-  const accent = isDark ? '#5BA89F' : '#2F6F69';
+  const bg = isDark ? '#2A1824' : '#F7F0E8';
+  const text = isDark ? '#F7F0E8' : '#2A1F24';
+  const muted = isDark ? 'rgba(247, 240, 232, 0.58)' : '#6B5560';
+  const accent = isDark ? '#E07A5F' : '#E07A5F';
 
   const handleSocial = (provider: 'Google' | 'Apple') => {
     setNotice(
@@ -85,16 +85,16 @@ export function AuthShell({ tone = 'dark', title, subtitle, children, footer }: 
                 ]}
               >
                 <Ionicons name="information-circle-outline" size={18} color={accent} />
-                <Text style={[styles.noticeText, { color: isDark ? '#D7EDE9' : '#245A55' }]}>
+                <Text style={[styles.noticeText, { color: isDark ? '#F5D4C8' : '#C45D45' }]}>
                   {notice}
                 </Text>
               </View>
             ) : null}
 
             <View style={[styles.dividerRow, { maxWidth: layout.formMaxWidth }]}>
-              <View style={[styles.divider, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#DCE1E8' }]} />
+              <View style={[styles.divider, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E8D9CE' }]} />
               <Text style={[styles.dividerText, { color: muted }]}>ou</Text>
-              <View style={[styles.divider, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#DCE1E8' }]} />
+              <View style={[styles.divider, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E8D9CE' }]} />
             </View>
 
             <View style={[styles.socialRow, { maxWidth: layout.formMaxWidth }]}>
@@ -108,7 +108,7 @@ export function AuthShell({ tone = 'dark', title, subtitle, children, footer }: 
                   pressed && styles.pressed,
                 ]}
               >
-                <Ionicons name="logo-google" size={22} color={isDark ? '#F2F4F7' : '#15181E'} />
+                <Ionicons name="logo-google" size={22} color={isDark ? '#F7F0E8' : '#2A1F24'} />
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -120,7 +120,7 @@ export function AuthShell({ tone = 'dark', title, subtitle, children, footer }: 
                   pressed && styles.pressed,
                 ]}
               >
-                <Ionicons name="logo-apple" size={24} color={isDark ? '#F2F4F7' : '#15181E'} />
+                <Ionicons name="logo-apple" size={24} color={isDark ? '#F7F0E8' : '#2A1F24'} />
               </Pressable>
             </View>
 
@@ -207,9 +207,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   socialCircleLight: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFCFA',
     borderWidth: 1,
-    borderColor: '#DCE1E8',
+    borderColor: '#E8D9CE',
   },
 
   footer: { alignItems: 'center', marginTop: spacing.xl, width: '100%' },

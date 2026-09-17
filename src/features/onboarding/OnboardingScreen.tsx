@@ -1,5 +1,5 @@
 /**
- * Onboarding — 3 slides alignées sur la charte atelier (brume + eucalyptus).
+ * Onboarding — 3 slides Coral + Plum + Cream.
  */
 
 import { useRef, useState } from 'react';

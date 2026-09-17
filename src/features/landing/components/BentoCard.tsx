@@ -27,7 +27,7 @@ export function BentoCard({ icon, title, description, style }: BentoCardProps) {
   return (
     <View style={[styles.card, style]}>
       <View style={styles.iconShell}>
-        <Ionicons name={icon} size={22} color={brandColors.goldSoft} />
+        <Ionicons name={icon} size={22} color={brandColors.coralDeep} />
       </View>
       <Text style={[darkTheme.typography.title, styles.title]}>{title}</Text>
       <Text style={[darkTheme.typography.bodySmall, styles.description]}>{description}</Text>

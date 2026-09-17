@@ -1,5 +1,5 @@
 /**
- * Route publique : /inv/{slug}?guestId= — config locale ou API Django.
+ * Route publique : /inv/{slug}?guest= — contenu studio publié via API.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -10,6 +10,10 @@ import { brandColors } from '@/constants/theme';
 import { SIMULATE_BACKEND } from '@/constants/config';
 import { GuestInvitation } from '@/features/invitation/GuestInvitation';
 import { getInvitationConfig, resolveGuest } from '@/features/invitation/guestRegistry';
+import {
+  hasStudioConfig,
+  invitationConfigFromStudio,
+} from '@/features/invitation/studioConfig';
 import type { Guest } from '@/features/invitation/types';
 import type { InvitationConfig } from '@/features/invitation/guestRegistry';
 import { guestsService } from '@/services/guestsService';
@@ -74,29 +78,41 @@ export default function PublicInvitationScreen() {
         const mappedGuest = payload.guest
           ? mapApiGuestToLocal(payload.guest)
           : localGuest;
-        const nextConfig: InvitationConfig = {
-          ...localConfig,
-          venue: {
-            ...localConfig.venue,
-            name: event.venue_name || localConfig.venue.name,
-            city: event.venue_city || localConfig.venue.city,
-          },
-          cover: {
-            ...localConfig.cover,
-            title: event.name || localConfig.cover.title,
-            dateLabel: new Date(event.event_date).toLocaleDateString('fr-FR', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            }),
-          },
-          guests: payload.guest ? [mappedGuest] : localConfig.guests,
-        };
+
+        let nextConfig: InvitationConfig;
+        if (hasStudioConfig(event.studio_config)) {
+          nextConfig = invitationConfigFromStudio(event.studio_config, slug);
+          if (payload.guest) {
+            nextConfig = { ...nextConfig, guests: [mappedGuest] };
+          }
+        } else {
+          /* Anciennes invitations sans snapshot — overlay minimal sur le seed. */
+          nextConfig = {
+            ...localConfig,
+            venue: {
+              ...localConfig.venue,
+              name: event.venue_name || localConfig.venue.name,
+              city: event.venue_city || localConfig.venue.city,
+            },
+            cover: {
+              ...localConfig.cover,
+              title: event.name || localConfig.cover.title,
+              dateLabel: new Date(event.event_date).toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              }),
+              photoUri: event.cover_image_url || localConfig.cover.photoUri,
+            },
+            dressCode: event.message || localConfig.dressCode,
+            guests: payload.guest ? [mappedGuest] : localConfig.guests,
+          };
+        }
+
         setConfig(nextConfig);
         setGuest(mappedGuest);
       } catch {
         if (!alive) return;
-        /* Repli sur la config locale publiée / démo. */
         setConfig(localConfig);
         setGuest(localGuest);
         setError(null);

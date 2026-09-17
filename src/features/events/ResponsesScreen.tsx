@@ -123,7 +123,7 @@ export function ResponsesScreen() {
           <Ionicons name="chevron-back" size={20} color={c.textPrimary} />
         </Pressable>
         <View style={styles.headerCopy}>
-          <Text style={[styles.kicker, { color: brandColors.goldSoft }]}>Vue globale</Text>
+          <Text style={[styles.kicker, { color: brandColors.coralDeep }]}>Vue globale</Text>
           <Text style={[styles.title, { color: c.textPrimary }]}>Réponses</Text>
           <Text style={[styles.subtitle, { color: c.textMuted }]}>
             Toutes les RSVP de vos invitations, regroupées par événement.
@@ -146,12 +146,12 @@ export function ResponsesScreen() {
         </View>
 
         {isLoading ? (
-          <ActivityIndicator color={brandColors.goldSoft} style={{ marginTop: 24 }} />
+          <ActivityIndicator color={brandColors.coralDeep} style={{ marginTop: 24 }} />
         ) : error ? (
           <Text style={styles.errorText}>{error}</Text>
         ) : grouped.length === 0 ? (
           <View style={[styles.empty, { backgroundColor: c.surface, borderColor: c.border }]}>
-            <Ionicons name="people-outline" size={28} color={brandColors.goldSoft} />
+            <Ionicons name="people-outline" size={28} color={brandColors.coralDeep} />
             <Text style={[styles.emptyTitle, { color: c.textPrimary }]}>Aucune réponse pour l’instant</Text>
             <Text style={[styles.emptyHint, { color: c.textMuted }]}>
               Dès que vos invitations auront des invités, leurs réponses apparaîtront ici.

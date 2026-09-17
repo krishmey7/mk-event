@@ -1,5 +1,5 @@
 /**
- * Onglet « Plus » — modules hors onglets, regroupés par usage.
+ * Onglet Invités — liste + RSVP uniquement (parcours guidé).
  */
 
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -8,119 +8,89 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EditorHint } from '@/features/editor/components/EditorHint';
-import { SaveToLibraryCard } from '@/features/editor/components/SaveToLibraryCard';
 import { useEditor } from '@/features/editor/EditorContext';
+import { useAppTheme } from '@/context/ThemePreferenceContext';
+import { fontFamilies, spacing } from '@/constants/theme';
 
-const GROUPS = [
-  {
-    title: 'Vos invités',
-    items: [
-      { icon: 'people-outline' as const, label: 'Invités', hint: 'Liste, places, liens personnels', route: '/editor/invites' },
-      { icon: 'checkbox-outline' as const, label: 'RSVP', hint: 'Boissons proposées aux invités', route: '/editor/rsvp' },
-    ],
-  },
-  {
-    title: 'Souvenirs',
-    items: [
-      { icon: 'images-outline' as const, label: 'Galerie', hint: 'Photos et style d’affichage', route: '/editor/galerie' },
-      { icon: 'book-outline' as const, label: 'Livre d’or', hint: 'Messages des invités', route: '/editor/livredor' },
-    ],
-  },
-  {
-    title: 'Ambiance',
-    items: [
-      { icon: 'musical-notes-outline' as const, label: 'Voix & musique', hint: 'Ambiance et message d’accueil', route: '/editor/voix' },
-    ],
-  },
+const ITEMS = [
+  { icon: 'people-outline' as const, label: 'Invités', hint: 'Liste, places, liens personnels', route: '/editor/invites' },
+  { icon: 'checkbox-outline' as const, label: 'RSVP', hint: 'Boissons et régimes proposés', route: '/editor/rsvp' },
 ];
 
 export default function PlusTabScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { theme, guests } = useEditor();
+  const { guests } = useEditor();
+  const { theme } = useAppTheme();
   const c = theme.colors;
 
   return (
     <ScrollView
-      style={{ backgroundColor: c.bg }}
+      style={{ backgroundColor: c.background }}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={[styles.title, { color: c.text }]}>Invités et extras</Text>
+      <Text style={[styles.title, { color: c.textPrimary }]}>Invités & RSVP</Text>
       <EditorHint>
-        Étape 4 : la liste d’invités d’abord. RSVP ne gère que les boissons. Enregistrez ensuite dans Mes invitations.
+        Étape Invités : ajoutez vos invités puis configurez les choix RSVP.
       </EditorHint>
-      <SaveToLibraryCard />
 
-      {GROUPS.map((group) => (
-        <View key={group.title} style={styles.group}>
-          <Text style={[styles.groupTitle, { color: c.textMuted }]}>{group.title}</Text>
-          <View style={[styles.sections, { backgroundColor: c.surface }]}>
-            {group.items.map((item) => {
-              const inviteEmpty = item.route === '/editor/invites' && guests.length === 0;
-              return (
-                <Pressable
-                  key={item.route}
-                  accessibilityRole="button"
-                  onPress={() => router.push(item.route)}
-                  style={({ pressed }) => [
-                    styles.sectionRow,
-                    { borderBottomColor: c.border },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Ionicons name={item.icon} size={19} color={c.primary} />
-                  <View style={styles.sectionCopy}>
-                    <View style={styles.labelRow}>
-                      <Text style={[styles.sectionLabel, { color: c.text }]}>{item.label}</Text>
-                      {inviteEmpty ? (
-                        <Text style={[styles.badge, { color: c.onPrimary, backgroundColor: c.primary }]}>À faire</Text>
-                      ) : null}
-                    </View>
-                    <Text style={[styles.sectionHint, { color: c.textMuted }]}>{item.hint}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={15} color={c.accent} />
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      ))}
+      <View style={[styles.sections, { backgroundColor: c.surface, borderColor: c.border }]}>
+        {ITEMS.map((item) => {
+          const inviteEmpty = item.route === '/editor/invites' && guests.length === 0;
+          return (
+            <Pressable
+              key={item.route}
+              accessibilityRole="button"
+              onPress={() => router.push(item.route)}
+              style={({ pressed }) => [
+                styles.sectionRow,
+                { borderBottomColor: c.border },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons name={item.icon} size={19} color={c.accent} />
+              <View style={styles.sectionCopy}>
+                <View style={styles.labelRow}>
+                  <Text style={[styles.sectionLabel, { color: c.textPrimary }]}>{item.label}</Text>
+                  {inviteEmpty ? (
+                    <Text style={[styles.badge, { color: c.onAccent, backgroundColor: c.accent }]}>À faire</Text>
+                  ) : null}
+                </View>
+                <Text style={[styles.sectionHint, { color: c.textMuted }]}>{item.hint}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
+            </Pressable>
+          );
+        })}
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 24, paddingTop: 20 },
-  title: {
-    fontFamily: 'Fraunces_500Medium', fontSize: 22, lineHeight: 28,
-    marginBottom: 10,
-  },
-  group: { marginBottom: 18 },
-  groupTitle: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
-  sections: { borderRadius: 18, overflow: 'hidden' },
+  content: { padding: spacing.lg },
+  title: { fontFamily: fontFamilies.sansSemiBold, fontSize: 18, marginBottom: 8 },
+  sections: { borderWidth: 1, borderRadius: 14, overflow: 'hidden', marginTop: spacing.md },
   sectionRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   sectionCopy: { flex: 1, gap: 2 },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  sectionLabel: { fontFamily: fontFamilies.sansSemiBold, fontSize: 15 },
+  sectionHint: { fontFamily: fontFamilies.sans, fontSize: 12.5 },
   badge: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: fontFamilies.sansSemiBold,
     fontSize: 10,
-    borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 2,
+    borderRadius: 8,
     overflow: 'hidden',
   },
-  sectionHint: { fontFamily: 'Inter_400Regular', fontSize: 12 },
-  pressed: { opacity: 0.8 },
+  pressed: { opacity: 0.85 },
 });

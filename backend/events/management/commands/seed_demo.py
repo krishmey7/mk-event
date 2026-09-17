@@ -30,6 +30,8 @@ class Command(BaseCommand):
         templates = [
             ("elegance", "Élégance", "wedding"),
             ("hiver", "Hiver", "wedding"),
+            ("celebration", "Célébration", "birthday"),
+            ("summit", "Summit", "corporate"),
             ("moderne", "Moderne", "birthday"),
         ]
         template_objs = {}

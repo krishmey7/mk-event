@@ -131,7 +131,21 @@ class EventViewSet(viewsets.ModelViewSet):
             synced_guests.append(payload)
 
         event.status = Event.Status.PUBLISHED
-        event.save(update_fields=["slug", "status", "updated_at"])
+        update_fields = ["slug", "status", "updated_at"]
+        studio_config = request.data.get("studio_config")
+        if isinstance(studio_config, dict):
+            event.studio_config = studio_config
+            update_fields.append("studio_config")
+            theme_from_config = studio_config.get("themeKey")
+            if isinstance(theme_from_config, str) and theme_from_config.strip():
+                event.theme_key = theme_from_config.strip()[:40]
+                update_fields.append("theme_key")
+        theme_key = request.data.get("theme_key")
+        if isinstance(theme_key, str) and theme_key.strip():
+            event.theme_key = theme_key.strip()[:40]
+            if "theme_key" not in update_fields:
+                update_fields.append("theme_key")
+        event.save(update_fields=update_fields)
         event = annotate_events(Event.objects.filter(pk=event.pk)).get()
         return Response(
             {

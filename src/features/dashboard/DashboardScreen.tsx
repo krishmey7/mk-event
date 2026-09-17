@@ -101,7 +101,7 @@ export function DashboardScreen() {
               onPress={() => router.push('/modeles')}
               style={({ pressed }) => [styles.primaryCta, pressed && styles.pressed]}
             >
-              <Ionicons name="add" size={18} color="#0F1419" />
+              <Ionicons name="add" size={18} color="#FFFFFF" />
               <Text style={styles.primaryCtaLabel}>Nouvelle invitation</Text>
             </Pressable>
           </View>
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 22,
     borderBottomRightRadius: 22,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(91, 168, 159, 0.22)',
+    borderBottomColor: 'rgba(224, 122, 95, 0.22)',
   },
   headerInner: {
     paddingHorizontal: spacing.lg,
@@ -279,8 +279,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   profileButtonDark: {
-    borderColor: 'rgba(91, 168, 159, 0.28)',
-    backgroundColor: 'rgba(91, 168, 159, 0.1)',
+    borderColor: 'rgba(224, 122, 95, 0.28)',
+    backgroundColor: 'rgba(224, 122, 95, 0.1)',
   },
 
   hero: {
@@ -313,13 +313,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 18,
     paddingVertical: 13,
-    backgroundColor: '#5BA89F',
+    backgroundColor: '#E07A5F',
     ...shadows.sm,
   },
   primaryCtaLabel: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 14.5,
-    color: '#0F1419',
+    color: '#FFFFFF',
   },
 
   shortcuts: { gap: 10 },

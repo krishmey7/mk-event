@@ -38,7 +38,7 @@ export function AppTabBar({ state, navigation }: BottomTabBarProps) {
           shadows.md,
           {
             backgroundColor: isDark ? c.surfaceElevated : c.surfaceElevated,
-            borderColor: isDark ? 'rgba(91, 168, 159, 0.22)' : c.border,
+            borderColor: isDark ? 'rgba(224, 122, 95, 0.28)' : c.border,
           },
         ]}
       >

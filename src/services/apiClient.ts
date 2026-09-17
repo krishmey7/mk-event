@@ -79,6 +79,13 @@ const toApiError = async (response: Response): Promise<ApiError> => {
   if (response.status === 401 && fieldErrors.length === 0 && detail === 'Une erreur est survenue. Merci de réessayer.') {
     detail = 'Identifiants incorrects. Vérifiez votre e-mail et votre mot de passe.';
   }
+  // DRF renvoie souvent { email: ["…"] } sans `detail` — remonter le message champ.
+  if (
+    fieldErrors.length > 0
+    && detail === 'Une erreur est survenue. Merci de réessayer.'
+  ) {
+    detail = fieldErrors[0].message;
+  }
   return new ApiError(detail, response.status, fieldErrors);
 };
 

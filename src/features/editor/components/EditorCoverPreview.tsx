@@ -20,6 +20,7 @@ export function EditorCoverPreview({ embedded = false }: { embedded?: boolean })
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <TemplateCover
         layout={template.coverLayout}
+        ornaments={template.ornaments}
         colors={theme.colors}
         isDark={theme.isDark}
         coverUri={cover.photoUri}

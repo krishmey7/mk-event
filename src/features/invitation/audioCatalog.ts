@@ -85,6 +85,20 @@ export function personaFromEventType(type: EventType | string | undefined): Voic
   }
 }
 
+/** Ambiance par défaut selon le type d’événement (plus de choix manuel). */
+export function musicFromEventType(type: EventType | string | undefined): string {
+  switch (type) {
+    case 'birthday':
+      return 'pop';
+    case 'corporate':
+      return 'jazz';
+    case 'wedding':
+    case 'baptism':
+    default:
+      return 'classique';
+  }
+}
+
 /** URI effective : upload organisateur, sinon préréglage. */
 export function resolveAmbientUri(musicKey: string, ambientUri?: string | null): string {
   const custom = (ambientUri ?? '').trim();

@@ -14,6 +14,9 @@ import { Logo } from '@/components/ui/Logo';
 import { IMAGES, WEDDING } from '../data';
 import type { TemplateTheme } from '../themes';
 
+/** Or champagne du modèle Élégance — pas le coral chrome app ni le thème wizard. */
+const ELEGANCE_LOGO = '#C4A574';
+const ELEGANCE_LOGO_SOFT = '#A98246';
 export function CoverView({ theme, onThemePress, onEnter }: {
   theme: TemplateTheme;
   onThemePress: () => void;
@@ -29,7 +32,7 @@ export function CoverView({ theme, onThemePress, onEnter }: {
 
         <View style={[styles.content, { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 6 }]}>
           <View style={styles.topRow}>
-            <Logo size="sm" variant="gold" />
+            <Logo size="sm" color={ELEGANCE_LOGO} wordmarkColor={ELEGANCE_LOGO_SOFT} />
             <View style={styles.flex} />
             <Pressable
               accessibilityRole="button"

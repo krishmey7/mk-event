@@ -20,10 +20,10 @@ import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { fontFamilies, shadows, spacing } from '@/constants/theme';
 import { LandingAtmosphere } from './LandingAtmosphere';
 
-const ACCENT = '#5BA89F';
-const ACCENT_DEEP = '#2F6F69';
-const INK = '#0F1419';
-const PAPER = '#F7F9FA';
+const ACCENT = '#E07A5F';
+const ACCENT_DEEP = '#C45D45';
+const INK = '#2A1824';
+const PAPER = '#F7F0E8';
 
 export function LandingScreen() {
   const router = useRouter();
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fontFamilies.serifSemiBold,
     textAlign: 'center',
-    color: '#F2F4F7',
+    color: '#F7F0E8',
     letterSpacing: -0.5,
     marginTop: 8,
   },
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     lineHeight: 21,
     textAlign: 'center',
-    color: 'rgba(242, 244, 247, 0.58)',
+    color: 'rgba(247, 240, 232, 0.62)',
     maxWidth: 320,
   },
   cardWrap: {
@@ -182,16 +182,16 @@ const styles = StyleSheet.create({
     width: 200,
     height: 260,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(247,240,232,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(247,240,232,0.08)',
   },
   shadowLeft: {
     transform: [{ rotate: '-8deg' }, { translateX: -28 }],
   },
   shadowRight: {
     transform: [{ rotate: '8deg' }, { translateX: 28 }],
-    backgroundColor: 'rgba(91, 168, 159, 0.12)',
+    backgroundColor: 'rgba(224, 122, 95, 0.14)',
   },
   invite: {
     width: 210,
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   invitePlace: {
     fontFamily: fontFamilies.sans,
     fontSize: 12,
-    color: '#5A6270',
+    color: '#6B5560',
     textAlign: 'center',
   },
   inviteChip: {
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: 'rgba(47, 111, 105, 0.12)',
+    backgroundColor: 'rgba(224, 122, 95, 0.14)',
   },
   inviteChipText: {
     fontFamily: fontFamilies.sansMedium,
@@ -274,12 +274,12 @@ const styles = StyleSheet.create({
   ctaLabel: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 16,
-    color: INK,
+    color: '#FFFFFF',
   },
   link: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 14,
-    color: 'rgba(242, 244, 247, 0.72)',
+    color: 'rgba(247, 240, 232, 0.72)',
   },
   pressed: { opacity: 0.82 },
 });

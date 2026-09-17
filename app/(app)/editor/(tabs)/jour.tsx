@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useEditor } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 
 import HistoireTabScreen from './histoire';
 import ProgrammeTabScreen from './programme';
@@ -21,9 +21,8 @@ const PANES = [
 type PaneKey = (typeof PANES)[number]['key'];
 
 export default function JourTabScreen() {
-  const { theme } = useEditor();
   const [pane, setPane] = useState<PaneKey>('histoire');
-  const c = theme.colors;
+  const c = useStudioChrome();
 
   return (
     <View style={[styles.root, { backgroundColor: c.bg }]}>

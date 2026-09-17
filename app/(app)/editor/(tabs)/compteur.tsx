@@ -5,26 +5,18 @@
  */
 
 import { useEffect, useState } from 'react';
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ImageBackground, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { COUNTDOWN_TARGET } from '@/features/templates/elegance/data';
 import { EditorHint } from '@/features/editor/components/EditorHint';
-import { useEditor, type CountdownStyleKey } from '@/features/editor/EditorContext';
-
-const COUNTER_STYLES = [
-  { key: 'classique', label: 'Classique', icon: 'grid-outline' },
-  { key: 'cercle', label: 'Cercle', icon: 'radio-button-on-outline' },
-  { key: 'minimaliste', label: 'Minimaliste', icon: 'text-outline' },
-] as const;
-
-type CounterStyleKey = (typeof COUNTER_STYLES)[number]['key'];
+import { useEditor } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');
 
 export default function CompteurTabScreen() {
-  const { template, cover, theme, countdownStyle, setCountdownStyle } = useEditor();
-  const colors = theme.colors;
+  const {template, countdownStyle} = useEditor();
+  const colors = useStudioChrome();
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -46,7 +38,7 @@ export default function CompteurTabScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <EditorHint>Choisissez un style et une couleur. La date vient de la couverture.</EditorHint>
+      <EditorHint>Aperçu du compte à rebours. Style figé par le modèle ; la date vient de la couverture.</EditorHint>
       <View style={styles.previewCard}>
         <ImageBackground source={{ uri: template.countdownImage }} style={styles.preview} resizeMode="cover">
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(6, 6, 10, 0.72)' }]} />
@@ -77,41 +69,6 @@ export default function CompteurTabScreen() {
           </View>
         </ImageBackground>
       </View>
-
-      <View style={styles.labelRow}>
-        <Text style={[styles.sectionLabel, { color: colors.text }]}>Style du compteur</Text>
-        <Ionicons name="refresh" size={15} color={colors.textMuted} />
-      </View>
-      <View style={styles.styleRow}>
-        {COUNTER_STYLES.map((item) => {
-          const selected = countdownStyle === item.key;
-          return (
-            <Pressable
-              key={item.key}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-              onPress={() => setCountdownStyle(item.key as CountdownStyleKey)}
-              style={[
-                styles.styleCard,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-                selected && { borderColor: colors.primary, backgroundColor: colors.chip },
-              ]}
-            >
-              <Ionicons name={item.icon} size={19} color={selected ? colors.primary : colors.textMuted} />
-              <Text
-                style={[
-                  styles.styleLabel,
-                  selected && { color: colors.primary, fontFamily: 'Inter_600SemiBold' },
-                  !selected && { color: colors.textMuted },
-                ]}
-              >
-                {item.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
     </ScrollView>
   );
 }

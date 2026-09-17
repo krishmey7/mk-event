@@ -11,20 +11,15 @@ import { useRouter } from 'expo-router';
 import { EditorInput } from '@/features/editor/components/EditorInput';
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { confirmDelete } from '@/features/editor/confirmDelete';
-import { useEditor, type ProgramStyleKey } from '@/features/editor/EditorContext';
+import { useEditor } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import type { ProgramStep } from '@/features/templates/elegance/data';
-
-const STYLES = [
-  { key: 'classique', label: 'Classique', icon: 'albums-outline' },
-  { key: 'minimaliste', label: 'Minimaliste', icon: 'document-outline' },
-  { key: 'icones', label: 'Icônes', icon: 'flower-outline' },
-  { key: 'personnalise', label: 'Personnalisé', icon: 'color-palette-outline' },
-] as const;
 
 export default function ProgrammeTabScreen() {
   const router = useRouter();
-  const { program, theme, programStyle, setProgramStyle, venue, updateVenue, removeProgramStep } = useEditor();
-  const colors = theme.colors;
+  const { program, programStyle, venue, updateVenue, removeProgramStep, template } = useEditor();
+  const colors = useStudioChrome();
+  const isConference = template.category === 'corporate';
 
   /* 4 layouts — le choix met à jour la liste instantanément. */
   const renderStep = (step: ProgramStep, index: number) => {
@@ -33,8 +28,10 @@ export default function ProgrammeTabScreen() {
     const key = `${index}-${step.time}-${step.title}`;
     const remove = () =>
       confirmDelete(
-        'Supprimer ce moment ?',
-        'Il disparaîtra du programme de l’invitation.',
+        isConference ? 'Supprimer ce créneau ?' : 'Supprimer ce moment ?',
+        isConference
+          ? 'Il disparaîtra de l’agenda de l’invitation.'
+          : 'Il disparaîtra du programme de l’invitation.',
         () => removeProgramStep(index),
       );
 
@@ -109,17 +106,29 @@ export default function ProgrammeTabScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <EditorHint>Modifiez ou supprimez chaque moment. Le crayon ouvre le détail, la corbeille l’enlève.</EditorHint>
-      <Text style={[styles.heading, { color: colors.text }]}>Programme de la journée</Text>
+      <EditorHint>
+        {isConference
+          ? 'Construisez l’agenda : horaires, sessions et salles. Les participants le verront sur l’invitation.'
+          : 'Modifiez ou supprimez chaque moment. Le crayon ouvre le détail, la corbeille l’enlève.'}
+      </EditorHint>
+      <Text style={[styles.heading, { color: colors.text }]}>
+        {isConference ? 'Agenda' : 'Programme de la journée'}
+      </Text>
 
       {program.length === 0 ? (
-        <Text style={[styles.empty, { color: colors.textMuted }]}>Aucun moment pour l’instant. Ajoutez la première étape.</Text>
+        <Text style={[styles.empty, { color: colors.textMuted }]}>
+          {isConference
+            ? 'Aucun créneau pour l’instant. Ajoutez la première session.'
+            : 'Aucun moment pour l’instant. Ajoutez la première étape.'}
+        </Text>
       ) : (
         <View style={styles.list}>{program.map(renderStep)}</View>
       )}
 
-      {/* Lieu du mariage — adresse affichée avec itinéraire sur l'invitation */}
-      <Text style={[styles.sectionLabel, { color: colors.text }]}>Lieu du mariage</Text>
+      {/* Lieu — adresse affichée sur l'invitation */}
+      <Text style={[styles.sectionLabel, { color: colors.text }]}>
+        {isConference ? 'Lieu de l’événement' : 'Lieu du mariage'}
+      </Text>
       <View style={[styles.venueCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <EditorInput
           value={venue.name}
@@ -154,30 +163,7 @@ export default function ProgrammeTabScreen() {
         </Text>
       </View>
 
-      <Text style={[styles.sectionLabel, { color: colors.text }]}>Choisir un style</Text>
-      <View style={styles.styleGrid}>
-        {STYLES.map((item) => {
-          const selected = programStyle === item.key;
-          return (
-            <Pressable
-              key={item.key}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-              onPress={() => setProgramStyle(item.key as ProgramStyleKey)}
-              style={[
-                styles.styleCard,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-                selected && { borderColor: colors.primary, backgroundColor: colors.chip },
-              ]}
-            >
-              <Ionicons name={item.icon} size={19} color={selected ? colors.primary : colors.textMuted} />
-              <Text style={[styles.styleLabel, { color: selected ? colors.primary : colors.textMuted }, selected && { fontFamily: 'Inter_600SemiBold' }]}>
-                {item.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <EditorHint>Le style du programme est figé par le modèle. Ajoutez ou modifiez les étapes.</EditorHint>
 
       <Pressable
         accessibilityRole="button"

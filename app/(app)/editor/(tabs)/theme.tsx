@@ -1,120 +1,139 @@
 /**
- * Étape Thème — dress code / ambiance + couleurs du modèle.
+ * Décor (anniversaire) / Lieu & pratiques (conférence) / Dress code (mariage).
  */
 
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { EditorInput } from '@/features/editor/components/EditorInput';
 import { EditorHint } from '@/features/editor/components/EditorHint';
-import { SaveToLibraryCard } from '@/features/editor/components/SaveToLibraryCard';
 import { useEditor } from '@/features/editor/EditorContext';
+import { useActiveEvent } from '@/context/ActiveEventContext';
+import { useAppTheme } from '@/context/ThemePreferenceContext';
+import { fontFamilies } from '@/constants/theme';
 
 export default function ThemeTabScreen() {
-  const { themes, cover, updateCover, dressCode, setDressCode, theme } = useEditor();
-  const colors = theme.colors;
+  const {
+    dressCode,
+    setDressCode,
+    theme,
+    template,
+    practical,
+    updatePractical,
+    venue,
+    updateVenue,
+  } = useEditor();
+  const { type: activeType } = useActiveEvent();
+  const eventType = activeType || template.category;
+  const { theme: appTheme } = useAppTheme();
+  const c = appTheme.colors;
+
+  if (eventType === 'birthday') {
+    return (
+      <ScrollView
+        style={{ backgroundColor: c.background }}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <EditorHint>
+          Le décor de l’affiche suit le thème choisi à la création. Affinez l’ambiance ici.
+        </EditorHint>
+        <Text style={[styles.heading, { color: c.textPrimary }]}>Ambiance</Text>
+        <Text style={[styles.lead, { color: c.textMuted }]}>
+          Palette active : {theme.label}. Les couleurs d’origine du modèle s’appliquent si vous
+          avez choisi « Aucun ».
+        </Text>
+        <EditorInput
+          value={dressCode}
+          onChangeText={setDressCode}
+          placeholder="Ex. À 21h · tenue chic festive"
+        />
+        <View style={[styles.swatch, { backgroundColor: theme.swatch || c.accent }]} />
+      </ScrollView>
+    );
+  }
+
+  if (eventType === 'corporate') {
+    return (
+      <ScrollView
+        style={{ backgroundColor: c.background }}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <EditorHint>
+          Infos pratiques affichées aux participants : accès, parking, hébergement.
+        </EditorHint>
+        <Text style={[styles.heading, { color: c.textPrimary }]}>Lieu</Text>
+        <EditorInput
+          value={venue.name}
+          onChangeText={(value) => updateVenue({ name: value })}
+          placeholder="Nom du lieu"
+        />
+        <View style={styles.gap} />
+        <EditorInput
+          value={venue.street}
+          onChangeText={(value) => updateVenue({ street: value })}
+          placeholder="Adresse"
+        />
+        <View style={styles.gap} />
+        <EditorInput
+          value={venue.city}
+          onChangeText={(value) => updateVenue({ city: value })}
+          placeholder="Ville"
+        />
+        <Text style={[styles.heading, { color: c.textPrimary }]}>Accès</Text>
+        <EditorInput
+          value={practical.access}
+          onChangeText={(value) => updatePractical({ access: value })}
+          placeholder="Métro, bus, indications…"
+        />
+        <Text style={[styles.heading, { color: c.textPrimary }]}>Parking</Text>
+        <EditorInput
+          value={practical.parking}
+          onChangeText={(value) => updatePractical({ parking: value })}
+          placeholder="Parking sur place…"
+        />
+        <Text style={[styles.heading, { color: c.textPrimary }]}>Hébergement</Text>
+        <EditorInput
+          value={practical.hotel}
+          onChangeText={(value) => updatePractical({ hotel: value })}
+          placeholder="Hôtels partenaires…"
+        />
+        <Text style={[styles.heading, { color: c.textPrimary }]}>Dress code</Text>
+        <EditorInput
+          value={dressCode}
+          onChangeText={setDressCode}
+          placeholder="Business casual"
+        />
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView
-      style={{ backgroundColor: colors.bg }}
+      style={{ backgroundColor: c.background }}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
       <EditorHint>
-        Indiquez le dress code ou l’ambiance. Les couleurs s’appliquent tout de suite à cet écran et à l’invitation.
+        Le design et les couleurs viennent du thème choisi à la création. Ici : dress code uniquement.
       </EditorHint>
-
-      <Text style={[styles.heading, { color: colors.text }]}>Dress code ou thème</Text>
-      <Text style={[styles.lead, { color: colors.textMuted }]}>
-        Que devront porter vos invités ? Quelle ambiance voulez-vous ?
+      <Text style={[styles.heading, { color: c.textPrimary }]}>Dress code ou ambiance</Text>
+      <Text style={[styles.lead, { color: c.textMuted }]}>
+        Palette active : {theme.label}. Non modifiable dans le studio.
       </Text>
-
       <EditorInput
         value={dressCode}
         onChangeText={setDressCode}
         placeholder="Ex. Tenue de cocktail, champagne et ivoire"
       />
-
-      <View style={styles.ideas}>
-        {themes.map((item) => {
-          const label = item.dressLabel ?? item.label;
-          const on = dressCode === label;
-          return (
-            <Pressable
-              key={item.key}
-              accessibilityRole="button"
-              onPress={() => {
-                setDressCode(label);
-                updateCover({ themeKey: item.key });
-              }}
-              style={[
-                styles.idea,
-                { borderColor: colors.border, backgroundColor: colors.surface },
-                on && { borderColor: colors.primary, backgroundColor: colors.chip },
-              ]}
-            >
-              <Text style={[styles.ideaLabel, { color: on ? colors.primary : colors.text }]}>{label}</Text>
-              <Text style={[styles.ideaHint, { color: colors.textMuted }]}>{item.dressHint ?? item.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <Text style={[styles.heading, { color: colors.text }]}>Couleurs de l’invitation</Text>
-      <View style={styles.themeList}>
-        {themes.map((item) => {
-          const selected = cover.themeKey === item.key;
-          return (
-            <Pressable
-              key={item.key}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-              onPress={() => updateCover({ themeKey: item.key })}
-              style={[
-                styles.themeRow,
-                { borderColor: colors.border, backgroundColor: colors.surface },
-                selected && { borderColor: colors.primary, backgroundColor: colors.chip },
-              ]}
-            >
-              <View style={[styles.swatch, { backgroundColor: item.swatch }]} />
-              <Text style={[styles.themeLabel, { color: colors.text }]}>{item.label}</Text>
-              {selected ? <Ionicons name="checkmark-circle" size={18} color={colors.primary} /> : null}
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <SaveToLibraryCard />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 36 },
-  heading: { fontFamily: 'Inter_600SemiBold', fontSize: 16, marginTop: 16, marginBottom: 6 },
-  lead: { fontFamily: 'Inter_400Regular', fontSize: 13.5, lineHeight: 19, marginBottom: 10 },
-  ideas: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  idea: {
-    flexGrow: 1,
-    flexBasis: '47%',
-    borderWidth: 1.4,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 2,
-  },
-  ideaLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
-  ideaHint: { fontFamily: 'Inter_400Regular', fontSize: 11 },
-  themeList: { gap: 8, marginBottom: 8 },
-  themeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderWidth: 1.4,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  swatch: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)' },
-  themeLabel: { flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  heading: { fontFamily: fontFamilies.sansSemiBold, fontSize: 16, marginTop: 8, marginBottom: 6 },
+  lead: { fontFamily: fontFamilies.sans, fontSize: 13.5, lineHeight: 19, marginBottom: 10 },
+  gap: { height: 10 },
+  swatch: { width: 36, height: 36, borderRadius: 18, marginTop: 16 },
 });

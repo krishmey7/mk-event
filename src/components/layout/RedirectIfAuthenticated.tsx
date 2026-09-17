@@ -1,25 +1,26 @@
 /**
- * Garde de route « invité » : si une session est active, redirige
- * automatiquement vers /(app)/dashboard. Appliqué aux écrans publics
- * (/, /onboarding, /login, /register).
+ * Garde « déjà connecté » : redirige vers le wizard si l’événement
+ * n’est pas encore configuré, sinon vers le dashboard.
  */
 
 import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'expo-router';
 
 import { useAuth } from '@/context/AuthContext';
+import { homeAfterAuth, useActiveEvent } from '@/context/ActiveEventContext';
 
 export function RedirectIfAuthenticated({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
+  const { ready, needsSetup } = useActiveEvent();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.replace('/dashboard');
+    if (!isLoading && isAuthenticated && ready) {
+      router.replace(homeAfterAuth(needsSetup));
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, needsSetup, ready, router]);
 
-  if (isLoading) {
+  if (isLoading || (isAuthenticated && !ready)) {
     return null;
   }
   return <>{children}</>;

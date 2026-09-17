@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 
 import { EditorHeader } from '@/features/editor/components/EditorHeader';
 import { useEditor, VOICE_MUSICS } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { goBackInEditor } from '@/features/editor/navigation';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -20,8 +21,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default function BibliothequeScreen() {
   const router = useRouter();
-  const { template, gallery, voix, theme } = useEditor();
-  const colors = theme.colors;
+  const {template, gallery, voix} = useEditor();
+  const colors = useStudioChrome();
 
   const music = VOICE_MUSICS.find((item) => item.key === voix.musicKey);
   const counts = gallery.reduce<Record<string, number>>((acc, item) => {
@@ -31,7 +32,6 @@ export default function BibliothequeScreen() {
 
   const shortcuts = [
     { icon: 'images-outline', label: 'Gérer la galerie', hint: `${gallery.length} photos`, route: '/editor/galerie' },
-    { icon: 'musical-notes-outline', label: 'Voix & musique', hint: music?.label ?? '—', route: '/editor/voix' },
     { icon: 'image-outline', label: 'Photo de couverture', hint: 'Choisir dans le modèle', route: '/editor/couverture-photo' },
   ] as const;
 
@@ -60,16 +60,16 @@ export default function BibliothequeScreen() {
           ))}
         </ScrollView>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Musique sélectionnée</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Voix & musique du studio</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.row}>
             <View style={[styles.musicIcon, { backgroundColor: colors.chip }]}>
               <Ionicons name={music?.icon ?? 'musical-notes-outline'} size={17} color={colors.primary} />
             </View>
             <View style={styles.rowBody}>
-              <Text style={[styles.rowLabel, { color: colors.text }]}>{music?.label ?? 'Aucune'}</Text>
+              <Text style={[styles.rowLabel, { color: colors.text }]}>{music?.label ?? 'Ambiance studio'}</Text>
               <Text style={[styles.rowHint, { color: colors.textMuted }]}>
-                Lecture automatique {voix.autoplay ? 'activée' : 'désactivée'} · Boucle {voix.loop ? 'activée' : 'désactivée'}
+                Adaptées automatiquement à votre type d’événement
               </Text>
             </View>
           </View>

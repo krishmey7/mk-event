@@ -15,6 +15,7 @@ import { EditorInput } from '@/features/editor/components/EditorInput';
 import { EditorHeader } from '@/features/editor/components/EditorHeader';
 import { FieldWithCounter } from '@/features/editor/components/FieldWithCounter';
 import { useEditor } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { goBackInEditor } from '@/features/editor/navigation';
 import { confirmDelete } from '@/features/editor/confirmDelete';
 import { pickLibraryImage } from '@/features/editor/imagePicker';
@@ -25,8 +26,8 @@ type Mode = 'photo-texte' | 'texte-seul';
 export default function HistoireEtapeScreen() {
   const router = useRouter();
   const { index } = useLocalSearchParams<{ index?: string }>();
-  const { story, saveStoryStep, removeStoryStep, theme } = useEditor();
-  const colors = theme.colors;
+  const {story, saveStoryStep, removeStoryStep} = useEditor();
+  const colors = useStudioChrome();
 
   const editIndex = index !== undefined ? Number.parseInt(index, 10) : -1;
   const existing = editIndex >= 0 ? story[editIndex] : undefined;

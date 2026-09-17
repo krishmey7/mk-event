@@ -22,6 +22,7 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 
 import { AuthProvider } from '@/context/AuthContext';
+import { ActiveEventProvider } from '@/context/ActiveEventContext';
 import { ThemePreferenceProvider, useAppTheme } from '@/context/ThemePreferenceContext';
 import { PwaInstallPrompt } from '@/features/pwa/PwaInstallPrompt';
 
@@ -31,7 +32,7 @@ void SplashScreen.preventAutoHideAsync().catch(() => {
 });
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Fraunces_400Regular,
     Fraunces_400Regular_Italic,
     Fraunces_500Medium,
@@ -42,21 +43,23 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsLoaded || fontError) {
       void SplashScreen.hideAsync().catch(() => {
         // noop
       });
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
     <ThemePreferenceProvider>
       <AuthProvider>
-        <RootChrome />
+        <ActiveEventProvider>
+          <RootChrome />
+        </ActiveEventProvider>
       </AuthProvider>
     </ThemePreferenceProvider>
   );

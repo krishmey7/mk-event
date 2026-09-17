@@ -15,9 +15,11 @@ expo-env.d.ts
 ios/
 android/
 
-# Dépendances
-node_modules/
+# Dépendances (uniquement à la racine — ne pas toucher dist/assets/node_modules)
+/node_modules/
 backend/.venv/
+/deploy-web/
+/deploy-web-*/
 
 # Debug / logs
 npm-debug.*

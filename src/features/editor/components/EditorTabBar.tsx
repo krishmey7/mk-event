@@ -1,26 +1,36 @@
 /**
- * Barre du studio — 4 étapes (Page → Thème → Récit → Invités).
+ * Barre du studio — parcours guidé selon le type d’événement.
  */
 
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
+import { useActiveEvent } from '@/context/ActiveEventContext';
+import { useAppTheme } from '@/context/ThemePreferenceContext';
+import { fontFamilies } from '@/constants/theme';
 import { useEditor } from '../EditorContext';
-
-const LABELS: Record<string, { step: string; title: string }> = {
-  index: { step: '1', title: 'Page' },
-  theme: { step: '2', title: 'Thème' },
-  jour: { step: '3', title: 'Récit' },
-  plus: { step: '4', title: 'Invités' },
-};
+import { getStudioSteps } from '../studioSteps';
 
 export function EditorTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { guests, theme } = useEditor();
+  const { guests, template } = useEditor();
+  const { type: activeType } = useActiveEvent();
+  /** Le modèle ouvert prime : évite un type ActiveEvent obsolète. */
+  const eventType = template.category || activeType;
+  const steps = getStudioSteps(eventType);
+  const { theme } = useAppTheme();
   const c = theme.colors;
   const currentKey = state.routes[state.index]?.name;
-  const routes = state.routes.filter((route) => route.name in LABELS);
+
+  const items = useMemo(() => {
+    return steps.flatMap((step, stepIndex) => {
+      const route = state.routes.find((item) => item.name === step.route);
+      if (!route) return [];
+      return [{ route, step, stepIndex }];
+    });
+  }, [steps, state.routes]);
 
   return (
     <View
@@ -33,10 +43,9 @@ export function EditorTabBar({ state, navigation }: BottomTabBarProps) {
         },
       ]}
     >
-      <Text style={[styles.caption, { color: c.textMuted }]}>Dans l’ordre</Text>
+      <Text style={[styles.caption, { color: c.textMuted }]}>Parcours guidé</Text>
       <View style={styles.row}>
-        {routes.map((route, index) => {
-          const meta = LABELS[route.name] ?? { step: String(index + 1), title: route.name };
+        {items.map(({ route, step, stepIndex }) => {
           const focused = currentKey === route.name;
           const showDot = route.name === 'plus' && guests.length === 0;
 
@@ -45,7 +54,7 @@ export function EditorTabBar({ state, navigation }: BottomTabBarProps) {
               key={route.key}
               accessibilityRole="tab"
               accessibilityState={{ selected: focused }}
-              accessibilityLabel={`Étape ${meta.step}, ${meta.title}`}
+              accessibilityLabel={`Étape ${stepIndex + 1}, ${step.title}`}
               onPress={() => {
                 const event = navigation.emit({
                   type: 'tabPress',
@@ -62,25 +71,31 @@ export function EditorTabBar({ state, navigation }: BottomTabBarProps) {
                 style={[
                   styles.badge,
                   {
-                    borderColor: focused ? c.primary : c.border,
-                    backgroundColor: focused ? c.primary : c.chip,
+                    borderColor: focused ? c.accent : c.border,
+                    backgroundColor: focused ? c.accent : c.surfaceElevated,
                   },
                 ]}
               >
                 <Text
                   style={[
                     styles.badgeText,
-                    { color: focused ? c.onPrimary : c.textMuted },
+                    { color: focused ? c.onAccent : c.textMuted },
                   ]}
                 >
-                  {meta.step}
+                  {stepIndex + 1}
                 </Text>
                 {showDot ? (
                   <View style={[styles.alert, { backgroundColor: c.accent, borderColor: c.surface }]} />
                 ) : null}
               </View>
-              <Text style={[styles.label, { color: focused ? c.text : c.textMuted }, focused && styles.labelOn]}>
-                {meta.title}
+              <Text
+                style={[
+                  styles.label,
+                  { color: focused ? c.textPrimary : c.textMuted },
+                  focused && styles.labelOn,
+                ]}
+              >
+                {step.title}
               </Text>
             </Pressable>
           );
@@ -94,10 +109,10 @@ const styles = StyleSheet.create({
   wrap: {
     borderTopWidth: 1,
     paddingTop: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
   },
   caption: {
-    fontFamily: 'Inter_500Medium',
+    fontFamily: fontFamilies.sansMedium,
     fontSize: 10,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
@@ -105,16 +120,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   row: { flexDirection: 'row', alignItems: 'flex-start' },
-  item: { flex: 1, alignItems: 'center', gap: 6 },
+  item: { flex: 1, alignItems: 'center', gap: 4 },
   badge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
+  badgeText: { fontFamily: fontFamilies.sansSemiBold, fontSize: 12 },
   alert: {
     position: 'absolute',
     top: -2,
@@ -124,7 +139,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     borderWidth: 1.5,
   },
-  label: { fontFamily: 'Inter_500Medium', fontSize: 12 },
-  labelOn: { fontFamily: 'Inter_600SemiBold' },
+  label: { fontFamily: fontFamilies.sansMedium, fontSize: 10 },
+  labelOn: { fontFamily: fontFamilies.sansSemiBold },
   pressed: { opacity: 0.75 },
 });

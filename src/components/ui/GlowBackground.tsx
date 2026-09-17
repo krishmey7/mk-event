@@ -40,14 +40,14 @@ export interface GlowBackgroundProps {
 
 const DEFAULT_ORBS: Record<GlowPreset, GlowOrbSpec[]> = {
   landing: [
-    { top: -120, left: -160, size: 420, color: brandColors.gold, intensity: 0.35 },
-    { top: 520, right: -180, size: 380, color: brandColors.goldSoft, intensity: 0.28 },
+    { top: -120, left: -160, size: 420, color: brandColors.coral, intensity: 0.35 },
+    { top: 520, right: -180, size: 380, color: brandColors.coralDeep, intensity: 0.28 },
   ],
   auth: [
-    { top: -140, right: -160, size: 360, color: brandColors.gold, intensity: 0.22 },
+    { top: -140, right: -160, size: 360, color: brandColors.coral, intensity: 0.22 },
   ],
   soft: [
-    { top: -100, right: -140, size: 320, color: brandColors.goldSoft, intensity: 0.2 },
+    { top: -100, right: -140, size: 320, color: brandColors.coralDeep, intensity: 0.2 },
   ],
 };
 
@@ -84,7 +84,7 @@ const GlowOrb = memo(function GlowOrb({ spec }: { spec: GlowOrbSpec }) {
               width: diameter,
               height: diameter,
               borderRadius: diameter / 2,
-              backgroundColor: spec.color ?? brandColors.gold,
+              backgroundColor: spec.color ?? brandColors.coral,
               opacity: layer.opacity,
             }}
           />

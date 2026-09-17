@@ -1,16 +1,5 @@
 /**
- * ──────────────────────────────────────────────────────────────
- *  MK EVENT — REGISTRE DES MODÈLES D'INVITATION
- * ──────────────────────────────────────────────────────────────
- *  Source de vérité des modèles éditables dans le studio
- *  (EleganceTemplate aujourd'hui, prochains modèles ensuite).
- *  Chaque modèle apporte :
- *   • son système de thèmes (palettes au contrat TemplateColors) ;
- *   • ses contenus de démonstration (couverture par défaut,
- *     histoire, programme, galerie, photo du compte à rebours).
- *  Le studio /editor?template={key} reste ainsi agnostique du
- *  modèle : il ne consomme que ce contrat.
- * ──────────────────────────────────────────────────────────────
+ * MK EVENT — Registre des modèles d’invitation.
  */
 
 import type { EventType } from '@/types';
@@ -27,17 +16,24 @@ import {
 import { TEMPLATE_THEMES, TEMPLATE_THEME_ORDER, type TemplateColors } from './elegance/themes';
 import { HIVER_GALLERY, HIVER_IMAGES, HIVER_PROGRAM, HIVER_STORY, HIVER_VENUE, HIVER_WEDDING } from './hiver/data';
 import { HIVER_THEME_ORDER, HIVER_THEMES } from './hiver/themes';
+import { BIRTHDAY_DEMO, BIRTHDAY_IMAGES, BIRTHDAY_THEME_ORDER, BIRTHDAY_THEMES } from './birthday/themes';
+import {
+  CONFERENCE_DEMO,
+  CONFERENCE_IMAGES,
+  CONFERENCE_PROGRAM,
+  CONFERENCE_THEME_ORDER,
+  CONFERENCE_THEMES,
+} from './conference/data';
 import type { PhotoFrameOption } from '@/features/invitation/types';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import { ELEGANCE_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
+import type { OrnamentKey } from './ornaments';
 
-/** Ré-export : tout modèle définit ses palettes sur ce contrat. */
 export type { TemplateColors };
 
 export interface TemplateThemeDefinition {
   key: string;
   label: string;
-  /** Pastille du sélecteur. */
   swatch: string;
   isDark?: boolean;
   dressLabel?: string;
@@ -46,44 +42,34 @@ export interface TemplateThemeDefinition {
 }
 
 export interface TemplateDefaultCover {
-  /** « Save the Date » (limite 40). */
   title: string;
-  /** « 14 juin 2025 » */
   dateLabel: string;
-  /** « Léa & Thomas » (limite 50). */
   couple: string;
-  /** « Pour notre invité(e) {{Nom}} » (limite 100). */
   guestLine: string;
 }
 
+export type CoverLayout = 'classic' | 'winterPoster' | 'birthdayPoster' | 'conference';
+
 export interface TemplateDefinition {
-  /** Clé de route : /editor?template={key}. */
   key: string;
-  /** PK Django (InvitationTemplate.id). */
   id: number;
   name: string;
   category: EventType;
   description: string;
-  /** Photo de couverture par défaut. */
   coverImage: string;
-  /** Photos proposées dans « Choisir la photo de couverture ». */
   galleryImages: string[];
-  /** Fond du module compte à rebours. */
   countdownImage: string;
-  /** Photo du couple + cadre par défaut. */
   couplePhoto: { uri: string; frame: string };
   story: StoryMilestone[];
   program: ProgramStep[];
   defaultCover: TemplateDefaultCover;
   defaultThemeKey: string;
-  /** Composition de la couverture. */
-  coverLayout: 'classic' | 'winterPoster';
-  /** Accroche sous le logo (ex. « Cérémonie à 10h »). */
+  coverLayout: CoverLayout;
+  ornaments: OrnamentKey;
+  motions: { coverEnter: boolean; sectionReveal: boolean };
   defaultKicker?: string;
   defaultVenue?: { name: string; street: string; zip: string; city: string };
-  /** Thèmes du modèle, dans l'ordre d'affichage. */
   themes: TemplateThemeDefinition[];
-  /** Cadres photo du couple proposés dans le studio. */
   photoFrames: PhotoFrameOption[];
 }
 
@@ -116,13 +102,33 @@ const hiverThemes: TemplateThemeDefinition[] = HIVER_THEME_ORDER.map((key) => ({
   colors: HIVER_THEMES[key].colors,
 }));
 
+const birthdayThemes: TemplateThemeDefinition[] = BIRTHDAY_THEME_ORDER.map((key) => ({
+  key,
+  label: BIRTHDAY_THEMES[key].label,
+  swatch: BIRTHDAY_THEMES[key].swatch,
+  isDark: BIRTHDAY_THEMES[key].isDark,
+  dressLabel: BIRTHDAY_THEMES[key].dressLabel,
+  dressHint: BIRTHDAY_THEMES[key].dressHint,
+  colors: BIRTHDAY_THEMES[key].colors,
+}));
+
+const conferenceThemes: TemplateThemeDefinition[] = CONFERENCE_THEME_ORDER.map((key) => ({
+  key,
+  label: CONFERENCE_THEMES[key].label,
+  swatch: CONFERENCE_THEMES[key].swatch,
+  isDark: CONFERENCE_THEMES[key].isDark,
+  dressLabel: CONFERENCE_THEMES[key].dressLabel,
+  dressHint: CONFERENCE_THEMES[key].dressHint,
+  colors: CONFERENCE_THEMES[key].colors,
+}));
+
 export const TEMPLATES: TemplateDefinition[] = [
   {
     key: 'elegance',
     id: 1,
     name: 'Élégance',
     category: 'wedding',
-    description: "Histoire, programme, compte à rebours, RSVP, galerie et livre d'or — 6 thèmes personnalisables.",
+    description: 'Histoire, programme, compte à rebours, RSVP, galerie — 6 thèmes.',
     coverImage: IMAGES.cover,
     galleryImages: [IMAGES.cover, ...GALLERY.slice(0, 5).map((photo) => photo.uri)],
     countdownImage: IMAGES.countdown,
@@ -137,6 +143,8 @@ export const TEMPLATES: TemplateDefinition[] = [
     },
     defaultThemeKey: 'champagne',
     coverLayout: 'classic',
+    ornaments: 'elegance',
+    motions: { coverEnter: true, sectionReveal: true },
     themes: eleganceThemes,
     photoFrames: ELEGANCE_PHOTO_FRAMES,
   },
@@ -145,7 +153,7 @@ export const TEMPLATES: TemplateDefinition[] = [
     id: 2,
     name: 'Hiver',
     category: 'wedding',
-    description: 'Affiche marine & or, photo hexagonale, flocons — 6 palettes d’hiver, tout est modifiable.',
+    description: 'Affiche marine & or, photo hexagonale — 6 palettes d’hiver.',
     coverImage: HIVER_IMAGES.cover,
     galleryImages: HIVER_GALLERY,
     countdownImage: HIVER_IMAGES.countdown,
@@ -160,21 +168,89 @@ export const TEMPLATES: TemplateDefinition[] = [
     },
     defaultThemeKey: 'navyGold',
     coverLayout: 'winterPoster',
+    ornaments: 'hiver',
+    motions: { coverEnter: true, sectionReveal: true },
     defaultKicker: HIVER_WEDDING.kicker,
     defaultVenue: HIVER_VENUE,
     themes: hiverThemes,
     photoFrames: HIVER_PHOTO_FRAMES,
   },
+  {
+    key: 'celebration',
+    id: 3,
+    name: 'Célébration',
+    category: 'birthday',
+    description: 'Affiche anniversaire une page — or & crème, décor Iconify.',
+    coverImage: BIRTHDAY_IMAGES.cover,
+    galleryImages: BIRTHDAY_IMAGES.gallery,
+    countdownImage: BIRTHDAY_IMAGES.cover,
+    couplePhoto: { uri: BIRTHDAY_IMAGES.cover, frame: normalizePhotoFrame('soft') },
+    story: [],
+    program: [],
+    defaultCover: {
+      title: BIRTHDAY_DEMO.title,
+      dateLabel: BIRTHDAY_DEMO.dateLabel,
+      couple: BIRTHDAY_DEMO.celebrant,
+      guestLine: 'Pour {{Nom}}',
+    },
+    defaultThemeKey: 'orCreme',
+    coverLayout: 'birthdayPoster',
+    ornaments: 'birthday',
+    motions: { coverEnter: true, sectionReveal: false },
+    defaultKicker: BIRTHDAY_DEMO.ageLine,
+    defaultVenue: {
+      name: 'Numbers Night Club',
+      street: '300 Westheimer Rd',
+      zip: '',
+      city: 'Houston',
+    },
+    themes: birthdayThemes,
+    photoFrames: ELEGANCE_PHOTO_FRAMES,
+  },
+  {
+    key: 'summit',
+    id: 4,
+    name: 'Summit',
+    category: 'corporate',
+    description: 'Invitation pro multi-pages : agenda, intervenants, inscription.',
+    coverImage: CONFERENCE_IMAGES.cover,
+    galleryImages: CONFERENCE_IMAGES.gallery,
+    countdownImage: CONFERENCE_IMAGES.cover,
+    couplePhoto: { uri: CONFERENCE_IMAGES.cover, frame: normalizePhotoFrame('soft') },
+    story: [],
+    program: CONFERENCE_PROGRAM,
+    defaultCover: {
+      title: CONFERENCE_DEMO.title,
+      dateLabel: CONFERENCE_DEMO.dateLabel,
+      couple: CONFERENCE_DEMO.title,
+      guestLine: 'Participant · {{Nom}}',
+    },
+    defaultThemeKey: 'slate',
+    coverLayout: 'conference',
+    ornaments: 'conference',
+    motions: { coverEnter: true, sectionReveal: true },
+    defaultKicker: CONFERENCE_DEMO.tagline,
+    defaultVenue: {
+      name: CONFERENCE_DEMO.venueName,
+      street: '',
+      zip: '',
+      city: CONFERENCE_DEMO.venueCity,
+    },
+    themes: conferenceThemes,
+    photoFrames: ELEGANCE_PHOTO_FRAMES,
+  },
 ];
 
 export const DEFAULT_TEMPLATE_KEY = 'elegance';
 
-/** Résout un modèle par clé — repli sur le modèle par défaut. */
 export function getTemplate(key?: string | null): TemplateDefinition {
   return TEMPLATES.find((template) => template.key === key) ?? TEMPLATES[0];
 }
 
-/** Résout un modèle par PK Django — repli sur le modèle par défaut. */
 export function getTemplateById(id?: number | null): TemplateDefinition {
   return TEMPLATES.find((template) => template.id === id) ?? TEMPLATES[0];
+}
+
+export function getTemplatesForCategory(category: EventType): TemplateDefinition[] {
+  return TEMPLATES.filter((template) => template.category === category);
 }

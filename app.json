@@ -26,8 +26,8 @@
       "shortName": "MK Event",
       "description": "Créez et envoyez des invitations numériques élégantes.",
       "lang": "fr",
-      "themeColor": "#2F6F69",
-      "backgroundColor": "#EEF1F4"
+      "themeColor": "#2A1824",
+      "backgroundColor": "#F7F0E8"
     },
     "plugins": [
       "expo-router",

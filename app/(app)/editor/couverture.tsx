@@ -19,15 +19,16 @@ import { EditorHeader } from '@/features/editor/components/EditorHeader';
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { FieldWithCounter } from '@/features/editor/components/FieldWithCounter';
 import { useEditor } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { goBackInEditor } from '@/features/editor/navigation';
 import { pickLibraryImage } from '@/features/editor/imagePicker';
-import { REVEAL_EFFECTS, type PhotoFrameKey, type RevealEffectKey } from '@/features/invitation/types';
+import type { PhotoFrameKey } from '@/features/invitation/types';
 import type { IconName } from '@/features/templates/elegance/data';
 
 export default function CouvertureScreen() {
   const router = useRouter();
-  const { template, cover, updateCover, theme, revealEffect, setRevealEffect } = useEditor();
-  const c = theme.colors;
+  const {template, cover, updateCover} = useEditor();
+  const c = useStudioChrome();
   const [showLook, setShowLook] = useState(false);
 
   /* Galerie native du téléphone — prévisualisation instantanée. */
@@ -202,47 +203,6 @@ export default function CouvertureScreen() {
             );
           })}
         </View>
-
-        {/* Effets d'apparition des contenus — appliqués en direct */}
-        <Text style={[styles.fieldLabel, { color: c.textMuted }]}>Effets d'apparition des contenus</Text>
-        <View style={styles.effectsGrid}>
-          {REVEAL_EFFECTS.map((option) => {
-            const selected = revealEffect === option.key;
-            return (
-              <Pressable
-                key={option.key}
-                accessibilityRole="radio"
-                accessibilityLabel={`Effet ${option.label}`}
-                accessibilityState={{ selected }}
-                onPress={() => setRevealEffect(option.key as RevealEffectKey)}
-                style={[
-                  styles.effectCard,
-                  { backgroundColor: c.surface, borderColor: c.border },
-                  selected && { borderColor: c.primary, backgroundColor: c.chip },
-                ]}
-              >
-                <Ionicons
-                  name={option.icon as IconName}
-                  size={17}
-                  color={selected ? c.primary : c.textMuted}
-                />
-                <Text
-                  style={[
-                    styles.effectLabel,
-                    { color: selected ? c.primary : c.textMuted },
-                    selected && { fontFamily: 'Inter_600SemiBold' },
-                  ]}
-                >
-                  {option.label}
-                </Text>
-                <Text style={[styles.effectHint, { color: c.textMuted }]}>{option.hint}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <Text style={[styles.effectsNote, { color: c.textMuted }]}>
-          Testez l'effet en direct : « Voir » rejoue les animations avec ce réglage.
-        </Text>
           </View>
         ) : null}
       </ScrollView>

@@ -1,30 +1,33 @@
 /**
- * Catalogue — une miniature par modèle (les thèmes se choisissent dans le studio).
- * La miniature est la vraie couverture, réduite dans un cadre téléphone.
+ * Catalogue — miniatures teintes, filtrées strictement par type d’événement.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-
-import { openTemplateEditor } from '@/features/editor/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { brandColors, shadows, spacing } from '@/constants/theme';
+import { openTemplateEditor } from '@/features/editor/navigation';
+import { brandColors, fontFamilies, shadows, spacing } from '@/constants/theme';
+import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import { CoverDiscoverHint, COVER_STAGE, ScaledInvitationStage } from '@/features/invitation/InvitationCover';
+import { CoverDiscoverHint, ScaledInvitationStage } from '@/features/invitation/InvitationCover';
 import { TemplateCover } from '@/features/invitation/TemplateCover';
 import { DEMO_GUESTS } from '@/features/invitation/guestRegistry';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import { TEMPLATES, type TemplateDefinition } from '@/features/templates/registry';
-import { EVENT_TYPE_LABELS } from '@/types';
+import { resolveTemplateTheme } from '@/features/templates/resolveTheme';
+import { EVENT_TYPE_LABELS, type EventType } from '@/types';
 
-const COMING_SOON = [
-  { name: 'Romantique', tint: '#F4E4E0' },
-  { name: 'Nature', tint: '#E4EADF' },
-  { name: 'Minimaliste', tint: '#EEEAE3' },
+const COMING_SOON: { name: string; tint: string; categories: EventType[] }[] = [
+  { name: 'Romantique', tint: '#F4E4E0', categories: ['wedding'] },
+  { name: 'Jardin', tint: '#E4EADF', categories: ['wedding'] },
+  { name: 'Ballons pastel', tint: '#E8F0FA', categories: ['birthday'] },
+  { name: 'Forum', tint: '#E6EBF2', categories: ['corporate'] },
+  { name: 'Keynote', tint: '#EDE8F2', categories: ['corporate'] },
 ];
 
 export function TemplatesScreen() {
@@ -32,9 +35,19 @@ export function TemplatesScreen() {
   const router = useRouter();
   const { isDesktop } = useBreakpoint();
   const { theme, mode } = useAppTheme();
+  const { type, themeKey } = useActiveEvent();
   const columns = isDesktop ? 3 : 2;
   const cellWidth = columns === 3 ? '31.5%' : '48.2%';
   const c = theme.colors;
+
+  const templates = useMemo(
+    () => TEMPLATES.filter((item) => item.category === type),
+    [type],
+  );
+  const soon = useMemo(
+    () => COMING_SOON.filter((item) => item.categories.includes(type)),
+    [type],
+  );
 
   return (
     <View style={[styles.screen, { backgroundColor: c.background }]}>
@@ -49,25 +62,46 @@ export function TemplatesScreen() {
       >
         <Text style={[theme.typography.h2, { color: c.textPrimary }]}>Modèles</Text>
         <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-          Touchez une miniature pour l’ouvrir dans le studio.
+          {EVENT_TYPE_LABELS[type]} · teintés avec votre thème. Changez le type dans Profil.
         </Text>
 
         <View style={styles.grid}>
-          {TEMPLATES.map((template) => (
+          {templates.map((template) => (
             <View key={template.key} style={[styles.cell, { width: cellWidth }]}>
               <TemplateThumb
                 template={template}
-                onPress={() => openTemplateEditor(router, template.key)}
+                eventThemeKey={themeKey}
+                onPress={() => openTemplateEditor(router, template.key, themeKey)}
               />
             </View>
           ))}
 
-          {COMING_SOON.map((item) => (
+          {soon.map((item) => (
             <View key={item.name} style={[styles.cell, { width: cellWidth }]}>
               <ComingSoonThumb name={item.name} tint={item.tint} />
             </View>
           ))}
         </View>
+
+        {templates.length === 0 ? (
+          <View style={[styles.emptyBox, { borderColor: c.border, backgroundColor: c.surface }]}>
+            <Ionicons name="color-palette-outline" size={22} color={c.accent} />
+            <Text style={[styles.emptyTitle, { color: c.textPrimary }]}>
+              Pas encore de modèle {EVENT_TYPE_LABELS[type].toLowerCase()}
+            </Text>
+            <Text style={[styles.empty, { color: c.textMuted }]}>
+              Les aperçus « Bientôt » arrivent. Pour voir les modèles mariage, changez le type
+              d’événement dans Profil.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/profil')}
+              style={[styles.profileCta, { backgroundColor: c.accent }]}
+            >
+              <Text style={[styles.profileCtaLabel, { color: c.onAccent }]}>Ouvrir le profil</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -75,23 +109,24 @@ export function TemplatesScreen() {
 
 function TemplateThumb({
   template,
+  eventThemeKey,
   onPress,
 }: {
   template: TemplateDefinition;
+  eventThemeKey: string;
   onPress: () => void;
 }) {
   const { theme } = useAppTheme();
   const c = theme.colors;
   const [stageWidth, setStageWidth] = useState(0);
-  const defaultTheme =
-    template.themes.find((item) => item.key === template.defaultThemeKey) ?? template.themes[0];
+  const themed = resolveTemplateTheme(template, eventThemeKey);
   const guest = DEMO_GUESTS[0];
   const couplePhoto = {
     uri: template.couplePhoto.uri,
     frame: normalizePhotoFrame(template.couplePhoto.frame),
   };
 
-  if (!defaultTheme) return null;
+  if (!themed) return null;
 
   return (
     <Pressable
@@ -120,8 +155,9 @@ function TemplateThumb({
               <TemplateCover
                 compact
                 layout={template.coverLayout}
-                colors={defaultTheme.colors}
-                isDark={defaultTheme.isDark}
+                ornaments={template.ornaments}
+                colors={themed.colors}
+                isDark={themed.isDark}
                 coverUri={template.coverImage}
                 couplePhoto={couplePhoto}
                 guest={guest}
@@ -143,7 +179,7 @@ function TemplateThumb({
         {template.name}
       </Text>
       <Text style={[styles.thumbMeta, { color: c.textMuted }]}>
-        {EVENT_TYPE_LABELS[template.category]}
+        {EVENT_TYPE_LABELS[template.category]} · {themed.label}
       </Text>
     </Pressable>
   );
@@ -180,12 +216,29 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.lg },
   subtitle: {
-    fontFamily: 'Inter_400Regular',
+    fontFamily: fontFamilies.sans,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 6,
     marginBottom: spacing.lg,
   },
+  emptyBox: {
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: spacing.lg,
+    gap: 10,
+    alignItems: 'flex-start',
+  },
+  emptyTitle: { fontFamily: fontFamilies.sansSemiBold, fontSize: 15 },
+  empty: { fontFamily: fontFamilies.sans, fontSize: 13, lineHeight: 19 },
+  profileCta: {
+    marginTop: 4,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  profileCtaLabel: { fontFamily: fontFamilies.sansSemiBold, fontSize: 13 },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -193,16 +246,13 @@ const styles = StyleSheet.create({
   },
   cell: { marginBottom: 22 },
   pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
-
   phone: {
     borderRadius: 18,
     borderWidth: 1,
     padding: 7,
     paddingBottom: 10,
   },
-  phoneSoon: {
-    borderStyle: 'dashed',
-  },
+  phoneSoon: { borderStyle: 'dashed' },
   notch: {
     alignSelf: 'center',
     width: 36,
@@ -213,28 +263,20 @@ const styles = StyleSheet.create({
   },
   notchSoon: { backgroundColor: 'rgba(28, 23, 18, 0.08)' },
   phoneScreen: {
-    aspectRatio: COVER_STAGE.width / COVER_STAGE.height,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#14110E',
+    aspectRatio: 390 / 780,
+    backgroundColor: '#1A1A1A',
   },
-  coverPlaceholder: { flex: 1 },
-  thumbName: {
-    marginTop: 8,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 13.5,
-  },
-  thumbMeta: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 12,
-    flex: 1,
-  },
-  soonInner: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, opacity: 0.55 },
-  soonRule: { width: 28, height: 1, backgroundColor: brandColors.goldSoft },
+  coverPlaceholder: { flex: 1, backgroundColor: brandColors.coralDeep },
+  thumbName: { fontFamily: fontFamilies.sansSemiBold, fontSize: 14, marginTop: 10 },
+  thumbMeta: { fontFamily: fontFamilies.sans, fontSize: 12, marginTop: 2 },
+  soonInner: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
+  soonRule: { width: 36, height: 1, backgroundColor: 'rgba(28,23,18,0.2)' },
   soonMark: {
-    fontFamily: 'Fraunces_600SemiBold',
-    fontSize: 16,
-    letterSpacing: 2,
-    color: brandColors.ink,
+    fontFamily: fontFamilies.serifSemiBold,
+    fontSize: 22,
+    letterSpacing: 4,
+    color: 'rgba(28,23,18,0.45)',
   },
 });

@@ -76,7 +76,7 @@ export function QrCheckInScanner({
           </View>
         ) : !permission.granted ? (
           <View style={styles.center}>
-            <Ionicons name="camera-outline" size={36} color={brandColors.gold} />
+            <Ionicons name="camera-outline" size={36} color={brandColors.coral} />
             <Text style={styles.hint}>
               Autorisez l’accès à la caméra pour scanner les QR des invités.
             </Text>
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   },
   cta: {
     marginTop: 8,
-    backgroundColor: brandColors.gold,
+    backgroundColor: brandColors.coral,
     borderRadius: 999,
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     right: '14%',
     bottom: '28%',
     borderWidth: 2,
-    borderColor: brandColors.gold,
+    borderColor: brandColors.coral,
     borderRadius: 18,
   },
   scanHint: {

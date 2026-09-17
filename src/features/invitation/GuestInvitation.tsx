@@ -49,6 +49,7 @@ import {
   WinterVenueCard,
 } from '@/features/templates/hiver/GuestWinter';
 import { SnowflakeSvg, WinterPageDecor } from '@/features/templates/hiver/WinterArt';
+import type { OrnamentKey } from '@/features/templates/ornaments';
 import {
   COUNTDOWN_TARGET,
   GALLERY_FILTERS,
@@ -60,15 +61,20 @@ import {
 import { type TemplateTheme, type TemplateThemeKey } from '@/features/templates/elegance/themes';
 import { getTemplate, type TemplateThemeDefinition } from '@/features/templates/registry';
 import type { InvitationConfig } from './guestRegistry';
+import { BirthdayPoster } from '@/features/templates/birthday/BirthdayPoster';
+import { ConferenceInvitation } from '@/features/templates/conference/ConferenceInvitation';
+import { CONFERENCE_SPEAKERS } from '@/features/templates/conference/data';
+import { BIRTHDAY_DEMO } from '@/features/templates/birthday/themes';
 import { SIMULATE_BACKEND } from '@/constants/config';
 import { guestsService } from '@/services/guestsService';
 import { normalizeGalleryStyle, normalizePhotoFrame, normalizeRevealEffect, venueFullAddress } from './types';
 import type { CouplePhoto, GalleryStyleKey, Guest, RevealEffectKey, RsvpAnswer, Venue } from './types';
 import { InvitationAudioChrome } from './InvitationAudioChrome';
 import { useInvitationAudio } from './useInvitationAudio';
+import { musicFromEventType, personaFromEventType } from './audioCatalog';
 
 const DEFAULT_VOIX = {
-  musicKey: 'acoustique',
+  musicKey: 'classique',
   ambientUri: null as string | null,
   ambientName: null as string | null,
   autoplay: true,
@@ -159,9 +165,10 @@ export function GuestInvitation({ slug, config, guest }: {
   const voix = {
     ...DEFAULT_VOIX,
     ...config.voix,
+    musicKey: musicFromEventType(template.category),
     ambientUri: config.voix?.ambientUri ?? DEFAULT_VOIX.ambientUri,
     ambientName: config.voix?.ambientName ?? DEFAULT_VOIX.ambientName,
-    voicePersona: config.voix?.voicePersona ?? DEFAULT_VOIX.voicePersona,
+    voicePersona: personaFromEventType(template.category),
   };
   const audio = useInvitationAudio({
     enabled: voix.voiceGreeting || voix.autoplay,
@@ -172,6 +179,58 @@ export function GuestInvitation({ slug, config, guest }: {
       hosts: pageCover.couple,
     },
   });
+
+  /* Anniversaire — une seule page affiche. */
+  if (layout === 'birthdayPoster') {
+    return (
+      <View style={[styles.fill, { backgroundColor: theme.colors.bg }]}>
+        <StatusBar style={theme.isDark ? 'light' : 'dark'} />
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 16 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <BirthdayPoster
+            colors={theme.colors}
+            isDark={theme.isDark}
+            title={pageCover.title}
+            subtitle={pageCover.guestLine || BIRTHDAY_DEMO.subtitle}
+            ageLine={pageCover.kicker || BIRTHDAY_DEMO.ageLine}
+            headline="birthday"
+            scriptLine={BIRTHDAY_DEMO.script}
+            dateLabel={pageCover.dateLabel}
+            timePlace={config.dressCode || BIRTHDAY_DEMO.timePlace}
+            address={
+              [config.venue.name, config.venue.street, config.venue.city].filter(Boolean).join(' · ')
+              || BIRTHDAY_DEMO.address
+            }
+            closing={BIRTHDAY_DEMO.closing}
+            celebrant={pageCover.couple}
+          />
+        </ScrollView>
+      </View>
+    );
+  }
+
+  /* Conférence — multi-sections métier. */
+  if (layout === 'conference') {
+    return (
+      <ConferenceInvitation
+        colors={theme.colors}
+        isDark={theme.isDark}
+        title={pageCover.title || pageCover.couple}
+        tagline={pageCover.kicker}
+        dateLabel={pageCover.dateLabel}
+        venue={config.venue}
+        access={config.practical?.access}
+        parking={config.practical?.parking}
+        hotel={config.practical?.hotel}
+        dressCode={config.dressCode}
+        program={programItems}
+        speakers={config.speakers?.length ? config.speakers : CONFERENCE_SPEAKERS}
+        guest={guest}
+      />
+    );
+  }
 
   return (
     <RevealBusContext.Provider value={bus}>
@@ -197,6 +256,7 @@ export function GuestInvitation({ slug, config, guest }: {
           <GuestCoverSection
             theme={theme}
             layout={layout}
+            ornaments={template.ornaments}
             guest={guest}
             couplePhoto={couplePhoto}
             dressCode={config.dressCode}
@@ -585,6 +645,7 @@ function SectionHead({
 function GuestCoverSection({
   theme,
   layout,
+  ornaments,
   guest,
   couplePhoto,
   dressCode,
@@ -594,6 +655,7 @@ function GuestCoverSection({
 }: {
   theme: TemplateTheme;
   layout: 'classic' | 'winterPoster';
+  ornaments: OrnamentKey;
   guest: Guest;
   couplePhoto: CouplePhoto;
   dressCode?: string;
@@ -621,6 +683,7 @@ function GuestCoverSection({
     <View style={{ height: Dimensions.get('window').height }}>
       <TemplateCover
         layout={layout}
+        ornaments={ornaments}
         colors={theme.colors}
         isDark={theme.isDark}
         coverUri={cover.photoUri || IMAGES.cover}

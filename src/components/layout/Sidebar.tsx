@@ -1,5 +1,5 @@
 /**
- * Sidebar desktop (≥768 px) — atelier clair (ardoise + eucalyptus).
+ * Sidebar desktop (≥768 px) — plum profond + accent coral.
  */
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -43,8 +43,8 @@ export function Sidebar() {
       style={[
         styles.sidebar,
         {
-          backgroundColor: isDark ? c.surface : '#15181E',
-          borderRightColor: isDark ? c.border : 'rgba(255,255,255,0.06)',
+          backgroundColor: isDark ? c.surface : '#4A2740',
+          borderRightColor: isDark ? c.border : 'rgba(247,240,232,0.08)',
         },
       ]}
     >
@@ -72,19 +72,19 @@ export function Sidebar() {
                 }}
                 style={({ pressed }) => [
                   styles.navItem,
-                  isActive && { backgroundColor: 'rgba(91, 168, 159, 0.16)' },
+                  isActive && { backgroundColor: 'rgba(224, 122, 95, 0.18)' },
                   pressed && styles.pressed,
                 ]}
               >
                 <Ionicons
                   name={isActive ? item.iconActive : item.icon}
                   size={18}
-                  color={isActive ? '#5BA89F' : 'rgba(242, 244, 247, 0.45)'}
+                  color={isActive ? '#E07A5F' : 'rgba(247, 240, 232, 0.45)'}
                 />
                 <Text
                   style={[
                     styles.navLabel,
-                    { color: isActive ? '#F2F4F7' : 'rgba(242, 244, 247, 0.55)' },
+                    { color: isActive ? '#F7F0E8' : 'rgba(247, 240, 232, 0.55)' },
                     isActive && styles.navLabelActive,
                   ]}
                 >
@@ -97,7 +97,7 @@ export function Sidebar() {
       </View>
 
       <View style={styles.userBlock}>
-        <View style={[styles.avatar, { backgroundColor: '#2F6F69' }]}>
+        <View style={[styles.avatar, { backgroundColor: '#E07A5F' }]}>
           <Text style={styles.avatarText}>{initials}</Text>
         </View>
         <View style={styles.userMeta}>
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sans,
     fontSize: 12,
     lineHeight: 16,
-    color: 'rgba(242, 244, 247, 0.4)',
+    color: 'rgba(247, 240, 232, 0.4)',
   },
   nav: { gap: 4 },
   navItem: {
@@ -163,9 +163,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(247, 240, 232, 0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(247, 240, 232, 0.1)',
     borderRadius: 14,
     padding: 10,
   },
@@ -187,13 +187,13 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 13,
     lineHeight: 17,
-    color: '#F2F4F7',
+    color: '#F7F0E8',
   },
   userEmail: {
     fontFamily: fontFamilies.sans,
     fontSize: 11,
     lineHeight: 15,
-    color: 'rgba(242, 244, 247, 0.4)',
+    color: 'rgba(247, 240, 232, 0.4)',
   },
   logoutBtn: {
     width: 32,

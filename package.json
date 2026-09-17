@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "build:web": "expo export -p web && npx workbox-cli generateSW workbox-config.js",
-    "serve:web": "npx expo serve"
+    "serve:web": "npx expo serve",
+    "deploy:web": "node scripts/deploy-vercel.js"
   },
   "dependencies": {
     "@expo-google-fonts/fraunces": "^0.4.1",

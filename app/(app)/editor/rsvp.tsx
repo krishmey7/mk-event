@@ -11,12 +11,13 @@ import { EditorInput } from '@/features/editor/components/EditorInput';
 import { EditorHeader } from '@/features/editor/components/EditorHeader';
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { useEditor } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { goBackInEditor } from '@/features/editor/navigation';
 
 export default function RsvpScreen() {
   const router = useRouter();
-  const { theme, drinks, addDrink, removeDrink, updateDrink } = useEditor();
-  const colors = theme.colors;
+  const {drinks, addDrink, removeDrink, updateDrink} = useEditor();
+  const colors = useStudioChrome();
   const [newDrink, setNewDrink] = useState('');
   const [editingDrink, setEditingDrink] = useState<string | null>(null);
   const [drinkDraft, setDrinkDraft] = useState('');

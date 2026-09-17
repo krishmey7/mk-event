@@ -10,7 +10,10 @@ import { Logo } from '@/components/ui/Logo';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
 import { WinterCouplePhotoFrame } from './WinterCouplePhotoFrame';
-import { WinterPageDecor } from './WinterArt';
+
+/** Or signature du modèle Hiver (Marine & or) — pas le thème wizard. */
+const HIVER_LOGO = '#D4B45A';
+const HIVER_LOGO_SOFT = '#B8953E';
 
 export function WinterCover({
   colors,
@@ -58,12 +61,10 @@ export function WinterCover({
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg }]}>
-      <WinterPageDecor gold={gold} frost={icy} compact={compact} />
-
       <View style={[styles.content, { paddingTop: padTop, paddingBottom: padBottom }]}>
         {/* 1 · Marque */}
         <View style={[styles.brand, compact && styles.brandCompact]}>
-          <Logo size="sm" variant="gold" />
+          <Logo size="sm" color={HIVER_LOGO} wordmarkColor={HIVER_LOGO_SOFT} />
           {kicker.trim() ? (
             <Text style={[styles.kicker, { color: icy }]}>{kicker.trim().toUpperCase()}</Text>
           ) : null}

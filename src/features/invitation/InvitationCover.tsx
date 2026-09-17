@@ -12,6 +12,10 @@ import { CouplePhotoFrame } from './CouplePhotoFrame';
 import type { CouplePhoto, Guest } from './types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
 
+/** Marque Élégance — champagne fixe, indépendant du thème événement. */
+const ELEGANCE_LOGO = '#C4A574';
+const ELEGANCE_LOGO_SOFT = '#A98246';
+
 export const COVER_STAGE = { width: 390, height: 780 };
 
 export function InvitationCover({
@@ -54,7 +58,7 @@ export function InvitationCover({
       <View style={[StyleSheet.absoluteFill, styles.coverDeep, { backgroundColor: colors.coverOverlayDeep }]} />
 
       <View style={[styles.content, { paddingTop: padTop, paddingBottom: padBottom }]}>
-        <Logo size="sm" />
+        <Logo size="sm" color={ELEGANCE_LOGO} wordmarkColor={ELEGANCE_LOGO_SOFT} />
 
         <View style={styles.photoSlot}>
           <CouplePhotoFrame couplePhoto={couplePhoto} accent={colors.accent} />

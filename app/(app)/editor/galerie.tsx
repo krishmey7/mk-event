@@ -12,10 +12,9 @@ import { useRouter } from 'expo-router';
 
 import { EditorHeader } from '@/features/editor/components/EditorHeader';
 import { useEditor, type GalleryCategory } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { pickLibraryImages } from '@/features/editor/imagePicker';
 import { goBackInEditor } from '@/features/editor/navigation';
-import { GALLERY_STYLES, type GalleryStyleKey } from '@/features/invitation/types';
-import type { IconName } from '@/features/templates/elegance/data';
 
 const FILTERS = [
   { key: 'toutes', label: 'Toutes' },
@@ -28,8 +27,8 @@ const CATEGORIES: GalleryCategory[] = ['ceremonie', 'cocktail', 'soiree'];
 
 export default function GalerieScreen() {
   const router = useRouter();
-  const { gallery, addGalleryPhotos, removeGalleryPhoto, theme, galleryStyle, setGalleryStyle } = useEditor();
-  const colors = theme.colors;
+  const {gallery, addGalleryPhotos, removeGalleryPhoto} = useEditor();
+  const colors = useStudioChrome();
   const [filter, setFilter] = useState<'toutes' | GalleryCategory>('toutes');
   const [target, setTarget] = useState<GalleryCategory>('ceremonie');
   const [importing, setImporting] = useState(false);
@@ -54,34 +53,8 @@ export default function GalerieScreen() {
       <EditorHeader title="Galerie" onBack={() => goBackInEditor(router)} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Style d'affichage — appliqué à la galerie de l'invitation */}
-        <Text style={[styles.sectionLabel, { color: colors.text }]}>Style d'affichage</Text>
-        <View style={styles.styleGrid}>
-          {GALLERY_STYLES.map((option) => {
-            const selected = galleryStyle === option.key;
-            return (
-              <Pressable
-                key={option.key}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                onPress={() => setGalleryStyle(option.key as GalleryStyleKey)}
-                style={[
-                  styles.styleCard,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  selected && { borderColor: colors.primary, backgroundColor: colors.chip },
-                ]}
-              >
-                <Ionicons name={option.icon as IconName} size={18} color={selected ? colors.primary : colors.textMuted} />
-                <Text style={[styles.styleLabel, { color: selected ? colors.primary : colors.text }, selected && { fontFamily: 'Inter_600SemiBold' }]}>
-                  {option.label}
-                </Text>
-                <Text style={[styles.styleHint, { color: colors.textMuted }]}>{option.hint}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
         <Text style={[styles.styleNote, { color: colors.textMuted }]}>
-          Modifie instantanément le rendu de la galerie sur l'invitation.
+          Style d’affichage figé par le modèle. Ajoutez ou retirez des photos ici.
         </Text>
 
         {/* Filtres par catégorie */}

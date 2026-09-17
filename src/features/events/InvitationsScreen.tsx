@@ -38,7 +38,7 @@ export function InvitationsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {isLoading ? (
-          <ActivityIndicator color={brandColors.goldSoft} style={styles.loader} />
+          <ActivityIndicator color={brandColors.coralDeep} style={styles.loader} />
         ) : error ? (
           <Text style={styles.errorText}>{error}</Text>
         ) : (

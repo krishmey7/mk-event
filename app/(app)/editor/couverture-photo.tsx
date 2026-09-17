@@ -10,13 +10,14 @@ import { useRouter } from 'expo-router';
 
 import { EditorHeader } from '@/features/editor/components/EditorHeader';
 import { useEditor } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { goBackInEditor } from '@/features/editor/navigation';
 import { pickLibraryImage } from '@/features/editor/imagePicker';
 
 export default function CouverturePhotoScreen() {
   const router = useRouter();
-  const { template, cover, updateCover, theme } = useEditor();
-  const colors = theme.colors;
+  const {template, cover, updateCover} = useEditor();
+  const colors = useStudioChrome();
   const candidates = template.galleryImages;
 
   const pick = (uri: string) => {
@@ -60,11 +61,11 @@ export default function CouverturePhotoScreen() {
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
                 onPress={() => pick(uri)}
-                style={({ pressed }) => [styles.cell, selected && { borderColor: theme.colors.primary }, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.cell, selected && { borderColor: colors.primary }, pressed && styles.pressed]}
               >
                 <Image source={{ uri }} style={styles.cellImage} resizeMode="cover" />
                 {selected ? (
-                  <View style={[styles.check, { backgroundColor: theme.colors.primary }]}>
+                  <View style={[styles.check, { backgroundColor: colors.primary }]}>
                     <Ionicons name="checkmark" size={13} color="#FFFFFF" />
                   </View>
                 ) : null}

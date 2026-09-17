@@ -58,6 +58,17 @@ class Event(models.Model):
     slug = models.SlugField(unique=True, max_length=220)
     qr_code_url = models.URLField(blank=True, null=True)
     cover_image_url = models.URLField(blank=True, null=True)
+    theme_key = models.CharField(
+        max_length=40,
+        blank=True,
+        default="",
+        help_text="Clé de palette choisie à la création (ex. sauge, champagne).",
+    )
+    studio_config = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Snapshot studio (cover, story, programme, galerie, thème…) servi à l’invité.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

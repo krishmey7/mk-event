@@ -1,13 +1,14 @@
-/**
- * Atmosphère — halo eucalyptus + grain (landing / header dashboard).
+﻿/**
+ * Atmosphère — halo coral + plum (landing / header dashboard).
  */
 
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { Defs, Ellipse, Line, RadialGradient, Stop } from 'react-native-svg';
 
-const INK = '#0F1419';
-const TEAL = '#5BA89F';
+const INK = '#2A1824';
+const CORAL = '#E07A5F';
+const PLUM = '#6B3A5C';
 
 export function LandingAtmosphere({
   height: heightProp,
@@ -67,13 +68,13 @@ export function LandingAtmosphere({
         <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
           <Defs>
             <RadialGradient id="halo" cx="50%" cy="40%" r="62%">
-              <Stop offset="0%" stopColor={TEAL} stopOpacity="0.24" />
-              <Stop offset="40%" stopColor={TEAL} stopOpacity="0.08" />
-              <Stop offset="75%" stopColor="#141A22" stopOpacity="0.3" />
+              <Stop offset="0%" stopColor={CORAL} stopOpacity="0.28" />
+              <Stop offset="35%" stopColor={PLUM} stopOpacity="0.16" />
+              <Stop offset="75%" stopColor="#3A2434" stopOpacity="0.35" />
               <Stop offset="100%" stopColor={INK} stopOpacity="1" />
             </RadialGradient>
             <RadialGradient id="floor" cx="50%" cy="100%" r="55%">
-              <Stop offset="0%" stopColor="#0B0F14" stopOpacity="0.85" />
+              <Stop offset="0%" stopColor="#1A1018" stopOpacity="0.85" />
               <Stop offset="100%" stopColor={INK} stopOpacity="0" />
             </RadialGradient>
           </Defs>
@@ -104,8 +105,8 @@ export function LandingAtmosphere({
               y1={y}
               x2={width}
               y2={y}
-              stroke="#F2F4F7"
-              strokeOpacity={index % 4 === 0 ? 0.028 : 0.01}
+              stroke="#F7F0E8"
+              strokeOpacity={index % 4 === 0 ? 0.035 : 0.012}
               strokeWidth={1}
             />
           );

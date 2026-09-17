@@ -1,12 +1,12 @@
 /**
- * STUDIO — Gestion des invités (fin d'édition).
- * Ajout d'invités (Prénom, Nom, Téléphone/Email, places attribuées),
- * génération automatique du lien unique + QR par invité, et partage
- * direct WhatsApp / réseaux du lien pré-personnalisé.
+ * STUDIO — Gestion des invités (fin d’édition).
+ * Ajout d’invités (Prénom, Nom, Téléphone/Email, places attribuées).
+ * Lien / QR personnels : visibles après publication (pas de partage ici
+ * pour éviter d’envoyer un lien provisoire INV-…).
  */
 
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -15,14 +15,15 @@ import { QrPattern } from '@/components/ui/QrPattern';
 import { EditorHeader } from '@/features/editor/components/EditorHeader';
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { useEditor } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { goBackInEditor } from '@/features/editor/navigation';
 import { buildGuestLink, guestAccessKey } from '@/features/invitation/qr';
 import type { Guest } from '@/features/invitation/types';
 
 export default function InvitesScreen() {
   const router = useRouter();
-  const { guests, addGuest, removeGuest, cover, invitationSlug, theme } = useEditor();
-  const colors = theme.colors;
+  const { guests, addGuest, removeGuest, invitationSlug } = useEditor();
+  const colors = useStudioChrome();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -44,34 +45,23 @@ export default function InvitesScreen() {
 
   const linkFor = (guest: Guest) => buildGuestLink(invitationSlug, guestAccessKey(guest));
 
-  /* Lien pré-personnalisé + envoi WhatsApp / partage natif. */
-  const guestMessage = (guest: Guest): string =>
-    `Bonjour ${guest.firstName} ! 💛 Vous êtes invité(e) au mariage de ${cover.couple} — ${cover.dateLabel}. Votre invitation personnelle : ${linkFor(guest)}`;
-
-  const openWhatsApp = (guest: Guest) => {
-    void Linking.openURL(`https://wa.me/?text=${encodeURIComponent(guestMessage(guest))}`);
-  };
-
-  const shareGuest = (guest: Guest) => {
-    void Share.share({ message: guestMessage(guest) });
-  };
-
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <EditorHeader title="Invités" onBack={() => goBackInEditor(router)} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <EditorHint>
-          Ajoutez prénom et nom, puis validez. Chaque personne reçoit un lien personnel (bouton partage).
+          Ajoutez prénom et nom, puis publiez l’invitation. Les liens personnels se créent à la
+          publication — ne les envoyez qu’après.
         </EditorHint>
         <View style={[styles.summary, { backgroundColor: colors.chip }]}>
           <Ionicons name="people-outline" size={15} color={colors.primary} />
           <Text style={[styles.summaryText, { color: colors.primary }]}>
-            {guests.length} invité{guests.length > 1 ? 's' : ''} · {totalSeats} place{totalSeats > 1 ? 's' : ''}
+            {guests.length} invité{guests.length > 1 ? 's' : ''} · {totalSeats} place
+            {totalSeats > 1 ? 's' : ''}
           </Text>
         </View>
 
-        {/* Formulaire d'ajout */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Ajouter un invité</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.nameRow}>
@@ -98,11 +88,21 @@ export default function InvitesScreen() {
           <View style={styles.seatsRow}>
             <Text style={[styles.seatsLabel, { color: colors.text }]}>Places attribuées</Text>
             <View style={[styles.seatsStepper, { backgroundColor: colors.chip }]}>
-              <Pressable accessibilityRole="button" onPress={() => setSeats(Math.max(1, seats - 1))} hitSlop={6} style={styles.stepBtn}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setSeats(Math.max(1, seats - 1))}
+                hitSlop={6}
+                style={styles.stepBtn}
+              >
                 <Ionicons name="remove" size={16} color={colors.text} />
               </Pressable>
               <Text style={[styles.seatsValue, { color: colors.primary }]}>{seats}</Text>
-              <Pressable accessibilityRole="button" onPress={() => setSeats(Math.min(10, seats + 1))} hitSlop={6} style={styles.stepBtn}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setSeats(Math.min(10, seats + 1))}
+                hitSlop={6}
+                style={styles.stepBtn}
+              >
                 <Ionicons name="add" size={16} color={colors.text} />
               </Pressable>
             </View>
@@ -114,19 +114,23 @@ export default function InvitesScreen() {
           accessibilityState={{ disabled: !canAdd }}
           onPress={submit}
           disabled={!canAdd}
-          style={({ pressed }) => [styles.addBtn, { backgroundColor: colors.primary }, !canAdd && styles.disabled, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.addBtn,
+            { backgroundColor: colors.primary },
+            !canAdd && styles.disabled,
+            pressed && styles.pressed,
+          ]}
         >
           <Ionicons name="person-add-outline" size={16} color={colors.onPrimary} />
           <Text style={[styles.addLabel, { color: colors.onPrimary }]}>Ajouter cet invité</Text>
         </Pressable>
 
-        {/* Liste — lien unique + QR + partage par invité */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Vos invités</Text>
         {guests.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="people-outline" size={22} color="#ADB5BD" />
             <Text style={styles.emptyText}>
-              Ajoutez vos invités — chacun reçoit un lien et un QR personnels.
+              Ajoutez vos invités — chacun aura un lien et un QR personnels après publication.
             </Text>
           </View>
         ) : null}
@@ -135,8 +139,12 @@ export default function InvitesScreen() {
           const open = openId === guest.id;
           const accessKey = guestAccessKey(guest);
           const link = linkFor(guest);
+          const published = Boolean(guest.accessToken);
           return (
-            <View key={guest.id} style={[styles.guestCard, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+            <View
+              key={guest.id}
+              style={[styles.guestCard, { borderColor: colors.border, backgroundColor: colors.surface }]}
+            >
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setOpenId(open ? null : guest.id)}
@@ -152,42 +160,37 @@ export default function InvitesScreen() {
                   <Text style={[styles.guestName, { color: colors.text }]}>
                     {guest.firstName} {guest.lastName}
                   </Text>
-                  <Text style={[styles.guestContact, { color: colors.textMuted }]}>{guest.contact || 'Contact non renseigné'}</Text>
+                  <Text style={[styles.guestContact, { color: colors.textMuted }]}>
+                    {guest.contact || 'Contact non renseigné'}
+                  </Text>
                   <Text style={[styles.guestId, { color: colors.primary }]}>
-                    {guest.accessToken ? 'Publié' : guest.id} · {guest.seats} place{guest.seats > 1 ? 's' : ''}
+                    {published ? 'Publié' : guest.id} · {guest.seats} place
+                    {guest.seats > 1 ? 's' : ''}
                   </Text>
                 </View>
-                <Ionicons name={open ? 'chevron-up' : 'qr-code-outline'} size={18} color={colors.textMuted} />
+                <Ionicons
+                  name={open ? 'chevron-up' : 'qr-code-outline'}
+                  size={18}
+                  color={colors.textMuted}
+                />
               </Pressable>
 
               {open ? (
                 <View style={[styles.guestShare, { borderTopColor: colors.border }]}>
                   <QrPattern seed={accessKey} size={17} cell={5} style={styles.guestQr} />
-                  <Text style={[styles.linkText, { color: colors.textMuted }]} numberOfLines={2} ellipsizeMode="middle">
-                    {link}
-                  </Text>
-                  <View style={styles.shareRow}>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => openWhatsApp(guest)}
-                      style={({ pressed }) => [styles.shareBtn, { backgroundColor: colors.primary }, pressed && styles.pressed]}
+                  {published ? (
+                    <Text
+                      style={[styles.linkText, { color: colors.textMuted }]}
+                      numberOfLines={2}
+                      ellipsizeMode="middle"
                     >
-                      <Ionicons name="logo-whatsapp" size={15} color={colors.onPrimary} />
-                      <Text style={[styles.shareLabel, { color: colors.onPrimary }]}>WhatsApp</Text>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => shareGuest(guest)}
-                      style={({ pressed }) => [styles.shareBtn, styles.shareOutline, { borderColor: colors.primary, backgroundColor: colors.surface }, pressed && styles.pressed]}
-                    >
-                      <Ionicons name="share-social-outline" size={15} color={colors.primary} />
-                      <Text style={[styles.shareLabel, { color: colors.primary }]}>Partager</Text>
-                    </Pressable>
-                  </View>
+                      {link}
+                    </Text>
+                  ) : null}
                   <Text style={[styles.shareHint, { color: colors.textMuted }]}>
-                    {guest.accessToken
-                      ? `Lien Django (?guest=…) — « Bienvenue, ${guest.firstName} » + QR pass après RSVP.`
-                      : `Publiez l’invitation pour activer le jeton Django. Lien provisoire : ${guest.id}.`}
+                    {published
+                      ? 'Lien personnel prêt. Après confirmation de présence, l’invité affichera son pass d’entrée.'
+                      : 'Publiez l’invitation pour activer le vrai lien personnel de cet invité.'}
                   </Text>
                 </View>
               ) : null}
@@ -262,8 +265,12 @@ const styles = StyleSheet.create({
   addLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
   empty: { alignItems: 'center', gap: 8, paddingVertical: 26 },
   emptyText: {
-    fontFamily: 'Inter_400Regular', fontSize: 12.5, lineHeight: 18,
-    color: '#9A9EA7', textAlign: 'center', maxWidth: 260,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: '#9A9EA7',
+    textAlign: 'center',
+    maxWidth: 260,
   },
   guestCard: {
     backgroundColor: '#FFFFFF',
@@ -288,23 +295,18 @@ const styles = StyleSheet.create({
   },
   guestQr: { borderRadius: 10, overflow: 'hidden' },
   linkText: {
-    fontFamily: 'Inter_500Medium', fontSize: 11.5,
-    color: '#6F675C', textAlign: 'center',
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11.5,
+    color: '#6F675C',
+    textAlign: 'center',
   },
-  shareRow: { flexDirection: 'row', gap: 10 },
-  shareBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-  },
-  shareOutline: { backgroundColor: '#FFFFFF', borderWidth: 1.4 },
-  shareLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 12.5 },
   shareHint: {
-    fontFamily: 'Inter_400Regular', fontSize: 10.5, lineHeight: 15,
-    color: '#9A9EA7', textAlign: 'center', paddingHorizontal: 6,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 10.5,
+    lineHeight: 15,
+    color: '#9A9EA7',
+    textAlign: 'center',
+    paddingHorizontal: 6,
   },
   removeBtn: { position: 'absolute', top: 10, right: 10, padding: 4 },
 });

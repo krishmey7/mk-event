@@ -1,30 +1,45 @@
 /**
- * Accueil du studio — aperçu + actions.
- * En bas : Page · Thème · Récit · Invités.
+ * Étape 1 — Infos / Affiche selon le type d’événement.
  */
 
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import type { ComponentProps } from 'react';
 
 import { EditorCoverPreview } from '@/features/editor/components/EditorCoverPreview';
-import { SaveToLibraryCard } from '@/features/editor/components/SaveToLibraryCard';
+import { EditorHint } from '@/features/editor/components/EditorHint';
+import { EditorInput } from '@/features/editor/components/EditorInput';
 import { useEditor } from '@/features/editor/EditorContext';
-import type { TemplateColors } from '@/features/templates/registry';
+import { useActiveEvent } from '@/context/ActiveEventContext';
+import { useAppTheme } from '@/context/ThemePreferenceContext';
+import { fontFamilies, spacing } from '@/constants/theme';
 
-export default function EditorHomePreviewScreen() {
+export default function EditorInfosScreen() {
   const router = useRouter();
-  const { guests, cover, theme } = useEditor();
-  const c = theme.colors;
-  const guestCount = guests.length;
+  const { cover, dressCode, setDressCode, venue, updateVenue, theme, template, updateCover } =
+    useEditor();
+  const { type: activeType } = useActiveEvent();
+  const eventType = activeType || template.category;
+  const { theme: appTheme } = useAppTheme();
+  const c = appTheme.colors;
+
+  const birthday = eventType === 'birthday';
+  const conference = eventType === 'corporate';
 
   return (
     <ScrollView
-      style={[styles.screen, { backgroundColor: c.bg }]}
+      style={{ backgroundColor: c.background }}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
+      <EditorHint>
+        {birthday
+          ? 'Personnalisez l’affiche : textes, date et lieu. Une seule page pour vos invités.'
+          : conference
+            ? 'Nom de l’événement, dates et accroche. L’agenda et les intervenants viennent ensuite.'
+            : 'Textes, lieu et dress code. Le design du modèle et les couleurs sont déjà fixés.'}
+      </EditorHint>
+
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Modifier la couverture"
@@ -32,174 +47,165 @@ export default function EditorHomePreviewScreen() {
         style={({ pressed }) => [styles.previewWrap, pressed && styles.pressed]}
       >
         <EditorCoverPreview embedded />
-        <View style={styles.previewCta}>
+        <View style={[styles.previewCta, { backgroundColor: 'rgba(15,18,22,0.72)' }]}>
           <Ionicons name="create-outline" size={16} color="#F6F1E8" />
-          <Text style={styles.previewCtaLabel}>Modifier la couverture</Text>
+          <Text style={styles.previewCtaLabel}>
+            {birthday ? 'Modifier l’affiche' : 'Modifier la couverture'}
+          </Text>
         </View>
       </Pressable>
 
-      <Text style={[styles.kicker, { color: c.textMuted }]}>Pour commencer</Text>
-      <Text style={[styles.lead, { color: c.text }]}>
-        La couverture ici, puis les étapes du bas. Enregistrez dans Mes invitations quand c’est prêt.
-      </Text>
+      {birthday ? (
+        <>
+          <Text style={[styles.heading, { color: c.textPrimary }]}>Textes de l’affiche</Text>
+          <EditorInput
+            value={cover.title}
+            onChangeText={(value) => updateCover({ title: value })}
+            placeholder="Save the Date"
+          />
+          <View style={styles.gap} />
+          <EditorInput
+            value={cover.kicker}
+            onChangeText={(value) => updateCover({ kicker: value })}
+            placeholder="happy 28th"
+          />
+          <View style={styles.gap} />
+          <EditorInput
+            value={cover.couple}
+            onChangeText={(value) => updateCover({ couple: value })}
+            placeholder="Prénom du/de la fêté(e)"
+          />
+          <View style={styles.gap} />
+          <EditorInput
+            value={cover.dateLabel}
+            onChangeText={(value) => updateCover({ dateLabel: value })}
+            placeholder="04 | 05 | 2026"
+          />
+          <View style={styles.gap} />
+          <EditorInput
+            value={dressCode}
+            onChangeText={setDressCode}
+            placeholder="À 21h · Nom du lieu"
+          />
+        </>
+      ) : conference ? (
+        <>
+          <Text style={[styles.heading, { color: c.textPrimary }]}>Événement</Text>
+          <EditorInput
+            value={cover.title}
+            onChangeText={(value) => updateCover({ title: value, couple: value })}
+            placeholder="Nom de la conférence"
+          />
+          <View style={styles.gap} />
+          <EditorInput
+            value={cover.kicker}
+            onChangeText={(value) => updateCover({ kicker: value })}
+            placeholder="Accroche · Innovation · Networking"
+          />
+          <View style={styles.gap} />
+          <EditorInput
+            value={cover.dateLabel}
+            onChangeText={(value) => updateCover({ dateLabel: value })}
+            placeholder="12–13 mars 2026"
+          />
+        </>
+      ) : null}
 
-      <View style={styles.steps}>
-        <StepRow
-          n="1"
-          title="Couverture"
-          hint={`${cover.couple} · ${cover.dateLabel}`}
-          icon="image-outline"
-          colors={c}
-          onPress={() => router.push('/editor/couverture')}
-        />
-        <StepRow
-          n="2"
-          title="Thème"
-          hint="Dress code et couleurs"
-          icon="color-palette-outline"
-          colors={c}
-          onPress={() => router.push('/editor/theme')}
-        />
-        <StepRow
-          n="3"
-          title="Invités"
-          hint={guestCount === 0 ? 'Personne n’est encore sur la liste' : `${guestCount} personne${guestCount > 1 ? 's' : ''} invitée${guestCount > 1 ? 's' : ''}`}
-          icon="people-outline"
-          colors={c}
-          emphasize={guestCount === 0}
-          onPress={() => router.push('/editor/plus')}
-        />
-        <StepRow
-          n="4"
-          title="Voir comme un invité"
-          hint="Contrôlez le rendu avant d’envoyer les liens"
-          icon="eye-outline"
-          colors={c}
-          onPress={() => router.push('/editor/previsualisation')}
-        />
+      <Text style={[styles.heading, { color: c.textPrimary }]}>Lieu</Text>
+      <EditorInput
+        value={venue.name}
+        onChangeText={(value) => updateVenue({ name: value })}
+        placeholder="Nom du lieu"
+      />
+      <View style={styles.gap} />
+      <EditorInput
+        value={venue.city}
+        onChangeText={(value) => updateVenue({ city: value })}
+        placeholder="Ville"
+      />
+      {(birthday || conference) && (
+        <>
+          <View style={styles.gap} />
+          <EditorInput
+            value={venue.street}
+            onChangeText={(value) => updateVenue({ street: value })}
+            placeholder="Adresse"
+          />
+        </>
+      )}
+
+      {!birthday ? (
+        <>
+          <Text style={[styles.heading, { color: c.textPrimary }]}>
+            {conference ? 'Dress code' : 'Dress code'}
+          </Text>
+          <Text style={[styles.lead, { color: c.textMuted }]}>
+            Indiquez l’ambiance ou la tenue attendue. Palette : {theme.label}.
+          </Text>
+          <EditorInput
+            value={dressCode}
+            onChangeText={setDressCode}
+            placeholder={
+              conference
+                ? 'Ex. Business casual'
+                : 'Ex. Tenue cocktail, tons eucalyptus'
+            }
+          />
+        </>
+      ) : null}
+
+      <View style={[styles.swatchRow, { borderColor: c.border, backgroundColor: c.surface }]}>
+        <View style={[styles.swatch, { backgroundColor: theme.swatch || c.accent }]} />
+        <Text style={[styles.swatchLabel, { color: c.textSecondary }]}>
+          Thème · {cover.couple || cover.title || 'À personnaliser'}
+        </Text>
       </View>
-
-      <Text style={[styles.kicker, { color: c.textMuted }]}>En bas d’écran</Text>
-      <Text style={[styles.tabHelp, { color: c.textMuted }]}>
-        1 Page — couverture. 2 Thème — dress code et couleurs. 3 Récit — histoire, journée et compteur. 4 Invités — liste, RSVP, galerie, puis enregistrement.
-      </Text>
-
-      <SaveToLibraryCard />
     </ScrollView>
   );
 }
 
-function StepRow({
-  n,
-  title,
-  hint,
-  icon,
-  onPress,
-  colors,
-  emphasize = false,
-}: {
-  n: string;
-  title: string;
-  hint: string;
-  icon: ComponentProps<typeof Ionicons>['name'];
-  onPress: () => void;
-  colors: TemplateColors;
-  emphasize?: boolean;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.step,
-        {
-          backgroundColor: colors.surface,
-          borderColor: emphasize ? colors.primary : colors.border,
-        },
-        pressed && styles.pressed,
-      ]}
-    >
-      <View style={[styles.stepNum, { backgroundColor: colors.primary }]}>
-        <Text style={[styles.stepNumText, { color: colors.onPrimary }]}>{n}</Text>
-      </View>
-      <View style={styles.stepCopy}>
-        <Text style={[styles.stepTitle, { color: colors.text }]}>{title}</Text>
-        <Text style={[styles.stepHint, { color: colors.textMuted }]}>{hint}</Text>
-      </View>
-      <Ionicons name={icon} size={18} color={colors.textMuted} />
-      <Ionicons name="chevron-forward" size={15} color={colors.accent} />
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  content: { padding: 16, paddingBottom: 28 },
+  content: { padding: spacing.lg, paddingBottom: 40, gap: 4 },
   previewWrap: {
-    height: 320,
-    borderRadius: 18,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#141210',
-    marginBottom: 22,
+    height: 280,
+    marginBottom: spacing.md,
   },
   previewCta: {
     position: 'absolute',
-    alignSelf: 'center',
-    bottom: 14,
-    left: 14,
-    right: 14,
+    left: 12,
+    bottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(28, 23, 18, 0.82)',
-    borderRadius: 999,
-    paddingVertical: 11,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
   },
   previewCtaLabel: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 13.5,
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 13,
     color: '#F6F1E8',
   },
-  kicker: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
-  lead: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  tabHelp: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
-    lineHeight: 19,
+  heading: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 15,
+    marginTop: spacing.md,
     marginBottom: 8,
   },
-  steps: { gap: 8, marginBottom: 22 },
-  step: {
+  lead: { fontFamily: fontFamilies.sans, fontSize: 13, lineHeight: 18, marginBottom: 8 },
+  gap: { height: 10 },
+  swatchRow: {
+    marginTop: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    padding: 12,
+    borderRadius: 12,
     borderWidth: 1,
   },
-  stepNum: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepNumText: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
-  stepCopy: { flex: 1, gap: 2 },
-  stepTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 14.5 },
-  stepHint: { fontFamily: 'Inter_400Regular', fontSize: 12 },
-  pressed: { opacity: 0.88 },
+  swatch: { width: 22, height: 22, borderRadius: 11 },
+  swatchLabel: { fontFamily: fontFamilies.sansMedium, fontSize: 13, flex: 1 },
+  pressed: { opacity: 0.9 },
 });

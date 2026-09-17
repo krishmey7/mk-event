@@ -1,5 +1,5 @@
 /**
- * Connexion — charte atelier (ardoise + eucalyptus).
+ * Connexion — charte Coral + Plum + Cream.
  */
 
 import { useState } from 'react';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { useAuth } from '@/context/AuthContext';
+import { homeAfterAuth, useActiveEvent } from '@/context/ActiveEventContext';
 import { AuthShell, useAuthNotice } from './AuthShell';
 import { Input } from '@/components/ui/Input';
 import { ApiError } from '@/services/apiClient';
@@ -20,8 +21,8 @@ interface LoginFieldErrors {
   password?: string;
 }
 
-const ACCENT = '#5BA89F';
-const INK = '#0F1419';
+const ACCENT = '#E07A5F';
+const INK = '#2A1F24';
 
 export function LoginScreen() {
   const router = useRouter();
@@ -53,6 +54,7 @@ export function LoginScreen() {
 function LoginForm() {
   const router = useRouter();
   const { signIn } = useAuth();
+  const { needsSetup, ready } = useActiveEvent();
   const showNotice = useAuthNotice();
 
   const [identifier, setIdentifier] = useState('');
@@ -84,7 +86,7 @@ function LoginForm() {
     try {
       const session = await login({ identifier: identifier.trim(), password });
       await signIn(session);
-      router.replace('/dashboard');
+      router.replace(homeAfterAuth(ready ? needsSetup : true));
     } catch (error) {
       setFormError(
         error instanceof ApiError

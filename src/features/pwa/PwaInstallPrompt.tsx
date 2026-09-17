@@ -163,7 +163,7 @@ export function PwaInstallPrompt() {
                   pressed && styles.pressed,
                 ]}
               >
-                <Ionicons name="download-outline" size={18} color={brandColors.gold} />
+                <Ionicons name="download-outline" size={18} color={brandColors.coral} />
                 <Text style={styles.primaryLabel}>
                   {platform === 'ios' ? 'Voir comment faire' : 'Installer'}
                 </Text>
@@ -266,12 +266,12 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(47, 111, 105, 0.15)',
+    backgroundColor: 'rgba(224, 122, 95, 0.15)',
   },
   guideIndexText: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 11,
-    color: '#2F6F69',
+    color: '#E07A5F',
   },
   guideText: {
     flex: 1,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   primaryLabel: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 15,
-    color: brandColors.gold,
+    color: brandColors.coral,
   },
   secondary: {
     alignItems: 'center',

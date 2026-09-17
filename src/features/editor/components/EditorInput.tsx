@@ -1,10 +1,10 @@
 import { Input, type InputProps } from '@/components/ui/Input';
-import { useEditor } from '../EditorContext';
 
-/** Champ du studio : couleurs du thème d’invitation en cours. */
+import { useStudioChrome } from '../useStudioChrome';
+
+/** Champ du studio — couleurs chrome app. */
 export function EditorInput(props: Omit<InputProps, 'tone' | 'palette'>) {
-  const { theme } = useEditor();
-  const c = theme.colors;
+  const c = useStudioChrome();
   return (
     <Input
       {...props}

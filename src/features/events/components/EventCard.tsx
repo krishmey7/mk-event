@@ -22,19 +22,19 @@ import { useAppTheme } from '@/context/ThemePreferenceContext';
 import type { Event, EventType } from '@/types';
 
 const COVERS_LIGHT: Record<EventType, { background: string; text: string }> = {
-  wedding: { background: '#E4EEEC', text: '#2F6F69' },
-  birthday: { background: '#15181E', text: '#F2F4F7' },
-  baptism: { background: '#E8EDF4', text: '#3D5A80' },
-  corporate: { background: '#E7EAEF', text: '#15181E' },
-  other: { background: '#E7EAEF', text: '#15181E' },
+  wedding: { background: '#FCECE7', text: '#C45D45' },
+  birthday: { background: '#6B3A5C', text: '#F7F0E8' },
+  baptism: { background: '#F0E8F2', text: '#6B3A5C' },
+  corporate: { background: '#EDE4D8', text: '#2A1F24' },
+  other: { background: '#EDE4D8', text: '#2A1F24' },
 };
 
 const COVERS_DARK: Record<EventType, { background: string; text: string }> = {
-  wedding: { background: 'rgba(91, 168, 159, 0.2)', text: '#7BC4BB' },
-  birthday: { background: 'rgba(242, 244, 247, 0.08)', text: '#F2F4F7' },
-  baptism: { background: 'rgba(120, 150, 190, 0.2)', text: '#A8C0E0' },
-  corporate: { background: 'rgba(242, 244, 247, 0.08)', text: '#D0D5DC' },
-  other: { background: 'rgba(242, 244, 247, 0.08)', text: '#D0D5DC' },
+  wedding: { background: 'rgba(224, 122, 95, 0.22)', text: '#F0A090' },
+  birthday: { background: 'rgba(247, 240, 232, 0.1)', text: '#F7F0E8' },
+  baptism: { background: 'rgba(155, 107, 138, 0.25)', text: '#D4B8C8' },
+  corporate: { background: 'rgba(247, 240, 232, 0.08)', text: '#D4C4CE' },
+  other: { background: 'rgba(247, 240, 232, 0.08)', text: '#D4C4CE' },
 };
 
 function buildCover(

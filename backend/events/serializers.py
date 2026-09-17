@@ -118,6 +118,8 @@ class EventSerializer(serializers.ModelSerializer):
             "slug",
             "qr_code_url",
             "cover_image_url",
+            "theme_key",
+            "studio_config",
             "guests_count",
             "rsvp_summary",
             "program",
@@ -194,6 +196,7 @@ class EventDraftSerializer(serializers.ModelSerializer):
             "venue_city",
             "message",
             "template",
+            "theme_key",
         )
 
 

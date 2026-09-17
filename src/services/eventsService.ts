@@ -147,7 +147,7 @@ export const eventsService = {
         name: payload.name,
         type: payload.type,
         status: 'draft',
-        template: payload.template,
+        template: payload.template ?? null,
         event_date: payload.event_date,
         venue_name: payload.venue_name,
         venue_city: payload.venue_city,
@@ -155,6 +155,8 @@ export const eventsService = {
         slug: `${baseSlug}-${id}`,
         qr_code_url: null,
         cover_image_url: null,
+        theme_key: payload.theme_key ?? '',
+        studio_config: payload.theme_key ? { themeKey: payload.theme_key } : {},
         guests_count: 0,
         rsvp_summary: { total: 0, confirmed: 0, pending: 0, maybe: 0, declined: 0 },
         program: [],
@@ -203,7 +205,13 @@ export const eventsService = {
    */
   async publishEvent(
     id: number,
-    payload: { slug?: string; guests?: PublishGuestInput[] },
+    payload: {
+      slug?: string;
+      guests?: PublishGuestInput[];
+      /** Contenu édité (cover, story, galerie…) — requis pour l’affichage invité. */
+      studio_config?: Record<string, unknown>;
+      theme_key?: string | null;
+    },
   ): Promise<PublishEventResult> {
     if (SIMULATE_BACKEND) {
       hydrateLibrary(MOCK_EVENTS);
@@ -212,10 +220,16 @@ export const eventsService = {
       if (index < 0) throw new Error('Invitation introuvable');
       const now = new Date().toISOString();
       const slug = payload.slug?.trim() || MOCK_EVENTS[index].slug;
+      const themeFromConfig =
+        typeof payload.studio_config?.themeKey === 'string'
+          ? payload.studio_config.themeKey
+          : null;
       MOCK_EVENTS[index] = {
         ...MOCK_EVENTS[index],
         slug,
         status: 'published',
+        theme_key: payload.theme_key ?? themeFromConfig ?? MOCK_EVENTS[index].theme_key ?? '',
+        studio_config: payload.studio_config ?? MOCK_EVENTS[index].studio_config ?? null,
         guests_count: payload.guests?.length ?? MOCK_EVENTS[index].guests_count,
         updated_at: now,
       };

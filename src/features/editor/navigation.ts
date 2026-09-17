@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { Router } from 'expo-router';
 
 import type { Event } from '@/types';
-import { getTemplate, getTemplateById } from '@/features/templates/registry';
+import { getTemplate, getTemplateById, getTemplatesForCategory } from '@/features/templates/registry';
 
 let pendingTemplateKey: string | undefined;
 const listeners = new Set<() => void>();
@@ -54,21 +54,38 @@ export function goBackInEditor(router: Router): void {
 }
 
 /** Ouvre le studio pour un modèle du catalogue. */
-export function openTemplateEditor(router: Router, templateKey: string): void {
+export function openTemplateEditor(
+  router: Router,
+  templateKey: string,
+  themeKey?: string | null,
+): void {
   rememberEditorTemplate(templateKey);
   router.navigate({
     pathname: '/editor',
-    params: { template: templateKey },
+    params: {
+      template: templateKey,
+      ...(themeKey ? { theme: themeKey } : {}),
+    },
   });
 }
 
 /** Ouvre le studio pour un événement déjà dans Mes invitations. */
-export function openEventEditor(router: Router, event: Pick<Event, 'id' | 'template'>): void {
-  const template = getTemplateById(event.template);
+export function openEventEditor(
+  router: Router,
+  event: Pick<Event, 'id' | 'template' | 'theme_key' | 'type'>,
+): void {
+  const byId = event.template != null ? getTemplateById(event.template) : null;
+  const byCategory = getTemplatesForCategory(event.type)[0];
+  const template =
+    byId && byId.category === event.type ? byId : byCategory ?? getTemplate();
   rememberEditorTemplate(template.key);
   router.navigate({
     pathname: '/editor',
-    params: { template: template.key, event: String(event.id) },
+    params: {
+      template: template.key,
+      event: String(event.id),
+      ...(event.theme_key ? { theme: event.theme_key } : {}),
+    },
   });
 }
 

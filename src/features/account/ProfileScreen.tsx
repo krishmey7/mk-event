@@ -1,7 +1,8 @@
 /**
- * Profil / Paramètres — compte, apparence, déconnexion (charte atelier).
+ * Profil / Paramètres — compte, événement actif, thème, apparence.
  */
 
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -9,11 +10,21 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/AuthContext';
+import { useActiveEvent } from '@/context/ActiveEventContext';
 import {
   useAppTheme,
   type AppearancePreference,
 } from '@/context/ThemePreferenceContext';
+import { EventSwitchSheet } from '@/features/account/EventSwitchSheet';
+import {
+  SETUP_EVENT_TYPES,
+  SETUP_THEMES,
+  toSetupThemeSelection,
+  toStoredThemeKey,
+} from '@/features/onboarding/setupOptions';
+import { eventsService } from '@/services/eventsService';
 import { fontFamilies, radii, shadows, spacing } from '@/constants/theme';
+import { EVENT_TYPE_LABELS, type EventType } from '@/types';
 
 const APPEARANCE: { key: AppearancePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'light', label: 'Clair', icon: 'sunny-outline' },
@@ -26,7 +37,12 @@ export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
   const { theme, mode, preference, setPreference } = useAppTheme();
+  const { eventId, type, themeKey, setActiveEvent } = useActiveEvent();
   const c = theme.colors;
+  const [switchOpen, setSwitchOpen] = useState(false);
+
+  const currentEventMeta =
+    SETUP_EVENT_TYPES.find((item) => item.type === type) ?? SETUP_EVENT_TYPES[0];
 
   const initials =
     user?.full_name
@@ -35,6 +51,19 @@ export function ProfileScreen() {
       .slice(0, 2)
       .map((word) => word.charAt(0).toUpperCase())
       .join('') ?? 'MK';
+
+  const persistEvent = (nextType: EventType, nextThemeSelection: string) => {
+    const nextTheme = toStoredThemeKey(nextThemeSelection);
+    setActiveEvent({ eventId, type: nextType, themeKey: nextTheme });
+    if (eventId != null) {
+      void eventsService.updateEvent(eventId, {
+        type: nextType,
+        theme_key: nextTheme,
+      }).catch(() => {
+        /* ignore — local state already updated */
+      });
+    }
+  };
 
   const handleSignOut = () => {
     void signOut().then(() => router.replace('/login'));
@@ -57,7 +86,7 @@ export function ProfileScreen() {
         <View style={styles.header}>
           <Text style={[styles.title, { color: c.textPrimary }]}>Profil</Text>
           <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-            Compte et préférences d’affichage
+            Compte, événement actif et préférences
           </Text>
         </View>
 
@@ -69,7 +98,73 @@ export function ProfileScreen() {
           <Text style={[styles.email, { color: c.textSecondary }]}>{user?.email ?? ''}</Text>
           <View style={[styles.rolePill, { backgroundColor: c.accentMuted, borderColor: c.accent }]}>
             <Ionicons name="shield-checkmark-outline" size={13} color={c.accent} />
-            <Text style={[styles.roleText, { color: c.accent }]}>Organisateur</Text>
+            <Text style={[styles.roleText, { color: c.accent }]}>
+              {EVENT_TYPE_LABELS[type]}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Événement actif</Text>
+          <Text style={[styles.sectionHint, { color: c.textMuted }]}>
+            Filtre les modèles affichés. Appuyez pour basculer vers un autre type.
+          </Text>
+
+          <View
+            style={[
+              styles.activeEventCard,
+              { borderColor: c.border, backgroundColor: c.surface },
+            ]}
+          >
+            <View style={[styles.typeIcon, { backgroundColor: c.accentMuted }]}>
+              <Ionicons name={currentEventMeta.icon} size={20} color={c.accent} />
+            </View>
+            <View style={styles.typeCopy}>
+              <Text style={[styles.typeLabel, { color: c.textPrimary }]}>{currentEventMeta.label}</Text>
+              <Text style={[styles.typeHint, { color: c.textMuted }]}>{currentEventMeta.hint}</Text>
+            </View>
+          </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Changer d’événement"
+            onPress={() => setSwitchOpen(true)}
+            style={({ pressed }) => [
+              styles.changeBtn,
+              { borderColor: c.accent, backgroundColor: c.accentMuted },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons name="swap-horizontal-outline" size={18} color={c.accent} />
+            <Text style={[styles.changeBtnLabel, { color: c.accent }]}>Changer d’événement</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Thème couleur</Text>
+          <Text style={[styles.sectionHint, { color: c.textMuted }]}>
+            Palette pour les miniatures et l’invitation. « Aucun » conserve les couleurs du modèle.
+          </Text>
+          <View style={styles.themeGrid}>
+            {SETUP_THEMES.map((item) => {
+              const on = toSetupThemeSelection(themeKey) === item.key;
+              return (
+                <Pressable
+                  key={item.key}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => persistEvent(type, item.key)}
+                  style={[
+                    styles.themeCard,
+                    { borderColor: c.border, backgroundColor: c.surface },
+                    on && { borderColor: c.accent, backgroundColor: c.accentMuted },
+                  ]}
+                >
+                  <View style={[styles.swatch, { backgroundColor: item.swatch }]} />
+                  <Text style={[styles.themeLabel, { color: c.textPrimary }]}>{item.label}</Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
@@ -134,6 +229,13 @@ export function ProfileScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <EventSwitchSheet
+        visible={switchOpen}
+        currentType={type}
+        onClose={() => setSwitchOpen(false)}
+        onConfirm={(nextType, themeSelection) => persistEvent(nextType, themeSelection)}
+      />
     </View>
   );
 }
@@ -213,6 +315,47 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
+  activeEventCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1.5,
+    borderRadius: radii.md,
+    padding: 14,
+    marginTop: 4,
+  },
+  typeIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeCopy: { flex: 1, gap: 2 },
+  typeLabel: { fontFamily: fontFamilies.sansSemiBold, fontSize: 15 },
+  typeHint: { fontFamily: fontFamilies.sans, fontSize: 12 },
+  changeBtn: {
+    marginTop: 4,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  changeBtnLabel: { fontFamily: fontFamilies.sansSemiBold, fontSize: 14.5 },
+  themeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  themeCard: {
+    width: '31%',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 10,
+    gap: 6,
+    alignItems: 'flex-start',
+  },
+  swatch: { width: 22, height: 22, borderRadius: 11 },
+  themeLabel: { fontFamily: fontFamilies.sansSemiBold, fontSize: 12 },
   appearanceRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   appearanceChip: {
     flex: 1,

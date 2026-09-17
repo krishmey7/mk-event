@@ -1,0 +1,10 @@
+# Ne pas matcher assets/node_modules (polices Expo)
+/backend
+/backend/.venv
+/.venv
+/node_modules
+/.expo
+/dist
+*.sqlite3
+.env
+.env*.local

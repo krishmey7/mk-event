@@ -73,27 +73,27 @@ interface VariantSpec {
 
 const VARIANTS: Record<ButtonVariant, VariantSpec> = {
   primary: {
-    container: { backgroundColor: brandColors.gold, ...shadows.gold },
-    label: { color: brandColors.ink },
-    iconColor: brandColors.ink,
-    spinnerColor: brandColors.ink,
+    container: { backgroundColor: brandColors.coral, ...shadows.gold },
+    label: { color: '#FFFFFF' },
+    iconColor: '#FFFFFF',
+    spinnerColor: '#FFFFFF',
     hasSheen: false,
   },
   dark: {
-    container: { backgroundColor: brandColors.charcoal, ...shadows.sm },
-    label: { color: '#F6F1E8' },
-    iconColor: '#F6F1E8',
-    spinnerColor: '#F6F1E8',
+    container: { backgroundColor: brandColors.plum, ...shadows.sm },
+    label: { color: brandColors.cream },
+    iconColor: brandColors.cream,
+    spinnerColor: brandColors.cream,
   },
   glass: {
     container: {
-      backgroundColor: 'rgba(246, 241, 232, 0.06)',
+      backgroundColor: 'rgba(247, 240, 232, 0.06)',
       borderWidth: 1,
-      borderColor: 'rgba(196, 165, 116, 0.38)',
+      borderColor: 'rgba(224, 122, 95, 0.4)',
     },
-    label: { color: '#F6F1E8' },
-    iconColor: brandColors.gold,
-    spinnerColor: brandColors.gold,
+    label: { color: brandColors.cream },
+    iconColor: brandColors.coral,
+    spinnerColor: brandColors.coral,
   },
 };
 

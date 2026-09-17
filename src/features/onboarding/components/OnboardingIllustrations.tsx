@@ -1,17 +1,23 @@
 /**
- * Visuels onboarding — même langage que le studio (eucalyptus, ardoise, blanc).
+ * Visuels onboarding — coral, plum, cream.
  */
 
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { fontFamilies, radii, shadows } from '@/constants/theme';
 
-const TEAL = '#2F6F69';
-const TEAL_SOFT = '#5BA89F';
-const INK = '#15181E';
-const MIST = '#EEF1F4';
-const BORDER = '#DCE1E8';
+const CORAL = '#E07A5F';
+const CORAL_SOFT = '#F0A090';
+const INK = '#2A1F24';
+const CREAM = '#F7F0E8';
+const BORDER = '#E8D9CE';
+
+const FAN_IMAGES = {
+  left: require('../../../../assets/onboarding/anniversaire.jpg'),
+  center: require('../../../../assets/onboarding/mariage.jpg'),
+  right: require('../../../../assets/onboarding/conference.jpg'),
+} as const;
 
 const LEAF_POSITIONS = [
   { top: 30, left: 12 },
@@ -61,24 +67,15 @@ function TemplatesFanMockup() {
   return (
     <View style={styles.fanStage}>
       <View style={[styles.fanBackCard, styles.fanBackLeft]}>
-        <View style={styles.fanInnerFrame}>
-          <View style={styles.fanOrnament} />
-        </View>
+        <Image source={FAN_IMAGES.left} style={styles.fanImage} resizeMode="cover" />
       </View>
 
-      <View style={[styles.fanBackCard, styles.fanBackRight, { backgroundColor: INK }]}>
-        <View style={styles.fanInnerFrameDark}>
-          <View style={styles.fanRule} />
-          <View style={[styles.fanRule, { width: 56 }]} />
-          <View style={styles.fanRule} />
-        </View>
+      <View style={[styles.fanBackCard, styles.fanBackRight]}>
+        <Image source={FAN_IMAGES.right} style={styles.fanImage} resizeMode="cover" />
       </View>
 
       <View style={styles.fanFrontCard}>
-        <BotanicalSprig />
-        <Text style={styles.fanCardTitle}>MARIAGE</Text>
-        <View style={styles.fanDivider} />
-        <Text style={styles.fanCardDate}>14.06.2025</Text>
+        <Image source={FAN_IMAGES.center} style={styles.fanImage} resizeMode="cover" />
       </View>
     </View>
   );
@@ -103,7 +100,7 @@ function EditorPhoneMockup() {
           {(['text-outline', 'color-palette-outline', 'image-outline', 'add-circle-outline'] as const).map(
             (name) => (
               <View key={name} style={styles.editorToolChip}>
-                <Ionicons name={name} size={13} color={TEAL} />
+                <Ionicons name={name} size={13} color={CORAL} />
               </View>
             ),
           )}
@@ -117,19 +114,19 @@ function ShareCircleMockup() {
   return (
     <View style={styles.shareStage}>
       <View style={[styles.shareBubble, { left: 134, top: 4 }]}>
-        <Ionicons name="mail-outline" size={22} color={TEAL} />
+        <Ionicons name="mail-outline" size={22} color={CORAL} />
       </View>
       <View style={[styles.shareBubble, { left: 258, top: 94 }]}>
-        <Ionicons name="chatbubble-ellipses-outline" size={22} color={TEAL} />
+        <Ionicons name="chatbubble-ellipses-outline" size={22} color={CORAL} />
       </View>
       <View style={[styles.shareBubble, { left: 210, top: 239 }]}>
-        <Ionicons name="people-outline" size={22} color={TEAL} />
+        <Ionicons name="people-outline" size={22} color={CORAL} />
       </View>
       <View style={[styles.shareBubble, { left: 58, top: 239 }]}>
-        <Ionicons name="heart-outline" size={22} color={TEAL} />
+        <Ionicons name="heart-outline" size={22} color={CORAL} />
       </View>
       <View style={[styles.shareBubble, { left: 10, top: 94 }]}>
-        <Ionicons name="share-social-outline" size={22} color={TEAL} />
+        <Ionicons name="share-social-outline" size={22} color={CORAL} />
       </View>
 
       <View style={styles.shareCard}>
@@ -149,8 +146,8 @@ export function SlideIllustration({ variant }: { variant: 1 | 2 | 3 }) {
 }
 
 const styles = StyleSheet.create({
-  sprigLeaf: { position: 'absolute', backgroundColor: TEAL_SOFT },
-  sprigStem: { position: 'absolute', backgroundColor: TEAL },
+  sprigLeaf: { position: 'absolute', backgroundColor: CORAL_SOFT },
+  sprigStem: { position: 'absolute', backgroundColor: CORAL },
 
   fanStage: { width: 300, height: 330 },
   fanBackCard: {
@@ -161,38 +158,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: BORDER,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     ...shadows.md,
   },
   fanBackLeft: { left: 10, top: 48, transform: [{ rotate: '-14deg' }] },
   fanBackRight: { right: 10, top: 48, transform: [{ rotate: '14deg' }] },
-  fanInnerFrame: {
-    width: 132,
-    height: 192,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(47, 111, 105, 0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  fanImage: {
+    width: '100%',
+    height: '100%',
   },
-  fanInnerFrameDark: {
-    width: 132,
-    height: 192,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(91, 168, 159, 0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  fanOrnament: {
-    width: 12,
-    height: 12,
-    backgroundColor: TEAL_SOFT,
-    transform: [{ rotate: '45deg' }],
-  },
-  fanRule: { width: 84, height: 1.5, backgroundColor: 'rgba(91, 168, 159, 0.55)' },
   fanFrontCard: {
     position: 'absolute',
     left: 50,
@@ -203,26 +177,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: BORDER,
-    alignItems: 'center',
-    paddingTop: 28,
+    overflow: 'hidden',
     ...shadows.lg,
-  },
-  fanCardTitle: {
-    fontFamily: fontFamilies.sansSemiBold,
-    fontSize: 14,
-    lineHeight: 18,
-    letterSpacing: 4,
-    color: TEAL,
-    marginTop: 10,
-  },
-  fanDivider: { width: 34, height: 1.5, backgroundColor: TEAL_SOFT, marginTop: 10 },
-  fanCardDate: {
-    fontFamily: fontFamilies.sans,
-    fontSize: 11,
-    lineHeight: 15,
-    letterSpacing: 2,
-    color: '#5A6270',
-    marginTop: 8,
   },
 
   phone: {
@@ -250,7 +206,7 @@ const styles = StyleSheet.create({
   editorCanvas: {
     flex: 1,
     alignSelf: 'stretch',
-    backgroundColor: MIST,
+    backgroundColor: CREAM,
     marginTop: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -260,7 +216,7 @@ const styles = StyleSheet.create({
   editorSelection: {
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: TEAL_SOFT,
+    borderColor: CORAL_SOFT,
     borderStyle: 'dashed',
     borderRadius: radii.sm,
     padding: 8,
@@ -272,14 +228,14 @@ const styles = StyleSheet.create({
     width: 2,
     height: 22,
     borderRadius: 1,
-    backgroundColor: TEAL,
+    backgroundColor: CORAL,
   },
   editorTitle: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 11,
     lineHeight: 15,
     letterSpacing: 3,
-    color: TEAL,
+    color: CORAL,
   },
   editorDate: {
     fontFamily: fontFamilies.sans,
@@ -307,7 +263,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 8,
-    backgroundColor: MIST,
+    backgroundColor: CREAM,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -347,7 +303,7 @@ const styles = StyleSheet.create({
     color: INK,
     marginTop: 8,
   },
-  shareDivider: { width: 30, height: 1.5, backgroundColor: TEAL_SOFT, marginTop: 8 },
+  shareDivider: { width: 30, height: 1.5, backgroundColor: CORAL_SOFT, marginTop: 8 },
   shareCardDate: {
     fontFamily: fontFamilies.sans,
     fontSize: 10,

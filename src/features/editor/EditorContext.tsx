@@ -21,6 +21,7 @@ import {
 import type { ProgramStep, StoryMilestone } from '@/features/templates/elegance/data';
 import { DEFAULT_COUPLE_PHOTO, DEFAULT_DIETS, DEFAULT_DRINKS, DEFAULT_VENUE, publishInvitationConfig } from '@/features/invitation/guestRegistry';
 import {
+  musicFromEventType,
   personaFromEventType,
   type VoicePersonaKey,
 } from '@/features/invitation/audioCatalog';
@@ -28,7 +29,15 @@ import { makeGuestId, slugifyCouple } from '@/features/invitation/qr';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import type { GalleryStyleKey, Guest, PhotoFrameKey, RevealEffectKey, Venue } from '@/features/invitation/types';
 import { eventsService } from '@/services/eventsService';
+import { resolveTemplateThemeKey } from '@/features/templates/resolveTheme';
+import {
+  CONFERENCE_DEMO,
+  CONFERENCE_SPEAKERS,
+  type ConferenceSpeaker,
+} from '@/features/templates/conference/data';
 import { parseFrenchDateLabel, toRemoteImageUrl, type EditorSnapshot } from './snapshot';
+import { resolvePublishableImage } from './resolvePublishableImage';
+import { useActiveEvent } from '@/context/ActiveEventContext';
 
 export type { VoicePersonaKey };
 export { MUSIC_TRACKS as VOICE_MUSICS, VOICE_PERSONAS } from '@/features/invitation/audioCatalog';
@@ -152,6 +161,13 @@ interface EditorContextValue {
   /** Lieu du mariage — adresse complète + itinéraire. */
   venue: Venue;
   updateVenue: (patch: Partial<Venue>) => void;
+  /** Intervenants (conférence). */
+  speakers: ConferenceSpeaker[];
+  saveSpeaker: (index: number, speaker: ConferenceSpeaker) => void;
+  removeSpeaker: (index: number) => void;
+  /** Infos pratiques (conférence). */
+  practical: { access: string; parking: string; hotel: string };
+  updatePractical: (patch: Partial<{ access: string; parking: string; hotel: string }>) => void;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -168,6 +184,7 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
   eventId?: string;
   children: ReactNode;
 }) {
+  const activeEvent = useActiveEvent();
   const boot = useMemo(() => bootFromParams(eventId), [eventId]);
   const snap = boot.snap;
   const template = useMemo(
@@ -175,13 +192,17 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
     [snap?.templateKey, templateKey],
   );
 
-  const resolvedThemeKey =
+  const resolvedThemeKey = resolveTemplateThemeKey(
+    template,
     snap?.cover.themeKey
-    ?? (template.themes.some((item) => item.key === initialThemeKey)
-      ? initialThemeKey
-      : template.defaultThemeKey);
+      ?? initialThemeKey
+      ?? activeEvent.themeKey
+      ?? template.defaultThemeKey,
+  );
 
-  const [boundEventId, setBoundEventId] = useState<number | null>(boot.id);
+  const [boundEventId, setBoundEventId] = useState<number | null>(
+    boot.id ?? activeEvent.eventId,
+  );
   const [dressCode, setDressCode] = useState(snap?.dressCode ?? '');
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(!snap);
@@ -207,7 +228,8 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(snap ? Date.now() : null);
 
   const updateCover = useCallback((patch: Partial<CoverConfig>) => {
-    setCover((prev) => ({ ...prev, ...patch }));
+    // Thème verrouillé (choix wizard / événement) — le studio ne redesign pas.
+    setCover((prev) => ({ ...prev, ...patch, themeKey: prev.themeKey }));
   }, []);
 
   const [story, setStory] = useState<StoryMilestone[]>(() => snap?.story ?? template.story);
@@ -280,20 +302,40 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
     setGallery((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  /* Voix assistant & musique de fond. */
-  const [voix, setVoix] = useState<VoixConfig>(() => ({
-    musicKey: snap?.voix?.musicKey ?? 'acoustique',
-    ambientUri: snap?.voix?.ambientUri ?? null,
-    ambientName: snap?.voix?.ambientName ?? null,
-    autoplay: snap?.voix?.autoplay ?? true,
-    loop: snap?.voix?.loop ?? true,
-    voiceGreeting: snap?.voix?.voiceGreeting ?? true,
-    voicePersona: snap?.voix?.voicePersona ?? personaFromEventType(template.category),
-  }));
+  /* Voix assistant & musique — persona / ambiance figées par type d’événement. */
+  const [voix, setVoix] = useState<VoixConfig>(() => {
+    const category = template.category;
+    return {
+      musicKey: musicFromEventType(category),
+      ambientUri: null,
+      ambientName: null,
+      autoplay: snap?.voix?.autoplay ?? true,
+      loop: snap?.voix?.loop ?? true,
+      voiceGreeting: snap?.voix?.voiceGreeting ?? true,
+      voicePersona: personaFromEventType(category),
+    };
+  });
 
   const updateVoix = useCallback((patch: Partial<VoixConfig>) => {
     setVoix((prev) => ({ ...prev, ...patch }));
   }, []);
+
+  useEffect(() => {
+    const persona = personaFromEventType(template.category);
+    const musicKey = musicFromEventType(template.category);
+    setVoix((prev) => {
+      if (prev.voicePersona === persona && prev.musicKey === musicKey && !prev.ambientUri) {
+        return prev;
+      }
+      return {
+        ...prev,
+        voicePersona: persona,
+        musicKey,
+        ambientUri: null,
+        ambientName: null,
+      };
+    });
+  }, [template.category]);
 
   /* Boissons RSVP — la liste exacte proposée aux invités. */
   const [drinks, setDrinks] = useState<string[]>(() => snap?.drinks?.length ? [...snap.drinks] : [...DEFAULT_DRINKS]);
@@ -387,6 +429,37 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
     setVenue((prev) => ({ ...prev, ...patch }));
   }, []);
 
+  const [speakers, setSpeakers] = useState<ConferenceSpeaker[]>(() =>
+    template.category === 'corporate' ? CONFERENCE_SPEAKERS.map((item) => ({ ...item })) : [],
+  );
+  const [practical, setPractical] = useState({
+    access: CONFERENCE_DEMO.access,
+    parking: CONFERENCE_DEMO.parking,
+    hotel: CONFERENCE_DEMO.hotel,
+  });
+
+  const saveSpeaker = useCallback((index: number, speaker: ConferenceSpeaker) => {
+    setSpeakers((prev) => {
+      if (index >= 0 && index < prev.length) {
+        const next = [...prev];
+        next[index] = speaker;
+        return next;
+      }
+      return [...prev, speaker];
+    });
+  }, []);
+
+  const removeSpeaker = useCallback((index: number) => {
+    setSpeakers((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const updatePractical = useCallback(
+    (patch: Partial<{ access: string; parking: string; hotel: string }>) => {
+      setPractical((prev) => ({ ...prev, ...patch }));
+    },
+    [],
+  );
+
   const saveToLibrary = useCallback(async () => {
     setSaving(true);
     try {
@@ -408,18 +481,45 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
         galleryStyle,
         venue,
       };
-      const name = cover.couple.trim() ? `Mariage – ${cover.couple.trim()}` : template.name;
+      const name = cover.couple.trim()
+        ? `${template.category === 'corporate' ? 'Conférence' : template.category === 'birthday' ? 'Anniversaire' : 'Mariage'} – ${cover.couple.trim()}`
+        : template.name;
       const base = {
         name,
-        type: template.category,
+        type: activeEvent.type || template.category,
         event_date: parseFrenchDateLabel(cover.dateLabel),
         venue_name: venue.name,
         venue_city: venue.city,
         message: dressCode.trim() || null,
         template: template.id,
+        theme_key: cover.themeKey,
       };
+      const publishedCoverPhoto = await resolvePublishableImage(cover.photoUri);
+      const publishedCouplePhoto = await resolvePublishableImage(cover.couplePhotoUri);
+      const publishedGallerySource = gallery.length > 0
+        ? gallery
+        : template.galleryImages.map((uri, index) => ({
+            id: `tpl-${index}`,
+            uri,
+            category: (['ceremonie', 'cocktail', 'soiree'] as const)[index % 3],
+          }));
+      const publishedGallery = await Promise.all(
+        publishedGallerySource.map(async (item) => ({
+          uri: await resolvePublishableImage(item.uri),
+          category: item.category,
+        })),
+      );
+      const publishedStory = await Promise.all(
+        story.map(async (step) => ({
+          ...step,
+          image: step.image ? await resolvePublishableImage(step.image) : step.image,
+        })),
+      );
+      const publishedCountdown = await resolvePublishableImage(template.countdownImage);
+
       const extras = {
-        cover_image_url: toRemoteImageUrl(cover.photoUri),
+        cover_image_url: toRemoteImageUrl(publishedCoverPhoto),
+        theme_key: cover.themeKey,
       };
       const event = boundEventId
         ? await eventsService.updateEvent(boundEventId, { ...base, ...extras })
@@ -427,6 +527,51 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
           (await eventsService.createEvent(base)).id,
           extras,
         );
+
+      const studioConfig = {
+        templateKey: template.key,
+        guests,
+        drinks,
+        diets,
+        themeKey: cover.themeKey,
+        revealEffect,
+        galleryStyle,
+        venue,
+        couplePhoto: { uri: publishedCouplePhoto, frame: cover.coupleFrame },
+        dressCode,
+        cover: {
+          title: cover.title,
+          dateLabel: cover.dateLabel,
+          couple: cover.couple,
+          guestLine: cover.guestLine,
+          kicker: cover.kicker,
+          photoUri: publishedCoverPhoto,
+        },
+        story: publishedStory,
+        program,
+        gallery: publishedGallery,
+        countdownImage: publishedCountdown || template.countdownImage,
+        voix,
+        speakers,
+        practical,
+      };
+
+      // Garde les URIs publiables dans le studio (évite de republier des blob: morts).
+      setCover((prev) => ({
+        ...prev,
+        photoUri: publishedCoverPhoto || prev.photoUri,
+        couplePhotoUri: publishedCouplePhoto || prev.couplePhotoUri,
+      }));
+      setStory(publishedStory);
+      if (gallery.length > 0) {
+        setGallery(
+          publishedGallery.map((item, index) => ({
+            id: gallery[index]?.id ?? `pub-${index}`,
+            uri: item.uri,
+            category: item.category as GalleryCategory,
+          })),
+        );
+      }
 
       const publishedResult = await eventsService.publishEvent(event.id, {
         slug: desiredSlug,
@@ -436,7 +581,17 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
           contact: guest.contact,
           seats: guest.seats,
         })),
+        studio_config: studioConfig,
+        theme_key: cover.themeKey,
       });
+
+      if (activeEvent.eventId !== event.id || activeEvent.themeKey !== cover.themeKey) {
+        activeEvent.setActiveEvent({
+          eventId: event.id,
+          type: activeEvent.type || template.category,
+          themeKey: cover.themeKey,
+        });
+      }
 
       const tokenByStudioKey = new Map(
         publishedResult.guests.map((item) => [
@@ -452,7 +607,21 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
       setPublishedSlug(publishedResult.event.slug);
       setPublished(true);
 
-      eventsService.saveSnapshot(event.id, { ...snapshot, guests: guestsWithTokens });
+      eventsService.saveSnapshot(event.id, {
+        ...snapshot,
+        cover: {
+          ...snapshot.cover,
+          photoUri: publishedCoverPhoto || snapshot.cover.photoUri,
+          couplePhotoUri: publishedCouplePhoto || snapshot.cover.couplePhotoUri,
+        },
+        story: publishedStory,
+        gallery: publishedGallery.map((item, index) => ({
+          id: gallery[index]?.id ?? `pub-${index}`,
+          uri: item.uri,
+          category: item.category,
+        })),
+        guests: guestsWithTokens,
+      });
       setBoundEventId(event.id);
       setDirty(false);
       setLastSavedAt(Date.now());
@@ -461,8 +630,8 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
       setSaving(false);
     }
   }, [
-    boundEventId, cover, countdownStyle, diets, dressCode, drinks, gallery, galleryStyle,
-    guests, program, programStyle, revealEffect, story, template, venue, voix,
+    activeEvent, boundEventId, cover, countdownStyle, diets, dressCode, drinks, gallery, galleryStyle,
+    guests, program, programStyle, revealEffect, story, template, venue, voix, speakers, practical,
   ]);
 
   useEffect(() => {
@@ -504,10 +673,13 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
       }))).map((item) => ({ uri: item.uri, category: item.category })),
       countdownImage: template.countdownImage,
       voix,
+      speakers,
+      practical,
     });
   }, [
     invitationSlug, guests, drinks, diets, cover, revealEffect, galleryStyle, venue, dressCode,
     story, program, gallery, template.key, template.countdownImage, template.galleryImages, voix,
+    speakers, practical,
   ]);
 
   const theme = useMemo(
@@ -563,6 +735,11 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
       setGalleryStyle,
       venue,
       updateVenue,
+      speakers,
+      saveSpeaker,
+      removeSpeaker,
+      practical,
+      updatePractical,
     }),
     [
       template,
@@ -609,6 +786,11 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
       setGalleryStyle,
       venue,
       updateVenue,
+      speakers,
+      saveSpeaker,
+      removeSpeaker,
+      practical,
+      updatePractical,
     ],
   );
 

@@ -15,6 +15,7 @@ import { EditorInput } from '@/features/editor/components/EditorInput';
 import { EditorHeader } from '@/features/editor/components/EditorHeader';
 import { FieldWithCounter } from '@/features/editor/components/FieldWithCounter';
 import { useEditor } from '@/features/editor/EditorContext';
+import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { goBackInEditor } from '@/features/editor/navigation';
 import { confirmDelete } from '@/features/editor/confirmDelete';
 
@@ -43,8 +44,8 @@ function formatTime(raw: string): string {
 export default function ProgrammeEtapeScreen() {
   const router = useRouter();
   const { index } = useLocalSearchParams<{ index?: string }>();
-  const { program, saveProgramStep, removeProgramStep, theme } = useEditor();
-  const colors = theme.colors;
+  const {program, saveProgramStep, removeProgramStep} = useEditor();
+  const colors = useStudioChrome();
 
   const editIndex = index !== undefined ? Number.parseInt(index, 10) : -1;
   const existing = editIndex >= 0 ? program[editIndex] : undefined;

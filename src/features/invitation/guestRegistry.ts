@@ -43,6 +43,20 @@ export interface InvitationConfig {
     voiceGreeting: boolean;
     voicePersona?: 'mariage' | 'anniversaire' | 'conference';
   };
+  /** Intervenants (conférence). */
+  speakers?: {
+    id: string;
+    name: string;
+    role: string;
+    bio: string;
+    photoUri?: string;
+  }[];
+  /** Infos pratiques (conférence). */
+  practical?: {
+    access?: string;
+    parking?: string;
+    hotel?: string;
+  };
 }
 
 export const DEFAULT_DRINKS: string[] = [

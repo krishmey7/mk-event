@@ -1,8 +1,7 @@
 /**
  * Groupe (app) — espace organisateur connecté.
- * Règle n°3 : mobile → dock flottant (Accueil · Invitations ·
- * Modèles · Profil) ; desktop (≥768 px) → dock masqué + Sidebar
- * latérale fixe de 260 px. Exige une session : sinon /login.
+ * Règle n°3 : mobile → dock flottant ; desktop → Sidebar.
+ * Sans événement configuré → wizard /setup obligatoire.
  */
 
 import { useEffect } from 'react';
@@ -11,12 +10,14 @@ import { Tabs, usePathname, useRouter } from 'expo-router';
 
 import { AppTabBar } from '@/components/layout/AppTabBar';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useAuth } from '@/context/AuthContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 
 export default function AppLayout() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { ready, needsSetup } = useActiveEvent();
   const router = useRouter();
   const pathname = usePathname();
   const { isDesktop } = useBreakpoint();
@@ -28,21 +29,31 @@ export default function AppLayout() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading || !isAuthenticated) {
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && ready && needsSetup) {
+      const onSetup = pathname.includes('/setup');
+      if (!onSetup) router.replace('/setup');
+    }
+  }, [isAuthenticated, isLoading, needsSetup, pathname, ready, router]);
+
+  if (isLoading || !isAuthenticated || !ready) {
     return null;
   }
 
   const onManageScreen = /\/invitations\/[^/]+$/.test(pathname);
+  const onSetup = pathname.includes('/setup');
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }, isDesktop && styles.rootDesktop]}>
-      {isDesktop ? <Sidebar /> : null}
+      {isDesktop && !onSetup ? <Sidebar /> : null}
       <View style={[styles.slot, { backgroundColor: theme.colors.background }]}>
         <Tabs
           tabBar={(props) => {
-            if (isDesktop) return null;
+            if (isDesktop || onSetup) return null;
             const active = props.state.routes[props.state.index]?.name;
-            if (active === 'editor' || active === 'reponses' || onManageScreen) return null;
+            if (active === 'editor' || active === 'reponses' || active === 'setup' || onManageScreen) {
+              return null;
+            }
             return <AppTabBar {...props} />;
           }}
           screenOptions={{
@@ -53,6 +64,7 @@ export default function AppLayout() {
           <Tabs.Screen name="invitations" options={{ title: 'Invitations' }} />
           <Tabs.Screen name="modeles" options={{ title: 'Modèles' }} />
           <Tabs.Screen name="profil" options={{ title: 'Profil' }} />
+          <Tabs.Screen name="setup" options={{ href: null, title: 'Configuration' }} />
           <Tabs.Screen
             name="reponses"
             options={{

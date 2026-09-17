@@ -252,6 +252,10 @@ export interface Event {
   slug: string;
   qr_code_url: string | null;
   cover_image_url: string | null;
+  /** Palette choisie au wizard (ex. sauge, champagne). */
+  theme_key?: string | null;
+  /** Snapshot studio publié — servi aux invités via /api/inv/{slug}/. */
+  studio_config?: Record<string, unknown> | null;
   guests_count: number;
   rsvp_summary: RsvpSummary;
   program: ProgramStep[];
@@ -266,7 +270,7 @@ export interface Event {
 export type EventDraftPayload = Pick<
   Event,
   'name' | 'type' | 'event_date' | 'venue_name' | 'venue_city' | 'message'
-> & { template: ID };
+> & { template?: ID | null; theme_key?: string | null };
 
 /* ════════════════════════ Invités ════════════════════════ */
 

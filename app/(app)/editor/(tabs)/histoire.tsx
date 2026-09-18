@@ -12,6 +12,7 @@ import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { EditorInput } from '@/features/editor/components/EditorInput';
 import { confirmDelete } from '@/features/editor/confirmDelete';
+import { studioStepHint } from '@/features/editor/studioSteps';
 
 export default function HistoireTabScreen() {
   const router = useRouter();
@@ -28,7 +29,8 @@ export default function HistoireTabScreen() {
         showsVerticalScrollIndicator={false}
       >
         <EditorHint>
-          Ajoutez les intervenants : nom, rôle et courte bio. Ils apparaissent sur l’invitation.
+          {studioStepHint('histoire', 'corporate')
+            ?? 'Présentez vos intervenants (photo, bio, rôle).'}
         </EditorHint>
         <Text style={[styles.heading, { color: colors.text }]}>Intervenants</Text>
         {speakers.map((speaker, index) => (

@@ -88,6 +88,8 @@ export const DEFAULT_VENUE: Venue = {
   street: '12 allée des Tilleuls',
   zip: '78100',
   city: 'Saint-Germain-en-Laye',
+  lat: 48.8989,
+  lng: 2.0938,
 };
 
 /**

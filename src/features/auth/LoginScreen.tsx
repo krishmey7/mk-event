@@ -54,7 +54,7 @@ export function LoginScreen() {
 function LoginForm() {
   const router = useRouter();
   const { signIn } = useAuth();
-  const { needsSetup, ready } = useActiveEvent();
+  const { syncFromServer } = useActiveEvent();
   const showNotice = useAuthNotice();
 
   const [identifier, setIdentifier] = useState('');
@@ -86,7 +86,8 @@ function LoginForm() {
     try {
       const session = await login({ identifier: identifier.trim(), password });
       await signIn(session);
-      router.replace(homeAfterAuth(ready ? needsSetup : true));
+      const needsSetup = await syncFromServer();
+      router.replace(homeAfterAuth(needsSetup));
     } catch (error) {
       setFormError(
         error instanceof ApiError

@@ -10,14 +10,19 @@ import { EditorCoverPreview } from '@/features/editor/components/EditorCoverPrev
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { SaveToLibraryCard } from '@/features/editor/components/SaveToLibraryCard';
 import { useEditor } from '@/features/editor/EditorContext';
+import { studioStepHint } from '@/features/editor/studioSteps';
+import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { fontFamilies, spacing } from '@/constants/theme';
 
 export default function PublierTabScreen() {
   const router = useRouter();
-  const { guests, cover } = useEditor();
+  const { guests, cover, template } = useEditor();
+  const { type: activeType } = useActiveEvent();
+  const eventType = activeType || template.category;
   const { theme } = useAppTheme();
   const c = theme.colors;
+  const hint = studioStepHint('publier', eventType);
 
   return (
     <ScrollView
@@ -25,9 +30,7 @@ export default function PublierTabScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <EditorHint>
-        Étape 6 : vérifiez le rendu, puis publiez pour générer les liens invités.
-      </EditorHint>
+      {hint ? <EditorHint>{hint}</EditorHint> : null}
 
       <Pressable
         accessibilityRole="button"

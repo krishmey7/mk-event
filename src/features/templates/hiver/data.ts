@@ -71,4 +71,6 @@ export const HIVER_VENUE = {
   street: '2440 Hoonani Rd',
   zip: '96746',
   city: 'Koloa, Hawaii',
+  lat: 21.8764,
+  lng: -159.4622,
 };

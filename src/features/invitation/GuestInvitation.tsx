@@ -67,8 +67,16 @@ import { CONFERENCE_SPEAKERS } from '@/features/templates/conference/data';
 import { BIRTHDAY_DEMO } from '@/features/templates/birthday/themes';
 import { SIMULATE_BACKEND } from '@/constants/config';
 import { guestsService } from '@/services/guestsService';
-import { normalizeGalleryStyle, normalizePhotoFrame, normalizeRevealEffect, venueFullAddress } from './types';
+import {
+  normalizeGalleryStyle,
+  normalizePhotoFrame,
+  normalizeRevealEffect,
+  venueDirectionsUrl,
+  venueFullAddress,
+  venueHasCoords,
+} from './types';
 import type { CouplePhoto, GalleryStyleKey, Guest, RevealEffectKey, RsvpAnswer, Venue } from './types';
+import { VenueMap } from '@/features/venue/VenueMap';
 import { InvitationAudioChrome } from './InvitationAudioChrome';
 import { useInvitationAudio } from './useInvitationAudio';
 import { musicFromEventType, personaFromEventType } from './audioCatalog';
@@ -848,14 +856,14 @@ function GuestProgramSection({ theme, winter, venue, program, dateLabel }: {
           colors={c}
           venueName={venue.name || 'Lieu à définir'}
           address={[venue.street, [venue.zip, venue.city].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}
+          map={
+            venueHasCoords(venue) ? (
+              <VenueMap lat={venue.lat!} lng={venue.lng!} height={180} />
+            ) : null
+          }
           onDirections={() => {
-            const address = venueFullAddress(venue);
-            if (!address) return;
-            const query = encodeURIComponent(address);
-            const url = Platform.OS === 'ios'
-              ? `https://maps.apple.com/?q=${query}`
-              : `https://www.google.com/maps/search/?api=1&query=${query}`;
-            void Linking.openURL(url);
+            const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+            void Linking.openURL(venueDirectionsUrl(venue, platform));
           }}
         />
       ) : (
@@ -884,13 +892,9 @@ function VenueCard({ venue, theme }: { venue: Venue; theme: TemplateTheme }) {
 
   if (!address) return null;
 
-  /* Ouvre Google Maps (Android / web) ou Apple Maps (iOS). */
   const openDirections = () => {
-    const query = encodeURIComponent(address);
-    const url = Platform.OS === 'ios'
-      ? `https://maps.apple.com/?q=${query}`
-      : `https://www.google.com/maps/search/?api=1&query=${query}`;
-    void Linking.openURL(url);
+    const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+    void Linking.openURL(venueDirectionsUrl(venue, platform));
   };
 
   return (
@@ -908,14 +912,19 @@ function VenueCard({ venue, theme }: { venue: Venue; theme: TemplateTheme }) {
             </Text>
           </View>
         </View>
+        {venueHasCoords(venue) ? (
+          <View style={styles.venueMap}>
+            <VenueMap lat={venue.lat!} lng={venue.lng!} height={180} />
+          </View>
+        ) : null}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Voir l'itinéraire"
+          accessibilityLabel="Y aller"
           onPress={openDirections}
           style={({ pressed }) => [styles.venueBtn, { backgroundColor: c.primary }, pressed && styles.pressed]}
         >
           <Ionicons name="navigate-outline" size={15} color={c.onPrimary} />
-          <Text style={[styles.venueBtnLabel, { color: c.onPrimary }]}>Voir l'itinéraire</Text>
+          <Text style={[styles.venueBtnLabel, { color: c.onPrimary }]}>Y aller</Text>
         </Pressable>
       </View>
     </Reveal>
@@ -1475,6 +1484,7 @@ const styles = StyleSheet.create({
   venueKicker: { fontFamily: 'Inter_600SemiBold', fontSize: 10, letterSpacing: 2.4 },
   venueName: { fontFamily: 'Fraunces_500Medium', fontSize: 18, lineHeight: 23 },
   venueAddress: { fontFamily: 'Inter_400Regular', fontSize: 12.5, lineHeight: 18 },
+  venueMap: { marginTop: 2, borderRadius: 12, overflow: 'hidden' },
   venueBtn: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -43,8 +43,16 @@ function patchFiles(dir) {
   }
 }
 
+if (!fs.existsSync(path.join(root, 'package.json'))) {
+  console.error('package.json introuvable');
+  process.exit(1);
+}
+
+console.log('build:web…');
+execSync('npm run build:web', { cwd: root, stdio: 'inherit', env: process.env });
+
 if (!fs.existsSync(dist)) {
-  console.error('dist/ introuvable — lance d’abord npm run build:web');
+  console.error('dist/ introuvable après build:web');
   process.exit(1);
 }
 

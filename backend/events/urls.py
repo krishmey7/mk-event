@@ -8,12 +8,15 @@ from .views import (
     PublicRSVPView,
     TableViewSet,
 )
+from .views_places import PlaceReverseView, PlaceSearchView
 
 router = DefaultRouter()
 router.register("events", EventViewSet, basename="event")
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("places/search/", PlaceSearchView.as_view(), name="places-search"),
+    path("places/locate/", PlaceReverseView.as_view(), name="places-locate"),
     path(
         "events/<int:event_id>/guests/",
         GuestViewSet.as_view({"get": "list", "post": "create"}),

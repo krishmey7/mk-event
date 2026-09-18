@@ -1,5 +1,6 @@
 /**
  * Événement actif (type + thème) — choisi au wizard, consommé par Modèles / Studio.
+ * `needsSetup` se base sur les événements serveur (pas seulement le stockage local).
  */
 
 import {
@@ -13,7 +14,8 @@ import {
 } from 'react';
 import { Platform } from 'react-native';
 
-import type { EventType } from '@/types';
+import { eventsService } from '@/services/eventsService';
+import type { Event, EventType } from '@/types';
 
 const STORAGE_KEY = 'mkevent.activeEvent';
 
@@ -25,10 +27,12 @@ export interface ActiveEventState {
 
 interface ActiveEventContextValue extends ActiveEventState {
   ready: boolean;
-  /** True tant qu’aucun brouillon n’a été créé via le wizard type/thème. */
+  /** True seulement après sync serveur, s’il n’existe aucun événement. */
   needsSetup: boolean;
   setActiveEvent: (next: ActiveEventState) => void;
   clearActiveEvent: () => void;
+  /** Aligne l’événement actif sur la liste API. Retourne needsSetup. */
+  syncFromServer: () => Promise<boolean>;
 }
 
 const DEFAULT: ActiveEventState = {
@@ -38,6 +42,15 @@ const DEFAULT: ActiveEventState = {
 };
 
 const ActiveEventContext = createContext<ActiveEventContextValue | null>(null);
+
+function themeFromEvent(event: Event): string {
+  if (typeof event.theme_key === 'string' && event.theme_key.trim()) return event.theme_key;
+  const fromConfig =
+    event.studio_config && typeof event.studio_config === 'object'
+      ? (event.studio_config as { themeKey?: unknown }).themeKey
+      : null;
+  return typeof fromConfig === 'string' && fromConfig.trim() ? fromConfig : 'sauge';
+}
 
 async function readStored(): Promise<ActiveEventState | null> {
   try {
@@ -69,12 +82,13 @@ export function homeAfterAuth(needsSetup: boolean): '/setup' | '/dashboard' {
 
 export function ActiveEventProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ActiveEventState>(DEFAULT);
-  const [ready, setReady] = useState(false);
+  const [storageReady, setStorageReady] = useState(false);
+  const [serverSynced, setServerSynced] = useState(false);
 
   useEffect(() => {
     void readStored().then((stored) => {
       if (stored?.eventId != null && stored.themeKey) setState(stored);
-      setReady(true);
+      setStorageReady(true);
     });
   }, []);
 
@@ -88,15 +102,58 @@ export function ActiveEventProvider({ children }: { children: ReactNode }) {
     void writeStored(null);
   }, []);
 
-  const needsSetup = state.eventId == null;
+  const syncFromServer = useCallback(async (): Promise<boolean> => {
+    try {
+      const { results } = await eventsService.getEvents();
+      if (results.length === 0) {
+        setState(DEFAULT);
+        void writeStored(null);
+        setServerSynced(true);
+        return true;
+      }
+
+      const stored = await readStored();
+      const match =
+        stored?.eventId != null
+          ? results.find((event) => event.id === stored.eventId)
+          : undefined;
+      const pick = match ?? results[0];
+      const next: ActiveEventState = {
+        eventId: pick.id,
+        type: pick.type,
+        themeKey: themeFromEvent(pick),
+      };
+      setState(next);
+      void writeStored(next);
+      setServerSynced(true);
+      return false;
+    } catch {
+      /* Réseau KO : ne force pas le wizard si un id local existe. */
+      const stored = await readStored();
+      setServerSynced(true);
+      return stored?.eventId == null;
+    }
+  }, []);
+
+  const ready = storageReady;
+  const needsSetup = serverSynced && state.eventId == null;
 
   const value = useMemo(
-    () => ({ ...state, ready, needsSetup, setActiveEvent, clearActiveEvent }),
-    [state, ready, needsSetup, setActiveEvent, clearActiveEvent],
+    () => ({
+      ...state,
+      ready,
+      needsSetup,
+      setActiveEvent,
+      clearActiveEvent,
+      syncFromServer,
+    }),
+    [state, ready, needsSetup, setActiveEvent, clearActiveEvent, syncFromServer],
   );
 
   return (
-    <ActiveEventContext.Provider value={value}>{children}</ActiveEventContext.Provider>
+    <ActiveEventContext.Provider value={value}>
+      {children}
+    </ActiveEventContext.Provider>
   );
 }
 

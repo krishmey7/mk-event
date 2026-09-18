@@ -68,7 +68,14 @@ export interface TemplateDefinition {
   ornaments: OrnamentKey;
   motions: { coverEnter: boolean; sectionReveal: boolean };
   defaultKicker?: string;
-  defaultVenue?: { name: string; street: string; zip: string; city: string };
+  defaultVenue?: {
+    name: string;
+    street: string;
+    zip: string;
+    city: string;
+    lat?: number | null;
+    lng?: number | null;
+  };
   themes: TemplateThemeDefinition[];
   photoFrames: PhotoFrameOption[];
 }
@@ -203,6 +210,8 @@ export const TEMPLATES: TemplateDefinition[] = [
       street: '300 Westheimer Rd',
       zip: '',
       city: 'Houston',
+      lat: 29.7436,
+      lng: -95.3845,
     },
     themes: birthdayThemes,
     photoFrames: ELEGANCE_PHOTO_FRAMES,
@@ -235,6 +244,8 @@ export const TEMPLATES: TemplateDefinition[] = [
       street: '',
       zip: '',
       city: CONFERENCE_DEMO.venueCity,
+      lat: 48.8794,
+      lng: 2.2839,
     },
     themes: conferenceThemes,
     photoFrames: ELEGANCE_PHOTO_FRAMES,

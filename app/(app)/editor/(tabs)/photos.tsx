@@ -9,6 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { useEditor, type GalleryCategory } from '@/features/editor/EditorContext';
 import { pickLibraryImages } from '@/features/editor/imagePicker';
+import { studioStepHint } from '@/features/editor/studioSteps';
+import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { fontFamilies, spacing } from '@/constants/theme';
 
@@ -22,12 +24,15 @@ const FILTERS = [
 const CATEGORIES: GalleryCategory[] = ['ceremonie', 'cocktail', 'soiree'];
 
 export default function PhotosTabScreen() {
-  const { gallery, addGalleryPhotos, removeGalleryPhoto } = useEditor();
+  const { gallery, addGalleryPhotos, removeGalleryPhoto, template } = useEditor();
+  const { type: activeType } = useActiveEvent();
+  const eventType = activeType || template.category;
   const { theme } = useAppTheme();
   const c = theme.colors;
   const [filter, setFilter] = useState<'toutes' | GalleryCategory>('toutes');
   const [target, setTarget] = useState<GalleryCategory>('ceremonie');
   const [importing, setImporting] = useState(false);
+  const hint = studioStepHint('photos', eventType);
 
   const visible = filter === 'toutes' ? gallery : gallery.filter((item) => item.category === filter);
 
@@ -49,9 +54,7 @@ export default function PhotosTabScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <EditorHint>
-        Étape 2 : ajoutez vos photos. La mise en page de la galerie est définie par le modèle.
-      </EditorHint>
+      {hint ? <EditorHint>{hint}</EditorHint> : null}
 
       <Text style={[styles.label, { color: c.textPrimary }]}>Catégorie d’import</Text>
       <View style={styles.row}>

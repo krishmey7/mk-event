@@ -137,6 +137,39 @@ export interface Venue {
   zip: string;
   /** Ville. */
   city: string;
+  /** Latitude WGS84 — null si non localisé. */
+  lat: number | null;
+  /** Longitude WGS84 — null si non localisé. */
+  lng: number | null;
+}
+
+/** True si le lieu a un pin carte utilisable. */
+export function venueHasCoords(venue: Pick<Venue, 'lat' | 'lng'>): boolean {
+  return (
+    typeof venue.lat === 'number'
+    && typeof venue.lng === 'number'
+    && Number.isFinite(venue.lat)
+    && Number.isFinite(venue.lng)
+  );
+}
+
+/** Normalise un venue partiel (anciens snapshots sans lat/lng). */
+export function normalizeVenue(input?: Partial<Venue> | null, fallback: Venue = {
+  name: '',
+  street: '',
+  zip: '',
+  city: '',
+  lat: null,
+  lng: null,
+}): Venue {
+  return {
+    name: input?.name ?? fallback.name,
+    street: input?.street ?? fallback.street,
+    zip: input?.zip ?? fallback.zip,
+    city: input?.city ?? fallback.city,
+    lat: typeof input?.lat === 'number' && Number.isFinite(input.lat) ? input.lat : (fallback.lat ?? null),
+    lng: typeof input?.lng === 'number' && Number.isFinite(input.lng) ? input.lng : (fallback.lng ?? null),
+  };
 }
 
 /** Adresse complète lisible — pour la carte et l'itinéraire. */
@@ -144,4 +177,22 @@ export function venueFullAddress(venue: Venue): string {
   return [venue.name, venue.street, [venue.zip, venue.city].filter(Boolean).join(' ')]
     .filter((part) => part.trim().length > 0)
     .join(', ');
+}
+
+/** URL d’itinéraire (OSM / Apple / Google selon plateforme). */
+export function venueDirectionsUrl(venue: Venue, platform: 'ios' | 'android' | 'web' = 'web'): string {
+  if (venueHasCoords(venue)) {
+    const { lat, lng } = venue;
+    if (platform === 'ios') {
+      return `https://maps.apple.com/?daddr=${lat},${lng}`;
+    }
+    if (platform === 'android') {
+      return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    }
+    return `https://www.openstreetmap.org/directions?to=${lat}%2C${lng}#map=16/${lat}/${lng}`;
+  }
+  const query = encodeURIComponent(venueFullAddress(venue));
+  if (platform === 'ios') return `https://maps.apple.com/?q=${query}`;
+  if (platform === 'android') return `https://www.google.com/maps/search/?api=1&query=${query}`;
+  return `https://www.openstreetmap.org/search?query=${query}`;
 }

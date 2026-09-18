@@ -45,7 +45,7 @@ def annotate_events(qs):
 
 class EventViewSet(viewsets.ModelViewSet):
     serializer_class = EventSerializer
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
         return annotate_events(

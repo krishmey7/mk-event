@@ -12,6 +12,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import {
   fontFamilies,
@@ -59,10 +60,11 @@ function buildCover(
 export interface EventCardProps {
   event: Event;
   onPress?: () => void;
+  onDelete?: () => void;
   style?: StyleProp<ViewStyle>;
 }
 
-export function EventCard({ event, onPress, style }: EventCardProps) {
+export function EventCard({ event, onPress, onDelete, style }: EventCardProps) {
   const { theme } = useAppTheme();
   const c = theme.colors;
   const cover = useMemo(() => buildCover(event, theme.mode), [event, theme.mode]);
@@ -122,6 +124,25 @@ export function EventCard({ event, onPress, style }: EventCardProps) {
           </Text>
         </View>
       </View>
+
+      {onDelete ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Supprimer ${event.name}`}
+          hitSlop={8}
+          onPress={(e) => {
+            e?.stopPropagation?.();
+            onDelete();
+          }}
+          style={({ pressed }) => [
+            styles.deleteBtn,
+            { backgroundColor: theme.mode === 'dark' ? c.surfaceElevated : c.background, borderColor: c.border },
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons name="trash-outline" size={18} color="#A45A45" />
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }
@@ -178,5 +199,14 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sansMedium,
     fontSize: 11,
     lineHeight: 14,
+  },
+  deleteBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
 });

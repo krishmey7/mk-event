@@ -10,16 +10,39 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EventCard } from './components/EventCard';
 import { useEvents } from './useEvents';
+import { confirmDelete } from '@/features/editor/confirmDelete';
 import { openEventManage } from '@/features/editor/navigation';
+import { eventsService } from '@/services/eventsService';
+import { useActiveEvent } from '@/context/ActiveEventContext';
 import { brandColors, spacing } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 
 export function InvitationsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { events, isLoading, error } = useEvents();
+  const { events, isLoading, error, reload } = useEvents();
+  const { eventId, syncFromServer } = useActiveEvent();
   const { theme, mode } = useAppTheme();
   const c = theme.colors;
+
+  const handleDelete = (id: number, name: string) => {
+    confirmDelete(
+      'Supprimer cette invitation ?',
+      `« ${name} » sera définitivement supprimée.`,
+      () => {
+        void (async () => {
+          try {
+            await eventsService.deleteEvent(id);
+            if (eventId === id) await syncFromServer();
+            await reload();
+          } catch {
+            /* ignore — reload montrera l’état réel */
+            await reload();
+          }
+        })();
+      },
+    );
+  };
 
   return (
     <View style={[styles.screen, { backgroundColor: c.background }]}>
@@ -41,6 +64,10 @@ export function InvitationsScreen() {
           <ActivityIndicator color={brandColors.coralDeep} style={styles.loader} />
         ) : error ? (
           <Text style={styles.errorText}>{error}</Text>
+        ) : events.length === 0 ? (
+          <Text style={[styles.empty, { color: c.textMuted }]}>
+            Aucune invitation. Créez-en une depuis Accueil ou Modèles.
+          </Text>
         ) : (
           <View style={styles.cards}>
             {events.map((event) => (
@@ -48,6 +75,7 @@ export function InvitationsScreen() {
                 key={event.id}
                 event={event}
                 onPress={() => openEventManage(router, event)}
+                onDelete={() => handleDelete(event.id, event.name)}
               />
             ))}
           </View>
@@ -77,6 +105,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: '#A45A45',
+  },
+  empty: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: spacing.md,
   },
   cards: { gap: spacing.md },
 });

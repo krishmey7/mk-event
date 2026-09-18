@@ -6,6 +6,7 @@ import { Stack, useGlobalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { EditorProvider } from '@/features/editor/EditorContext';
+import { StudioNavModeProvider } from '@/features/editor/StudioNavModeContext';
 import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useResolvedEditorTemplate } from '@/features/editor/navigation';
@@ -29,7 +30,9 @@ export default function EditorLayout() {
       initialThemeKey={themeParam ?? activeThemeKey}
       eventId={eventId}
     >
-      <ThemedEditorStack />
+      <StudioNavModeProvider>
+        <ThemedEditorStack />
+      </StudioNavModeProvider>
     </EditorProvider>
   );
 }

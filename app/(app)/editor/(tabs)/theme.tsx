@@ -7,6 +7,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { EditorInput } from '@/features/editor/components/EditorInput';
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { useEditor } from '@/features/editor/EditorContext';
+import { studioStepHint } from '@/features/editor/studioSteps';
+import { VenuePlaceEditor } from '@/features/venue/VenuePlaceEditor';
 import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { fontFamilies } from '@/constants/theme';
@@ -26,6 +28,7 @@ export default function ThemeTabScreen() {
   const eventType = activeType || template.category;
   const { theme: appTheme } = useAppTheme();
   const c = appTheme.colors;
+  const hint = studioStepHint('theme', eventType);
 
   if (eventType === 'birthday') {
     return (
@@ -34,9 +37,7 @@ export default function ThemeTabScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <EditorHint>
-          Le décor de l’affiche suit le thème choisi à la création. Affinez l’ambiance ici.
-        </EditorHint>
+        {hint ? <EditorHint>{hint}</EditorHint> : null}
         <Text style={[styles.heading, { color: c.textPrimary }]}>Ambiance</Text>
         <Text style={[styles.lead, { color: c.textMuted }]}>
           Palette active : {theme.label}. Les couleurs d’origine du modèle s’appliquent si vous
@@ -58,28 +59,10 @@ export default function ThemeTabScreen() {
         style={{ backgroundColor: c.background }}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <EditorHint>
-          Infos pratiques affichées aux participants : accès, parking, hébergement.
-        </EditorHint>
-        <Text style={[styles.heading, { color: c.textPrimary }]}>Lieu</Text>
-        <EditorInput
-          value={venue.name}
-          onChangeText={(value) => updateVenue({ name: value })}
-          placeholder="Nom du lieu"
-        />
-        <View style={styles.gap} />
-        <EditorInput
-          value={venue.street}
-          onChangeText={(value) => updateVenue({ street: value })}
-          placeholder="Adresse"
-        />
-        <View style={styles.gap} />
-        <EditorInput
-          value={venue.city}
-          onChangeText={(value) => updateVenue({ city: value })}
-          placeholder="Ville"
-        />
+        {hint ? <EditorHint>{hint}</EditorHint> : null}
+        <VenuePlaceEditor venue={venue} onChange={updateVenue} />
         <Text style={[styles.heading, { color: c.textPrimary }]}>Accès</Text>
         <EditorInput
           value={practical.access}

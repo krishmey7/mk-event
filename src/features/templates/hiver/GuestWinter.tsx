@@ -181,11 +181,13 @@ export function WinterVenueCard({
   venueName,
   address,
   onDirections,
+  map,
 }: {
   colors: TemplateColors;
   venueName: string;
   address: string;
   onDirections: () => void;
+  map?: ReactNode;
 }) {
   return (
     <View style={[styles.venueCard, { backgroundColor: colors.surface, borderColor: `${colors.accent}88` }]}>
@@ -193,9 +195,10 @@ export function WinterVenueCard({
       <Text style={[styles.venueKicker, { color: colors.textMuted }]}>LE LIEU</Text>
       <Text style={[styles.venueName, { color: colors.text }]}>{venueName}</Text>
       <Text style={[styles.venueAddress, { color: colors.textMuted }]}>{address}</Text>
+      {map ? <View style={styles.venueMap}>{map}</View> : null}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Voir l'itinéraire"
+        accessibilityLabel="Y aller"
         onPress={onDirections}
         style={({ pressed }) => [
           styles.venueBtn,
@@ -205,7 +208,7 @@ export function WinterVenueCard({
       >
         <View style={styles.venueBtnInner}>
           <Ionicons name="navigate-outline" size={15} color={colors.onPrimary} />
-          <Text style={[styles.venueBtnLabel, { color: colors.onPrimary }]}>Voir l'itinéraire</Text>
+          <Text style={[styles.venueBtnLabel, { color: colors.onPrimary }]}>Y aller</Text>
         </View>
       </Pressable>
     </View>
@@ -347,6 +350,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     textAlign: 'center',
+  },
+  venueMap: {
+    width: '100%',
+    marginTop: 4,
+    marginBottom: 2,
   },
   venueBtn: {
     width: '100%',

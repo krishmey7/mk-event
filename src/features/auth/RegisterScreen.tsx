@@ -78,7 +78,7 @@ const BG = '#F7F0E8';
 export function RegisterScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
-  const { clearActiveEvent } = useActiveEvent();
+  const { clearActiveEvent, syncFromServer } = useActiveEvent();
   const insets = useSafeAreaInsets();
 
   const [stepIndex, setStepIndex] = useState(0);
@@ -156,10 +156,11 @@ export function RegisterScreen() {
         password,
         password_confirm: confirmPassword,
       });
-      // Nouvelle inscription : forcer le wizard type + thème (avant signIn).
+      // Nouvelle inscription : forcer le wizard type + thème.
       clearActiveEvent();
       await signIn(session);
-      router.replace(homeAfterAuth(true));
+      const needsSetup = await syncFromServer();
+      router.replace(homeAfterAuth(needsSetup));
     } catch (error) {
       setFormError(
         error instanceof ApiError

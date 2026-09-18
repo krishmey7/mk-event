@@ -12,6 +12,7 @@ import { EditorInput } from '@/features/editor/components/EditorInput';
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { confirmDelete } from '@/features/editor/confirmDelete';
 import { useEditor } from '@/features/editor/EditorContext';
+import { studioStepHint } from '@/features/editor/studioSteps';
 import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import type { ProgramStep } from '@/features/templates/elegance/data';
 
@@ -108,7 +109,8 @@ export default function ProgrammeTabScreen() {
     <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <EditorHint>
         {isConference
-          ? 'Construisez l’agenda : horaires, sessions et salles. Les participants le verront sur l’invitation.'
+          ? (studioStepHint('programme', 'corporate')
+            ?? 'Construisez l’agenda : horaires, sessions et salles.')
           : 'Modifiez ou supprimez chaque moment. Le crayon ouvre le détail, la corbeille l’enlève.'}
       </EditorHint>
       <Text style={[styles.heading, { color: colors.text }]}>

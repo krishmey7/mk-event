@@ -3,7 +3,7 @@
  */
 
 import { useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +13,8 @@ import type { TemplateColors } from '@/features/templates/elegance/themes';
 import type { ProgramStep } from '@/features/templates/elegance/data';
 import type { ConferenceSpeaker } from './data';
 import type { Guest, Venue } from '@/features/invitation/types';
+import { venueDirectionsUrl, venueHasCoords } from '@/features/invitation/types';
+import { VenueMap } from '@/features/venue/VenueMap';
 import { IconifyIcon } from '@/components/ui/IconifyIcon';
 
 export function ConferenceInvitation({
@@ -124,6 +126,22 @@ export function ConferenceInvitation({
         {/* Pratiques */}
         <Section title="Infos pratiques" colors={c}>
           <InfoLine icon="location-outline" label={venueFull(venue)} colors={c} />
+          {venueHasCoords(venue) ? (
+            <View style={{ gap: 8 }}>
+              <VenueMap lat={venue.lat!} lng={venue.lng!} height={160} />
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  const platform =
+                    Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+                  void Linking.openURL(venueDirectionsUrl(venue, platform));
+                }}
+                style={[styles.rsvpBtn, { backgroundColor: c.primary }]}
+              >
+                <Text style={[styles.rsvpLabel, { color: c.onPrimary }]}>Y aller</Text>
+              </Pressable>
+            </View>
+          ) : null}
           {access ? <InfoLine icon="subway-outline" label={access} colors={c} /> : null}
           {parking ? <InfoLine icon="car-outline" label={parking} colors={c} /> : null}
           {hotel ? <InfoLine icon="bed-outline" label={hotel} colors={c} /> : null}

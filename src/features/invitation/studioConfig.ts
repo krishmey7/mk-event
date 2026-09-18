@@ -49,6 +49,15 @@ function asStringList(value: unknown, fallback: string[]): string[] {
   return list.length > 0 ? list : fallback;
 }
 
+function asCoord(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
 function asVenue(value: unknown): Venue {
   const row = asRecord(value);
   if (!row) return { ...DEFAULT_VENUE };
@@ -57,6 +66,8 @@ function asVenue(value: unknown): Venue {
     street: asString(row.street, DEFAULT_VENUE.street),
     zip: asString(row.zip, DEFAULT_VENUE.zip),
     city: asString(row.city, DEFAULT_VENUE.city),
+    lat: asCoord(row.lat),
+    lng: asCoord(row.lng),
   };
 }
 

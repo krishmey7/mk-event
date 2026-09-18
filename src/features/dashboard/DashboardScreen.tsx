@@ -19,8 +19,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Logo } from '@/components/ui/Logo';
 import { EventCard } from '@/features/events/components/EventCard';
 import { useEvents } from '@/features/events/useEvents';
+import { confirmDelete } from '@/features/editor/confirmDelete';
 import { useAuth } from '@/context/AuthContext';
+import { useActiveEvent } from '@/context/ActiveEventContext';
 import { openEventManage } from '@/features/editor/navigation';
+import { eventsService } from '@/services/eventsService';
 import { LandingAtmosphere } from '@/features/landing/LandingAtmosphere';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import {
@@ -34,7 +37,8 @@ export function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { events, isLoading, error } = useEvents();
+  const { events, isLoading, error, reload } = useEvents();
+  const { eventId, syncFromServer } = useActiveEvent();
   const { isDesktop, isWide } = useBreakpoint();
   const { theme } = useAppTheme();
   const c = theme.colors;
@@ -46,6 +50,24 @@ export function DashboardScreen() {
     const name = user?.full_name?.trim();
     return name ? name.split(/\s+/)[0] : 'Sarah';
   }, [user?.full_name]);
+
+  const handleDelete = (id: number, name: string) => {
+    confirmDelete(
+      'Supprimer cette invitation ?',
+      `« ${name} » sera définitivement supprimée.`,
+      () => {
+        void (async () => {
+          try {
+            await eventsService.deleteEvent(id);
+            if (eventId === id) await syncFromServer();
+            await reload();
+          } catch {
+            await reload();
+          }
+        })();
+      },
+    );
+  };
 
   const sent = events.reduce((sum, event) => sum + event.rsvp_summary.confirmed, 0);
   const totalGuests = events.reduce((sum, event) => sum + event.guests_count, 0);
@@ -174,6 +196,7 @@ export function DashboardScreen() {
                 key={event.id}
                 event={event}
                 onPress={() => openEventManage(router, event)}
+                onDelete={() => handleDelete(event.id, event.name)}
                 style={isWide ? styles.cardWide : undefined}
               />
             ))}

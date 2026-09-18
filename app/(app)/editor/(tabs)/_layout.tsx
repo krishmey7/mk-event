@@ -2,17 +2,26 @@
  * Studio — parcours guidé dynamique selon le type d’événement.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 import { EditorHeader } from '@/features/editor/components/EditorHeader';
 import { EditorTabBar } from '@/features/editor/components/EditorTabBar';
+import { StudioGuidedFooter } from '@/features/editor/components/StudioGuidedFooter';
+import { StudioProgressRail } from '@/features/editor/components/StudioProgressRail';
+import { StudioStepsSheet } from '@/features/editor/components/StudioStepsSheet';
 import { safeExitEditor } from '@/features/editor/navigation';
+import { useStudioNavMode } from '@/features/editor/StudioNavModeContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useEditor } from '@/features/editor/EditorContext';
-import { getStudioSteps, isStudioRouteVisible } from '@/features/editor/studioSteps';
+import {
+  getStudioSteps,
+  isStudioRouteVisible,
+  studioStepIndex,
+} from '@/features/editor/studioSteps';
 
 export default function EditorTabsLayout() {
   const router = useRouter();
@@ -20,19 +29,37 @@ export default function EditorTabsLayout() {
   const { theme } = useAppTheme();
   const { type: activeType } = useActiveEvent();
   const { template } = useEditor();
+  const { mode } = useStudioNavMode();
+  const [stepsOpen, setStepsOpen] = useState(false);
+  const tabNavigationRef = useRef<BottomTabBarProps['navigation'] | null>(null);
+
   const eventType = activeType || template.category;
   const steps = getStudioSteps(eventType);
   const c = theme.colors;
   const key = pathname.split('/').filter(Boolean).pop() ?? 'index';
+  const resolvedKey = steps.some((step) => step.route === key) ? key : steps[0]?.route ?? 'index';
+  const stepIndex = studioStepIndex(resolvedKey, eventType);
   const title =
-    steps.find((step) => step.route === key)?.headerTitle
+    steps.find((step) => step.route === resolvedKey)?.headerTitle
     ?? steps[0]?.headerTitle
     ?? 'Studio';
+  const stepMeta =
+    mode === 'guided' && stepIndex >= 0
+      ? `Étape ${stepIndex + 1} sur ${steps.length}`
+      : null;
 
   const hrefFor = useMemo(
     () => (route: string) => (isStudioRouteVisible(route, eventType) ? undefined : null),
     [eventType],
   );
+
+  const renderTabBar = (props: BottomTabBarProps) => {
+    tabNavigationRef.current = props.navigation;
+    if (mode === 'guided') {
+      return <StudioGuidedFooter {...props} />;
+    }
+    return <EditorTabBar {...props} />;
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
@@ -40,10 +67,19 @@ export default function EditorTabsLayout() {
         title={title}
         onBack={() => safeExitEditor(router)}
         leftLabel="Quitter"
+        stepMeta={stepMeta}
       />
 
+      {mode === 'guided' ? (
+        <StudioProgressRail
+          stepIndex={Math.max(0, stepIndex)}
+          stepCount={steps.length}
+          onOpenSteps={() => setStepsOpen(true)}
+        />
+      ) : null}
+
       <Tabs
-        tabBar={(props) => <EditorTabBar {...props} />}
+        tabBar={renderTabBar}
         screenOptions={{
           headerShown: false,
           sceneStyle: { backgroundColor: c.background },
@@ -60,6 +96,16 @@ export default function EditorTabsLayout() {
         <Tabs.Screen name="voix" options={{ title: 'Voix', href: null }} />
         <Tabs.Screen name="compteur" options={{ href: null }} />
       </Tabs>
+
+      <StudioStepsSheet
+        visible={stepsOpen}
+        steps={steps}
+        currentRoute={resolvedKey}
+        onClose={() => setStepsOpen(false)}
+        onSelect={(route) => {
+          tabNavigationRef.current?.navigate(route);
+        }}
+      />
     </View>
   );
 }

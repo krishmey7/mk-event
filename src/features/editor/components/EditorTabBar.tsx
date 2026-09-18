@@ -43,7 +43,7 @@ export function EditorTabBar({ state, navigation }: BottomTabBarProps) {
         },
       ]}
     >
-      <Text style={[styles.caption, { color: c.textMuted }]}>Parcours guidé</Text>
+      <Text style={[styles.caption, { color: c.textMuted }]}>Mode libre</Text>
       <View style={styles.row}>
         {items.map(({ route, step, stepIndex }) => {
           const focused = currentKey === route.name;

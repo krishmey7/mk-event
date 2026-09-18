@@ -188,6 +188,20 @@ export const eventsService = {
     return apiClient.patch<Event>(`/events/${id}/`, patch);
   },
 
+  /** DELETE /api/events/{id}/ — supprime une invitation. */
+  async deleteEvent(id: number): Promise<void> {
+    if (SIMULATE_BACKEND) {
+      hydrateLibrary(MOCK_EVENTS);
+      await delay(220);
+      const index = MOCK_EVENTS.findIndex((item) => item.id === id);
+      if (index < 0) throw new Error('Invitation introuvable');
+      MOCK_EVENTS.splice(index, 1);
+      persistLibrary(MOCK_EVENTS);
+      return;
+    }
+    await apiClient.delete(`/events/${id}/`);
+  },
+
   /** Enregistre l’instantané du studio auprès de l’invitation. */
   saveSnapshot(eventId: number, snapshot: EditorSnapshot): void {
     putSnapshot(eventId, snapshot);

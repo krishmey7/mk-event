@@ -6,7 +6,11 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { EditorHint } from '@/features/editor/components/EditorHint';
+import { useEditor } from '@/features/editor/EditorContext';
+import { studioStepHint } from '@/features/editor/studioSteps';
 import { useStudioChrome } from '@/features/editor/useStudioChrome';
+import { useActiveEvent } from '@/context/ActiveEventContext';
 
 import HistoireTabScreen from './histoire';
 import ProgrammeTabScreen from './programme';
@@ -23,9 +27,17 @@ type PaneKey = (typeof PANES)[number]['key'];
 export default function JourTabScreen() {
   const [pane, setPane] = useState<PaneKey>('histoire');
   const c = useStudioChrome();
+  const { template } = useEditor();
+  const { type: activeType } = useActiveEvent();
+  const hint = studioStepHint('jour', activeType || template.category);
 
   return (
     <View style={[styles.root, { backgroundColor: c.bg }]}>
+      {hint ? (
+        <View style={styles.hintWrap}>
+          <EditorHint>{hint}</EditorHint>
+        </View>
+      ) : null}
       <View style={styles.pills}>
         {PANES.map((item) => {
           const on = pane === item.key;
@@ -60,6 +72,7 @@ export default function JourTabScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  hintWrap: { paddingHorizontal: 16, paddingTop: 12 },
   pills: {
     flexDirection: 'row',
     gap: 8,

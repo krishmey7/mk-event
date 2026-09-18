@@ -28,6 +28,7 @@ import {
 import { makeGuestId, slugifyCouple } from '@/features/invitation/qr';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import type { GalleryStyleKey, Guest, PhotoFrameKey, RevealEffectKey, Venue } from '@/features/invitation/types';
+import { normalizeVenue } from '@/features/invitation/types';
 import { eventsService } from '@/services/eventsService';
 import { resolveTemplateThemeKey } from '@/features/templates/resolveTheme';
 import {
@@ -422,11 +423,11 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
     () => snap?.galleryStyle ?? 'masonry',
   );
   const [venue, setVenue] = useState<Venue>(() =>
-    snap?.venue ? { ...snap.venue } : { ...(template.defaultVenue ?? DEFAULT_VENUE) },
+    normalizeVenue(snap?.venue ?? template.defaultVenue, DEFAULT_VENUE),
   );
 
   const updateVenue = useCallback((patch: Partial<Venue>) => {
-    setVenue((prev) => ({ ...prev, ...patch }));
+    setVenue((prev) => normalizeVenue({ ...prev, ...patch }, prev));
   }, []);
 
   const [speakers, setSpeakers] = useState<ConferenceSpeaker[]>(() =>

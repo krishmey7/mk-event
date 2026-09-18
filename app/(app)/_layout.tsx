@@ -17,7 +17,7 @@ import { useBreakpoint } from '@/hooks/useBreakpoint';
 
 export default function AppLayout() {
   const { isAuthenticated, isLoading } = useAuth();
-  const { ready, needsSetup } = useActiveEvent();
+  const { ready, needsSetup, syncFromServer } = useActiveEvent();
   const router = useRouter();
   const pathname = usePathname();
   const { isDesktop } = useBreakpoint();
@@ -28,6 +28,12 @@ export default function AppLayout() {
       router.replace('/login');
     }
   }, [isAuthenticated, isLoading, router]);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && ready) {
+      void syncFromServer();
+    }
+  }, [isAuthenticated, isLoading, ready, syncFromServer]);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && ready && needsSetup) {

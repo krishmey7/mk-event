@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — UI / Button
+ *  MK EVENTS — UI / Button
  * ──────────────────────────────────────────────────────────────
  *  Bouton universel du design system.
  *  Variantes : primary (champagne + encre) · dark (charbon) · glass.

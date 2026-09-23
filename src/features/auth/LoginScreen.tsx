@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 
 import { useAuth } from '@/context/AuthContext';
 import { homeAfterAuth, useActiveEvent } from '@/context/ActiveEventContext';
-import { AuthShell, useAuthNotice } from './AuthShell';
+import { AuthShell } from './AuthShell';
 import { Input } from '@/components/ui/Input';
 import { ApiError } from '@/services/apiClient';
 import { login } from '@/services/authService';
@@ -55,7 +55,6 @@ function LoginForm() {
   const router = useRouter();
   const { signIn } = useAuth();
   const { syncFromServer } = useActiveEvent();
-  const showNotice = useAuthNotice();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -143,9 +142,7 @@ function LoginForm() {
 
       <Pressable
         accessibilityRole="button"
-        onPress={() =>
-          showNotice('La récupération de mot de passe sera disponible prochainement.')
-        }
+        onPress={() => router.push('/forgot-password')}
         hitSlop={8}
         style={({ pressed }) => [styles.forgot, pressed && styles.pressed]}
       >

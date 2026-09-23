@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Studio · accès à la galerie native (expo-image-picker).
+ * MK EVENTS — Studio · accès à la galerie native (expo-image-picker).
  * Ouvre le sélecteur du téléphone et renvoie l'URI locale de la
  * photo choisie — pour une prévisualisation instantanée dans le
  * studio (couverture, étapes d'histoire…).

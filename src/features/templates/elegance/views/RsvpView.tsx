@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Modèle « Élégance » · formulaire RSVP.
+ * MK EVENTS — Modèle « Élégance » · formulaire RSVP.
  * Présence + choix de la boisson uniquement.
  */
 

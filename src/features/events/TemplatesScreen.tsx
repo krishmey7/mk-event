@@ -164,7 +164,7 @@ function TemplateThumb({
                 title={template.defaultCover.title}
                 dateLabel={template.defaultCover.dateLabel}
                 couple={template.defaultCover.couple}
-                phrase={template.defaultCover.guestLine}
+                phrase={template.defaultKicker || 'Pour notre grand jour'}
                 guestSentence={template.defaultCover.guestLine}
                 kicker={template.defaultKicker}
                 venueName={template.defaultVenue?.name}

@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — INVITATION INVITÉ (landing continue — planche 3)
+ *  MK EVENTS — INVITATION INVITÉ (landing continue — planche 3)
  * ──────────────────────────────────────────────────────────────
  *  Page fluide SANS TabBar, lue d'un seul scroll : couverture
  *  pré-personnalisée + flèche animée, histoire cliquable (modale
@@ -37,7 +37,7 @@ import { shadows } from '@/constants/theme';
 import { CoverDiscoverHint } from './InvitationCover';
 import { TemplateCover } from './TemplateCover';
 import { QrPattern } from '@/components/ui/QrPattern';
-import { FilterPill, IconBubble, LabeledField, PillButton, SectionHeader, ThemedInput } from '@/features/templates/elegance/widgets';
+import { IconBubble, LabeledField, PillButton, SectionHeader, ThemedInput } from '@/features/templates/elegance/widgets';
 import { SelectField } from '@/features/templates/elegance/SelectField';
 import {
   WinterFlora,
@@ -52,12 +52,12 @@ import { SnowflakeSvg, WinterPageDecor } from '@/features/templates/hiver/Winter
 import type { OrnamentKey } from '@/features/templates/ornaments';
 import {
   COUNTDOWN_TARGET,
-  GALLERY_FILTERS,
   IMAGES,
-  type GalleryCategory,
   type ProgramStep,
   type StoryMilestone,
 } from '@/features/templates/elegance/data';
+import { resolveCountdownTargetMs } from '@/features/editor/snapshot';
+import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import { type TemplateTheme, type TemplateThemeKey } from '@/features/templates/elegance/themes';
 import { getTemplate, type TemplateThemeDefinition } from '@/features/templates/registry';
 import type { InvitationConfig } from './guestRegistry';
@@ -67,6 +67,7 @@ import { CONFERENCE_SPEAKERS } from '@/features/templates/conference/data';
 import { BIRTHDAY_DEMO } from '@/features/templates/birthday/themes';
 import { SIMULATE_BACKEND } from '@/constants/config';
 import { guestsService } from '@/services/guestsService';
+import { guestbookService } from '@/services/guestbookService';
 import {
   normalizeGalleryStyle,
   normalizePhotoFrame,
@@ -201,7 +202,10 @@ export function GuestInvitation({ slug, config, guest }: {
             colors={theme.colors}
             isDark={theme.isDark}
             title={pageCover.title}
-            subtitle={pageCover.guestLine || BIRTHDAY_DEMO.subtitle}
+            subtitle={fillGuestNameToken(
+              pageCover.guestLine || BIRTHDAY_DEMO.subtitle,
+              guest.firstName,
+            )}
             ageLine={pageCover.kicker || BIRTHDAY_DEMO.ageLine}
             headline="birthday"
             scriptLine={BIRTHDAY_DEMO.script}
@@ -301,6 +305,7 @@ export function GuestInvitation({ slug, config, guest }: {
             imageUri={countdownImage}
             theme={theme}
             winter={winter}
+            dateLabel={pageCover.dateLabel}
           />
 
           {winter ? <WinterBreak theme={theme} /> : null}
@@ -324,7 +329,12 @@ export function GuestInvitation({ slug, config, guest }: {
 
           {winter ? <WinterBreak theme={theme} /> : null}
 
-          <GuestGuestbookSection theme={theme} winter={winter} />
+          <GuestGuestbookSection
+            slug={slug}
+            guest={guest}
+            theme={theme}
+            winter={winter}
+          />
 
           <View style={styles.footer}>
             {winter ? (
@@ -700,7 +710,7 @@ function GuestCoverSection({
         title={cover.title}
         dateLabel={cover.dateLabel}
         couple={cover.couple}
-        phrase={cover.guestLine}
+        phrase={cover.kicker?.trim() || 'Pour notre grand jour'}
         guestSentence={cover.guestLine || 'Vous êtes invité(e) à célébrer avec nous.'}
         kicker={cover.kicker}
         venueName={venue.name}
@@ -933,23 +943,28 @@ function VenueCard({ venue, theme }: { venue: Venue; theme: TemplateTheme }) {
 
 /* ── 4. Compte à rebours — bloc sombre immersif ── */
 
-function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter }: {
+function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, dateLabel }: {
   liked: boolean;
   onToggleLike: () => void;
   imageUri: string;
   theme: TemplateTheme;
   winter: boolean;
+  dateLabel: string;
 }) {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
   const [now, setNow] = useState(() => Date.now());
+  const targetMs = useMemo(
+    () => resolveCountdownTargetMs(dateLabel) || COUNTDOWN_TARGET,
+    [dateLabel],
+  );
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const ms = Math.max(0, COUNTDOWN_TARGET - now);
+  const ms = Math.max(0, targetMs - now);
   const days = Math.floor(ms / 86400000);
   const p2 = (n: number): string => String(n).padStart(2, '0');
   const blocks = [
@@ -1035,12 +1050,16 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter }: {
   const [attending, setAttending] = useState<'yes' | 'no' | null>(null);
   const [drink, setDrink] = useState<string | null>(null);
   const [answer, setAnswer] = useState<RsvpAnswer | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
+  const accessToken = guest.accessToken || guest.id;
+  const canRsvp = Boolean(accessToken);
   const canSubmit =
-    attending === 'no' || (attending === 'yes' && drink !== null);
+    canRsvp && (attending === 'no' || (attending === 'yes' && drink !== null));
 
   const submit = async () => {
-    if (!canSubmit || attending === null) return;
+    if (!canSubmit || attending === null || !accessToken) return;
     const nextAnswer = {
       guestId: guest.id,
       attending,
@@ -1050,10 +1069,12 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter }: {
       diets: [],
       allergies: '',
     };
+    setSubmitError(null);
+    setSubmitting(true);
     try {
       if (!SIMULATE_BACKEND) {
         await guestsService.submitPublicRsvp(slug, {
-          access_token: guest.id,
+          access_token: accessToken,
           answer: attending === 'yes' ? 'yes' : 'no',
           adults_count: guest.seats,
           children_count: 0,
@@ -1062,10 +1083,26 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter }: {
       }
       setAnswer(nextAnswer);
     } catch {
-      /* Affiche quand même le succès local pour ne pas bloquer l’UX démo hors-ligne. */
-      setAnswer(nextAnswer);
+      setSubmitError('Impossible d’enregistrer votre réponse. Réessayez dans un instant.');
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  if (!canRsvp) {
+    return (
+      <SectionShell winter={winter} theme={theme}>
+        <SectionHead winter={winter} theme={theme} kicker="RSVP" title="Votre réponse" />
+        <Reveal effect={revealEffect} delay={0}>
+          <View style={[styles.successCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+            <Text style={[styles.successText, { color: c.textMuted }]}>
+              Ouvrez le lien personnel reçu par message pour confirmer votre présence.
+            </Text>
+          </View>
+        </Reveal>
+      </SectionShell>
+    );
+  }
 
   /* Après validation : le QR pass individuel s'active. */
   if (answer !== null) {
@@ -1177,13 +1214,24 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter }: {
 
       <Reveal effect={revealEffect} delay={260}>
         <PillButton
-          label={attending === 'yes' ? 'Valider & activer mon pass' : 'Valider ma réponse'}
+          label={
+            submitting
+              ? 'Envoi…'
+              : attending === 'yes'
+                ? 'Valider & activer mon pass'
+                : 'Valider ma réponse'
+          }
           onPress={submit}
-          disabled={!canSubmit}
+          disabled={!canSubmit || submitting}
           theme={theme}
           style={styles.rsvpSubmit}
         />
       </Reveal>
+      {submitError ? (
+        <Text style={[styles.successText, { color: '#A45A45', textAlign: 'center', marginTop: 10 }]}>
+          {submitError}
+        </Text>
+      ) : null}
     </SectionShell>
   );
 }
@@ -1198,14 +1246,11 @@ function GuestGallerySection({ theme, winter, styleKey, photos: incoming }: {
 }) {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
-  const [filter, setFilter] = useState<GalleryCategory>('tous');
-  const mapped = incoming.map((item, index) => ({
+  const photos = incoming.map((item, index) => ({
     id: `g-${index}`,
     uri: item.uri,
-    category: item.category as Exclude<GalleryCategory, 'tous'>,
     height: 170 + (index % 3) * 28,
   }));
-  const photos = filter === 'tous' ? mapped : mapped.filter((photo) => photo.category === filter);
   const leftColumn = photos.filter((_, index) => index % 2 === 0);
   const rightColumn = photos.filter((_, index) => index % 2 === 1);
   const photoReveal: RevealEffectKey = winter ? 'none' : revealEffect;
@@ -1219,20 +1264,6 @@ function GuestGallerySection({ theme, winter, styleKey, photos: incoming }: {
           title="Notre galerie"
           subtitle="Revivez les plus beaux moments de notre histoire…"
         />
-      </Reveal>
-
-      <Reveal effect={revealEffect} delay={90}>
-        <View style={[styles.galleryFilters, winter && styles.winterGalleryBlock]}>
-          {GALLERY_FILTERS.map((item) => (
-            <FilterPill
-              key={item.key}
-              label={item.label}
-              active={filter === item.key}
-              onPress={() => setFilter(item.key)}
-              theme={theme}
-            />
-          ))}
-        </View>
       </Reveal>
 
       {/* Carrousel — défilement horizontal avec arrêt sur photo */}
@@ -1284,21 +1315,83 @@ function GuestGallerySection({ theme, winter, styleKey, photos: incoming }: {
 
 /* ── 7. Livre d'or ── */
 
-function GuestGuestbookSection({ theme, winter }: { theme: TemplateTheme; winter: boolean }) {
+function GuestGuestbookSection({
+  slug,
+  guest,
+  theme,
+  winter,
+}: {
+  slug: string;
+  guest: Guest;
+  theme: TemplateTheme;
+  winter: boolean;
+}) {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
   const [text, setText] = useState('');
-  const [notes, setNotes] = useState<{ id: number; text: string; when: string }[]>([]);
+  const [notes, setNotes] = useState<
+    { id: number; text: string; when: string; author: string }[]
+  >([]);
   const [error, setError] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const send = () => {
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      setLoading(true);
+      try {
+        const entries = await guestbookService.listPublic(slug);
+        if (!alive) return;
+        setNotes(
+          entries.map((entry) => ({
+            id: entry.id,
+            text: entry.message,
+            author: entry.author_name,
+            when: guestbookService.formatRelative(entry.created_at),
+          })),
+        );
+      } catch {
+        if (alive) setNotes([]);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [slug]);
+
+  const send = async () => {
     if (text.trim().length === 0) {
       setError(true);
       return;
     }
-    setNotes((prev) => [{ id: Date.now(), text: text.trim(), when: 'À l\u2019instant' }, ...prev]);
-    setText('');
-    setError(false);
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      const accessToken = guest.accessToken || guest.id || null;
+      const entry = await guestbookService.createPublic(slug, {
+        message: text.trim(),
+        access_token: accessToken || undefined,
+      });
+      setNotes((prev) => [
+        {
+          id: entry.id,
+          text: entry.message,
+          author: entry.author_name,
+          when: guestbookService.formatRelative(entry.created_at),
+        },
+        ...prev,
+      ]);
+      setText('');
+      setError(false);
+    } catch {
+      setSubmitError('Impossible d’envoyer le message. Réessayez.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -1330,15 +1423,31 @@ function GuestGuestbookSection({ theme, winter }: { theme: TemplateTheme; winter
       {error ? (
         <Text style={styles.noteError}>{"Écris d\u2019abord un petit mot 💛"}</Text>
       ) : null}
+      {submitError ? (
+        <Text style={styles.noteError}>{submitError}</Text>
+      ) : null}
 
       <Reveal effect={revealEffect} delay={180}>
-        <PillButton label="Envoyer mon message" onPress={send} theme={theme} />
+        <PillButton
+          label={submitting ? 'Envoi…' : 'Envoyer mon message'}
+          onPress={send}
+          disabled={submitting}
+          theme={theme}
+        />
       </Reveal>
+
+      {loading ? (
+        <Text style={[styles.noteWhen, { color: c.textMuted, textAlign: 'center' }]}>
+          Chargement des messages…
+        </Text>
+      ) : null}
 
       {notes.map((note) => (
         <View key={note.id} style={[styles.noteItem, { backgroundColor: c.surface, borderColor: c.border }]}>
           <Text style={[styles.noteText, { color: c.text }]}>{note.text}</Text>
-          <Text style={[styles.noteWhen, { color: c.textMuted }]}>{note.when}</Text>
+          <Text style={[styles.noteWhen, { color: c.textMuted }]}>
+            {note.author} · {note.when}
+          </Text>
         </View>
       ))}
     </SectionShell>

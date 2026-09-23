@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Registre partagé organisateur → invité (local).
+ * MK EVENTS — Registre partagé organisateur → invité (local).
  * Le studio publie la config ; /inv/{slug} la consomme.
  * Sans backend, un jeu de démonstration garantit un lien consultable.
  */

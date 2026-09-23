@@ -15,7 +15,7 @@ import { getStudioSteps } from '../studioSteps';
 
 export function EditorTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { guests, template } = useEditor();
+  const { template } = useEditor();
   const { type: activeType } = useActiveEvent();
   /** Le modèle ouvert prime : évite un type ActiveEvent obsolète. */
   const eventType = template.category || activeType;
@@ -43,11 +43,9 @@ export function EditorTabBar({ state, navigation }: BottomTabBarProps) {
         },
       ]}
     >
-      <Text style={[styles.caption, { color: c.textMuted }]}>Mode libre</Text>
       <View style={styles.row}>
         {items.map(({ route, step, stepIndex }) => {
           const focused = currentKey === route.name;
-          const showDot = route.name === 'plus' && guests.length === 0;
 
           return (
             <Pressable
@@ -84,9 +82,6 @@ export function EditorTabBar({ state, navigation }: BottomTabBarProps) {
                 >
                   {stepIndex + 1}
                 </Text>
-                {showDot ? (
-                  <View style={[styles.alert, { backgroundColor: c.accent, borderColor: c.surface }]} />
-                ) : null}
               </View>
               <Text
                 style={[
@@ -111,14 +106,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingHorizontal: 6,
   },
-  caption: {
-    fontFamily: fontFamilies.sansMedium,
-    fontSize: 10,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
   row: { flexDirection: 'row', alignItems: 'flex-start' },
   item: { flex: 1, alignItems: 'center', gap: 4 },
   badge: {
@@ -130,15 +117,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: { fontFamily: fontFamilies.sansSemiBold, fontSize: 12 },
-  alert: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 1.5,
-  },
   label: { fontFamily: fontFamilies.sansMedium, fontSize: 10 },
   labelOn: { fontFamily: fontFamilies.sansSemiBold },
   pressed: { opacity: 0.75 },

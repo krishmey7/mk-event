@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Modèle « Élégance » · VUE 2 — « NOTRE HISTOIRE ».
+ * MK EVENTS — Modèle « Élégance » · VUE 2 — « NOTRE HISTOIRE ».
  * Timeline verticale à pastilles photo : 2018 → 2020 → 2023 → 2025.
  */
 

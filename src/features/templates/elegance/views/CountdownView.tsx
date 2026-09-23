@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Modèle « Élégance » · VUE 4 — Compte à rebours sombre.
+ * MK EVENTS — Modèle « Élégance » · VUE 4 — Compte à rebours sombre.
  * « LE GRAND JOUR DANS » — 142 J / 08 H / 36 M / 12 S (valeurs de la
  * maquette au chargement, décompte en temps réel) + « À très vite ! ».
  */

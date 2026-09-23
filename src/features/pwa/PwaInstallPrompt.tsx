@@ -3,10 +3,11 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Logo } from '@/components/ui/Logo';
 import { brandColors, fontFamilies, radii, shadows } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import {
@@ -17,8 +18,6 @@ import {
   isWebRuntime,
   wasPwaPromptDismissed,
 } from './pwaInstall';
-
-const LOGO = require('../../../assets/brand/mk-events-logo.png');
 
 export function PwaInstallPrompt() {
   const { theme } = useAppTheme();
@@ -83,12 +82,12 @@ export function PwaInstallPrompt() {
       ? 'Installer sur iPhone'
       : platform === 'android'
         ? 'Installer sur Android'
-        : 'Installer MK Event';
+        : 'Installer MK Events';
 
   const subtitle =
     platform === 'ios'
       ? 'Ajoutez l’app à l’écran d’accueil pour un accès rapide, comme une application.'
-      : 'Installez MK Event sur votre téléphone pour l’ouvrir hors navigateur.';
+      : 'Installez MK Events sur votre téléphone pour l’ouvrir hors navigateur.';
 
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={close}>
@@ -107,7 +106,7 @@ export function PwaInstallPrompt() {
           <View style={styles.handle} />
 
           <View style={styles.brandRow}>
-            <Image source={LOGO} style={styles.logo} resizeMode="contain" />
+            <Logo size="sm" variant={theme.mode === 'light' ? 'ink' : 'light'} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.title, { color: c.textPrimary }]}>{title}</Text>
               <Text style={[styles.subtitle, { color: c.textMuted }]}>{subtitle}</Text>
@@ -241,7 +240,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  logo: { width: 56, height: 56, borderRadius: 14 },
   title: {
     fontFamily: fontFamilies.serifMedium,
     fontSize: 20,

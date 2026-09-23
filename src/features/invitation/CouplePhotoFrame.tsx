@@ -1,52 +1,128 @@
 /**
- * Cadre de la photo du couple — la photo est masquée dans la forme
- * (cercle, ovale, cœur). Ornements en orbites, pas d’icônes collées.
+ * Cadre de la photo du couple — cercle, cœur, soft.
+ * Cœur : SVG + ClipPath partout (mask CSS Android = artefacts GPU sur la page).
  */
 
-import { Image, Platform, StyleSheet, View, type ViewStyle } from 'react-native';
+import { useId } from 'react';
+import { Image, StyleSheet, View } from 'react-native';
+import Svg, { ClipPath, Defs, Image as SvgImage, Path } from 'react-native-svg';
 
 import type { CouplePhoto } from './types';
 
-const SIZE = 118;
-const HEART_CLIP = {
-  clipPath:
-    'path("M0.5 0.92 C0.18 0.72 0.02 0.5 0.02 0.32 C0.02 0.16 0.16 0.06 0.32 0.06 C0.41 0.06 0.47 0.11 0.5 0.18 C0.53 0.11 0.59 0.06 0.68 0.06 C0.84 0.06 0.98 0.16 0.98 0.32 C0.98 0.5 0.82 0.72 0.5 0.92 Z")',
-} as const;
+const DEFAULT_SIZE = 118;
 
-export function CouplePhotoFrame({ couplePhoto, accent }: {
+/** Cœur en viewBox 0–100 (rempli). */
+const HEART_D =
+  'M50 88 C18 68 2 48 2 30 C2 16 16 6 32 6 C41 6 47 11 50 18 C53 11 59 6 68 6 C84 6 98 16 98 30 C98 48 82 68 50 88 Z';
+
+/** Contour légèrement élargi pour la bordure. */
+const HEART_RING_D =
+  'M50 92 C14 70 -2 48 -2 29 C-2 13 14 2 32 2 C42 2 48 8 50 16 C52 8 58 2 68 2 C86 2 102 13 102 29 C102 48 86 70 50 92 Z';
+
+function HeartPhoto({
+  uri,
+  accent,
+  floral,
+  size,
+}: {
+  uri: string;
+  accent: string;
+  floral?: boolean;
+  size: number;
+}) {
+  const clipId = `heart-${useId().replace(/:/g, '')}`;
+  const pad = floral ? Math.round(size * 0.2) : Math.round(size * 0.08);
+  const stage = size + pad * 2;
+  const photoSize = size;
+
+  return (
+    <View style={{ width: stage, height: stage, alignItems: 'center', justifyContent: 'center' }}>
+      {floral ? (
+        <OrbitMarks accent={accent} count={6} radius={size * 0.52} teardrop stage={stage} />
+      ) : null}
+      <Svg width={photoSize} height={photoSize} viewBox="0 0 100 100">
+        <Defs>
+          <ClipPath id={clipId}>
+            <Path d={HEART_D} />
+          </ClipPath>
+        </Defs>
+        <Path d={HEART_RING_D} fill="none" stroke={accent} strokeWidth={1.6} opacity={0.9} />
+        <SvgImage
+          href={uri}
+          x={0}
+          y={0}
+          width={100}
+          height={100}
+          preserveAspectRatio="xMidYMid slice"
+          clipPath={`url(#${clipId})`}
+        />
+      </Svg>
+    </View>
+  );
+}
+
+export function CouplePhotoFrame({
+  couplePhoto,
+  accent,
+  size = DEFAULT_SIZE,
+}: {
   couplePhoto: CouplePhoto;
   accent: string;
+  size?: number;
 }) {
   const { uri, frame } = couplePhoto;
   if (!uri) return null;
 
   if (frame === 'soft') {
+    const softW = Math.round(size * 1.08);
+    const softH = Math.round(size * 0.85);
     return (
-      <View style={[styles.softOuter, { borderColor: accent }]}>
-        <Image source={{ uri }} style={styles.softPhoto} resizeMode="cover" />
+      <View
+        style={[
+          styles.softOuter,
+          {
+            width: softW,
+            height: softH,
+            borderColor: accent,
+            borderRadius: softH / 2,
+            padding: Math.max(3, size * 0.03),
+          },
+        ]}
+      >
+        <Image
+          source={{ uri }}
+          style={[styles.softPhoto, { borderRadius: softH / 2 - 4 }]}
+          resizeMode="cover"
+        />
       </View>
     );
   }
 
   if (frame === 'heart' || frame === 'heartFloral') {
     return (
-      <View style={styles.heartStage}>
-        {frame === 'heartFloral' ? <OrbitMarks accent={accent} count={6} radius={66} teardrop /> : null}
-        <View style={[styles.heartShell, heartClip, { backgroundColor: accent }]}>
-          <View style={[styles.heartWell, heartClip]}>
-            <Image source={{ uri }} style={styles.fillPhoto} resizeMode="cover" />
-          </View>
-        </View>
-      </View>
+      <HeartPhoto uri={uri} accent={accent} floral={frame === 'heartFloral'} size={size} />
     );
   }
 
   const floral = frame === 'circleFloral';
+  const ring = size;
+  const stage = floral ? size + 36 : size + 12;
 
   return (
-    <View style={floral ? styles.circleStageFloral : styles.circleStage}>
-      {floral ? <OrbitMarks accent={accent} count={8} radius={72} /> : null}
-      <View style={[styles.circleRing, { borderColor: accent }]}>
+    <View style={{ width: stage, height: stage, alignItems: 'center', justifyContent: 'center' }}>
+      {floral ? <OrbitMarks accent={accent} count={8} radius={size * 0.58} stage={stage} /> : null}
+      <View
+        style={[
+          styles.circleRing,
+          {
+            width: ring,
+            height: ring,
+            borderRadius: ring / 2,
+            borderColor: accent,
+            padding: Math.max(3, size * 0.04),
+          },
+        ]}
+      >
         <View style={styles.circleWell}>
           <Image source={{ uri }} style={styles.fillPhoto} resizeMode="cover" />
         </View>
@@ -55,14 +131,21 @@ export function CouplePhotoFrame({ couplePhoto, accent }: {
   );
 }
 
-function OrbitMarks({ accent, count, radius, teardrop = false }: {
+function OrbitMarks({
+  accent,
+  count,
+  radius,
+  teardrop = false,
+  stage,
+}: {
   accent: string;
   count: number;
   radius: number;
   teardrop?: boolean;
+  stage: number;
 }) {
   return (
-    <View pointerEvents="none" style={styles.orbit}>
+    <View pointerEvents="none" style={[styles.orbit, { width: stage, height: stage }]}>
       {Array.from({ length: count }, (_, index) => {
         const deg = (360 / count) * index - 90;
         return (
@@ -82,29 +165,10 @@ function OrbitMarks({ accent, count, radius, teardrop = false }: {
   );
 }
 
-const heartClip = (Platform.OS === 'web' ? HEART_CLIP : { borderRadius: 48 }) as ViewStyle;
-
 const styles = StyleSheet.create({
   fillPhoto: { width: '100%', height: '100%' },
-
-  circleStage: {
-    width: SIZE + 12,
-    height: SIZE + 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleStageFloral: {
-    width: SIZE + 40,
-    height: SIZE + 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   circleRing: {
-    width: SIZE,
-    height: SIZE,
-    borderRadius: SIZE / 2,
     borderWidth: 1.5,
-    padding: 5,
     backgroundColor: 'rgba(18, 16, 12, 0.22)',
   },
   circleWell: {
@@ -112,7 +176,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     overflow: 'hidden',
   },
-
   orbit: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
@@ -140,34 +203,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     opacity: 0.88,
   },
-
   softOuter: {
-    width: 128,
-    height: 100,
-    borderRadius: 50,
     borderWidth: 1.5,
-    padding: 4,
     overflow: 'hidden',
     backgroundColor: 'rgba(18, 16, 12, 0.22)',
   },
-  softPhoto: { flex: 1, borderRadius: 46, width: '100%' },
-
-  heartStage: {
-    width: 136,
-    height: 128,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heartShell: {
-    width: 108,
-    height: 100,
-    padding: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heartWell: {
-    width: '100%',
-    height: '100%',
-    overflow: 'hidden',
-  },
+  softPhoto: { flex: 1, width: '100%' },
 });

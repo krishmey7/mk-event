@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Workflow invité · types partagés organisateur ↔ invité.
+ * MK EVENTS — Workflow invité · types partagés organisateur ↔ invité.
  */
 
 /** Invité d'une invitation (créé côté organisateur). */

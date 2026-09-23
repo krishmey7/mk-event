@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — UI / Input
+ *  MK EVENTS — UI / Input
  * ──────────────────────────────────────────────────────────────
  *  Champ de saisie du design system : label, icône à gauche,
  *  action à droite (toggle œil intégré pour les mots de passe),
@@ -209,7 +209,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 10,
   },
-  input: { flex: 1, fontSize: 15, paddingVertical: 14 },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 14,
+    backgroundColor: 'transparent',
+    ...(Platform.OS === 'web'
+      ? ({
+          outlineStyle: 'none',
+          outlineWidth: 0,
+          // Autofill Chrome : évite le rectangle blanc tant que le CSS global charge.
+          boxShadow: '0 0 0 1000px transparent inset',
+        } as object)
+      : null),
+  },
   toggle: { padding: 4 },
   pressed: { opacity: 0.7 },
   message: { fontFamily: fontFamilies.sansMedium, fontSize: 12, lineHeight: 16 },

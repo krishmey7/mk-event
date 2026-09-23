@@ -124,7 +124,7 @@ export function TemplateCover({
         title={title}
         dateLabel={dateLabel}
         couple={couple}
-        phrase={phrase || guestSentence}
+        phrase={guestSentence || phrase || ''}
         kicker={kicker ?? ''}
         venueName={venueName ?? ''}
         venueCity={venueCity ?? ''}

@@ -1,5 +1,6 @@
 /**
- * Wizard post-inscription : type d’événement → thème → brouillon → mur.
+ * Wizard post-inscription : type d’événement → thème → préférences locales.
+ * Aucun événement serveur n’est créé ici (ça se fait à la publication).
  */
 
 import { useState } from 'react';
@@ -18,10 +19,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '@/components/ui/Logo';
 import { useActiveEvent } from '@/context/ActiveEventContext';
-import { brandColors, fontFamilies, radii, shadows, spacing } from '@/constants/theme';
-import { eventsService } from '@/services/eventsService';
+import { fontFamilies, radii, spacing } from '@/constants/theme';
 import type { EventType } from '@/types';
-import { getTemplatesForCategory } from '@/features/templates/registry';
 import { SETUP_EVENT_TYPES, SETUP_THEMES, themeQuestionForEvent, toStoredThemeKey } from './setupOptions';
 
 const ACCENT = '#E07A5F';
@@ -32,12 +31,6 @@ const BG = '#F7F0E8';
 
 type Step = 'type' | 'theme';
 
-const DEFAULT_DATE = () => {
-  const d = new Date();
-  d.setMonth(d.getMonth() + 3);
-  return d.toISOString();
-};
-
 export function EventSetupWizard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -47,37 +40,17 @@ export function EventSetupWizard() {
   const [eventType, setEventType] = useState<EventType | null>(null);
   const [themeKey, setThemeKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const finish = async (type: EventType, theme: string) => {
+  const finish = (type: EventType, theme: string) => {
     setLoading(true);
-    setError(null);
-    try {
-      const nameByType: Record<string, string> = {
-        wedding: 'Mon mariage',
-        birthday: 'Mon anniversaire',
-        corporate: 'Ma conférence',
-      };
-      const defaultTemplate = getTemplatesForCategory(type)[0];
-      const storedTheme = toStoredThemeKey(theme);
-      const event = await eventsService.createEvent({
-        name: nameByType[type] ?? 'Mon événement',
-        type,
-        event_date: DEFAULT_DATE(),
-        venue_name: '',
-        venue_city: '',
-        message: null,
-        // PK Django du modèle catalogue — null si pas encore seedé (ex. conférence).
-        template: defaultTemplate?.id ?? null,
-        theme_key: storedTheme,
-      });
-      setActiveEvent({ eventId: event.id, type, themeKey: storedTheme });
-      router.replace('/dashboard');
-    } catch {
-      setError('Impossible de créer l’événement. Vérifiez votre connexion et réessayez.');
-    } finally {
-      setLoading(false);
-    }
+    const storedTheme = toStoredThemeKey(theme);
+    setActiveEvent({
+      eventId: null,
+      type,
+      themeKey: storedTheme,
+      preferencesReady: true,
+    });
+    router.replace('/dashboard');
   };
 
   return (
@@ -171,13 +144,12 @@ export function EventSetupWizard() {
                 );
               })}
             </View>
-            {error ? <Text style={styles.error}>{error}</Text> : null}
           </ScrollView>
           <Pressable
             accessibilityRole="button"
             disabled={!themeKey || !eventType || loading}
             onPress={() => {
-              if (eventType && themeKey) void finish(eventType, themeKey);
+              if (eventType && themeKey) finish(eventType, themeKey);
             }}
             style={[styles.cta, (!themeKey || loading) && styles.ctaDisabled]}
           >
@@ -202,7 +174,7 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 3,
     borderRadius: 99,
-    backgroundColor: brandColors.creamDeep,
+    backgroundColor: '#E8D9CE',
     overflow: 'hidden',
   },
   progressFill: { height: '100%', backgroundColor: ACCENT },
@@ -254,7 +226,7 @@ const styles = StyleSheet.create({
   iconWrapOn: { backgroundColor: ACCENT },
   cardText: { flex: 1, gap: 2 },
   cardTitle: { fontFamily: fontFamilies.sansSemiBold, fontSize: 16, color: INK },
-  cardTitleOn: { color: brandColors.plum },
+  cardTitleOn: { color: INK },
   cardHint: { fontFamily: fontFamilies.sans, fontSize: 13, color: MUTED },
   themeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   themeCard: {
@@ -279,11 +251,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     marginTop: spacing.sm,
-    ...shadows.sm,
   },
   ctaDisabled: { opacity: 0.45 },
   ctaLabel: { fontFamily: fontFamilies.sansSemiBold, fontSize: 15, color: ON_ACCENT },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   backText: { fontFamily: fontFamilies.sansMedium, fontSize: 14, color: MUTED },
-  error: { fontFamily: fontFamilies.sansMedium, fontSize: 13, color: brandColors.coralDeep },
 });

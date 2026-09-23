@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Modèle « Élégance » · menu déroulant thématisé
+ * MK EVENTS — Modèle « Élégance » · menu déroulant thématisé
  * (« Choix du menu » — Vue 5). Modal maison, zéro dépendance.
  */
 

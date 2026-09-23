@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Design system (Coral + Plum + Cream).
+ * MK EVENTS — Design system (Coral + Plum + Cream).
  * Joie chaude pour le chrome app — les modèles d’invitation gardent leurs palettes.
  */
 

@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — HOOK DE RESPONSIVITÉ (règle n°3)
+ *  MK EVENTS — HOOK DE RESPONSIVITÉ (règle n°3)
  * ──────────────────────────────────────────────────────────────
  *  Point de rupture courant dérivé de la largeur de fenêtre :
  *  bascule fluide mobile (flux vertical) → tablette → desktop

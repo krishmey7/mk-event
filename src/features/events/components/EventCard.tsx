@@ -1,8 +1,8 @@
 /**
- * Carte d'invitation — surface ton sur ton, badge discret.
+ * Carte d'événement — miniature depuis cover / studio, badge discret.
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -31,12 +31,38 @@ const COVERS_LIGHT: Record<EventType, { background: string; text: string }> = {
 };
 
 const COVERS_DARK: Record<EventType, { background: string; text: string }> = {
-  wedding: { background: 'rgba(224, 122, 95, 0.22)', text: '#F0A090' },
-  birthday: { background: 'rgba(247, 240, 232, 0.1)', text: '#F7F0E8' },
-  baptism: { background: 'rgba(155, 107, 138, 0.25)', text: '#D4B8C8' },
-  corporate: { background: 'rgba(247, 240, 232, 0.08)', text: '#D4C4CE' },
-  other: { background: 'rgba(247, 240, 232, 0.08)', text: '#D4C4CE' },
+  wedding: { background: 'rgba(224, 122, 95, 0.35)', text: '#F7F0E8' },
+  birthday: { background: 'rgba(247, 240, 232, 0.16)', text: '#F7F0E8' },
+  baptism: { background: 'rgba(155, 107, 138, 0.35)', text: '#F7F0E8' },
+  corporate: { background: 'rgba(247, 240, 232, 0.14)', text: '#F7F0E8' },
+  other: { background: 'rgba(247, 240, 232, 0.14)', text: '#F7F0E8' },
 };
+
+function isDisplayableImageUri(uri: string): boolean {
+  const value = uri.trim();
+  return /^https?:\/\//i.test(value) || value.startsWith('data:image/');
+}
+
+/** Photo de couverture : champ dédié, sinon studio_config (data URL après publish). */
+export function resolveEventThumbUri(event: Event): string | null {
+  const direct = event.cover_image_url?.trim();
+  if (direct && isDisplayableImageUri(direct)) return direct;
+
+  const config = event.studio_config;
+  if (!config || typeof config !== 'object') return null;
+
+  const cover = (config as { cover?: { photoUri?: unknown } }).cover;
+  if (typeof cover?.photoUri === 'string' && isDisplayableImageUri(cover.photoUri)) {
+    return cover.photoUri.trim();
+  }
+
+  const couple = (config as { couplePhoto?: { uri?: unknown } }).couplePhoto;
+  if (typeof couple?.uri === 'string' && isDisplayableImageUri(couple.uri)) {
+    return couple.uri.trim();
+  }
+
+  return null;
+}
 
 function buildCover(
   event: Event,
@@ -68,6 +94,12 @@ export function EventCard({ event, onPress, onDelete, style }: EventCardProps) {
   const { theme } = useAppTheme();
   const c = theme.colors;
   const cover = useMemo(() => buildCover(event, theme.mode), [event, theme.mode]);
+  const thumbUri = useMemo(() => resolveEventThumbUri(event), [event]);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [thumbUri]);
 
   const dateLabel = useMemo(
     () =>
@@ -81,10 +113,12 @@ export function EventCard({ event, onPress, onDelete, style }: EventCardProps) {
 
   const complete = event.rsvp_summary.pending === 0;
   const dotColor = complete ? semanticColors.success : semanticColors.warning;
+  const showImage = Boolean(thumbUri) && !imageFailed;
 
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityHint="Ouvre la gestion des invités"
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
@@ -96,8 +130,13 @@ export function EventCard({ event, onPress, onDelete, style }: EventCardProps) {
         style,
       ]}
     >
-      {event.cover_image_url ? (
-        <Image source={{ uri: event.cover_image_url }} style={styles.thumb} resizeMode="cover" />
+      {showImage ? (
+        <Image
+          source={{ uri: thumbUri! }}
+          style={styles.thumb}
+          resizeMode="cover"
+          onError={() => setImageFailed(true)}
+        />
       ) : (
         <View style={[styles.thumb, { backgroundColor: cover.background }]}>
           <Text style={[styles.thumbText, { color: cover.text }]}>{cover.initials}</Text>
@@ -158,8 +197,8 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.88 },
   thumb: {
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -168,8 +207,8 @@ const styles = StyleSheet.create({
   },
   thumbText: {
     fontFamily: fontFamilies.serifSemiBold,
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 14,
+    lineHeight: 18,
     letterSpacing: 0.3,
   },
   meta: { flex: 1, gap: 4, minWidth: 0, justifyContent: 'center' },

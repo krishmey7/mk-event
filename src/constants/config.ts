@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — CONFIGURATION APPLICATIVE
+ *  MK EVENTS — CONFIGURATION APPLICATIVE
  * ──────────────────────────────────────────────────────────────
  *  Réglages centralisés consommés par la couche `services`.
  *  L'URL de l'API Django est surchargeable sans recompilation via
@@ -20,6 +20,10 @@ export const API_BASE_URL =
 export const AUTH_ENDPOINTS = {
   login: '/auth/login/',
   register: '/auth/register/',
+  tokenRefresh: '/auth/token/refresh/',
+  passwordReset: '/auth/password-reset/',
+  passwordResetConfirm: '/auth/password-reset/confirm/',
+  google: '/auth/google/',
 } as const;
 
 /**
@@ -29,5 +33,11 @@ export const AUTH_ENDPOINTS = {
  */
 export const SIMULATE_BACKEND = false;
 
-/** Durée maximale d'une requête HTTP avant abort (ms). */
-export const REQUEST_TIMEOUT_MS = 15_000;
+/**
+ * Client OAuth Google (type Web). Absent → bouton Google désactivé.
+ * Vercel : EXPO_PUBLIC_GOOGLE_CLIENT_ID
+ */
+export const GOOGLE_CLIENT_ID = (process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? '').trim();
+
+/** Durée maximale d'une requête HTTP avant abort (ms). Publication peut être lourde. */
+export const REQUEST_TIMEOUT_MS = 60_000;

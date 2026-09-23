@@ -451,55 +451,6 @@ export function addEventTable(eventId: number, name: string): boolean {
   return true;
 }
 
-export function addEventTableRange(
-  eventId: number,
-  from: number,
-  to: number,
-  prefix = 'Table ',
-): number {
-  const state = store.get(eventId);
-  if (!state) return 0;
-  const start = Math.min(from, to);
-  const end = Math.max(from, to);
-  if (start < 1 || end > 500) return 0;
-
-  const existing = new Set(state.tables.map((table) => table.toLowerCase()));
-  const added: string[] = [];
-  for (let n = start; n <= end; n += 1) {
-    const name = `${prefix}${n}`;
-    if (existing.has(name.toLowerCase())) continue;
-    existing.add(name.toLowerCase());
-    added.push(name);
-  }
-  if (added.length === 0) return 0;
-
-  if (isApi(state)) {
-    void (async () => {
-      const created: ApiTable[] = [];
-      for (const name of added) {
-        created.push(await guestsService.createTable(eventId, { name, seats: 8 }));
-      }
-      const current = store.get(eventId);
-      if (!current) return;
-      const tableIds = { ...current.tableIds };
-      created.forEach((table) => {
-        tableIds[table.name] = table.id;
-      });
-      store.set(eventId, {
-        ...current,
-        tables: [...current.tables, ...created.map((table) => table.name)],
-        tableIds,
-      });
-      emit();
-    })().catch(() => undefined);
-    return added.length;
-  }
-
-  store.set(eventId, { ...state, tables: [...state.tables, ...added] });
-  emit();
-  return added.length;
-}
-
 export function renameEventTable(eventId: number, from: string, to: string): boolean {
   const state = store.get(eventId);
   if (!state) return false;

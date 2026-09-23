@@ -2,7 +2,7 @@
  * Gestion d’une invitation — invités, tables, boissons, stats, check-in QR.
  */
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -24,15 +24,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { QrPattern } from '@/components/ui/QrPattern';
 import { openEventEditor } from '@/features/editor/navigation';
+import { GuestbookManagePanel } from '@/features/events/components/GuestbookManagePanel';
 import { fontFamilies, radii, semanticColors, shadows, spacing, type AppTheme } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { buildGuestLink, guestAccessKey } from '@/features/invitation/qr';
 import { eventsService } from '@/services/eventsService';
 import type { Event } from '@/types';
+import { EVENT_STATUS_LABELS } from '@/types';
 import {
   addEventTable,
-  addEventTableRange,
   addManagedGuest,
   checkInGuest,
   computeManageStats,
@@ -56,8 +57,34 @@ import {
 } from './guestListIo';
 import { parseGuestQrPayload, QrCheckInScanner } from './QrCheckInScanner';
 import { SIMULATE_BACKEND } from '@/constants/config';
+import { ManagePostPublishSheet } from './components/ManagePostPublishSheet';
+import { GuestComposeCard } from './components/GuestComposeCard';
+import {
+  hydrateManageCoach,
+  markEntranceSeen,
+  markWelcomeSeen,
+  resetWelcomeCoach,
+} from './manageCoach';
 
 type TabKey = 'invites' | 'stats' | 'entrance';
+
+const TABS = [
+  {
+    key: 'invites' as const,
+    label: 'Invités',
+    icon: 'people-outline' as const,
+  },
+  {
+    key: 'stats' as const,
+    label: 'Réponses',
+    icon: 'stats-chart-outline' as const,
+  },
+  {
+    key: 'entrance' as const,
+    label: 'Entrée',
+    icon: 'qr-code-outline' as const,
+  },
+];
 
 const RSVP_LABELS: Record<ManageRsvp, string> = {
   confirmed: 'Confirmé',
@@ -71,7 +98,13 @@ const RSVP_COLORS: Record<ManageRsvp, string> = {
   declined: semanticColors.danger,
 };
 
-export function EventManageScreen({ eventId }: { eventId: number }) {
+export function EventManageScreen({
+  eventId,
+  showWelcome = false,
+}: {
+  eventId: number;
+  showWelcome?: boolean;
+}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDesktop } = useBreakpoint();
@@ -81,6 +114,9 @@ export function EventManageScreen({ eventId }: { eventId: number }) {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabKey>('invites');
   const [error, setError] = useState<string | null>(null);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [welcomeFromPublish, setWelcomeFromPublish] = useState(false);
+  const [entranceTip, setEntranceTip] = useState(false);
 
   const manageVersion = useSyncExternalStore(
     subscribeEventManage,
@@ -101,6 +137,37 @@ export function EventManageScreen({ eventId }: { eventId: number }) {
   }, [eventId, event, manageVersion]);
 
   const stats = useMemo(() => computeManageStats(manage), [manage]);
+
+  const statusLabel = EVENT_STATUS_LABELS[event?.status ?? 'draft'] ?? 'Invitation';
+
+  useEffect(() => {
+    if (eventId < 0) return;
+    let alive = true;
+    void hydrateManageCoach(eventId).then((coach) => {
+      if (!alive) return;
+      if (showWelcome && !coach.welcomeSeen) {
+        setWelcomeFromPublish(true);
+        setWelcomeOpen(true);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [eventId, showWelcome]);
+
+  useEffect(() => {
+    if (tab !== 'entrance' || eventId < 0) return;
+    let alive = true;
+    void hydrateManageCoach(eventId).then((coach) => {
+      if (!alive) return;
+      if (!coach.entranceSeen) {
+        setEntranceTip(true);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [tab, eventId]);
 
   useEffect(() => {
     let alive = true;
@@ -173,11 +240,26 @@ export function EventManageScreen({ eventId }: { eventId: number }) {
           <Ionicons name="chevron-back" size={22} color={c.textPrimary} />
         </Pressable>
         <View style={styles.topCopy}>
-          <Text style={[styles.topKicker, { color: c.accent }]}>Gestion</Text>
           <Text style={[styles.topTitle, { color: c.textPrimary }]} numberOfLines={1}>
             {event.name}
           </Text>
+          <Text style={[styles.topSubtitle, { color: c.textMuted }]} numberOfLines={1}>
+            {statusLabel}
+          </Text>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Aide organisation"
+          onPress={() => {
+            resetWelcomeCoach(eventId);
+            setWelcomeFromPublish(false);
+            setWelcomeOpen(true);
+          }}
+          hitSlop={8}
+          style={[styles.helpBtn, { backgroundColor: c.background, borderColor: c.border }]}
+        >
+          <Text style={[styles.helpBtnLabel, { color: c.textSecondary }]}>?</Text>
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Modifier le design"
@@ -190,13 +272,7 @@ export function EventManageScreen({ eventId }: { eventId: number }) {
       </View>
 
       <View style={[styles.tabs, isDesktop && styles.tabsDesktop]}>
-        {(
-          [
-            { key: 'invites', label: 'Invités', icon: 'people-outline' },
-            { key: 'stats', label: 'Stats', icon: 'stats-chart-outline' },
-            { key: 'entrance', label: 'Entrée', icon: 'qr-code-outline' },
-          ] as const
-        ).map((item) => {
+        {TABS.map((item) => {
           const active = tab === item.key;
           return (
             <Pressable
@@ -233,18 +309,6 @@ export function EventManageScreen({ eventId }: { eventId: number }) {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.summaryRow}>
-          <SummaryPill label="Confirmés" value={String(stats.confirmed)} tone={semanticColors.success} theme={theme} />
-          <SummaryPill label="En attente" value={String(stats.pending)} tone={semanticColors.warning} theme={theme} />
-          <SummaryPill label="Refusés" value={String(stats.declined)} tone={semanticColors.danger} theme={theme} />
-          <SummaryPill
-            label="À l’entrée"
-            value={`${stats.checkedIn}/${stats.confirmed}`}
-            tone={c.accent}
-            theme={theme}
-          />
-        </View>
-
         {tab === 'invites' ? (
           <InvitesTab
             eventId={eventId}
@@ -256,37 +320,46 @@ export function EventManageScreen({ eventId }: { eventId: number }) {
             theme={theme}
           />
         ) : null}
-        {tab === 'stats' ? <StatsTab stats={stats} drinks={manage.drinks} theme={theme} /> : null}
+        {tab === 'stats' ? (
+          <View style={{ gap: 8 }}>
+            <StatsTab stats={stats} drinks={manage.drinks} theme={theme} />
+            <GuestbookManagePanel eventId={eventId} theme={theme} />
+          </View>
+        ) : null}
         {tab === 'entrance' ? (
-          <EntranceTab eventId={eventId} guests={manage.guests} theme={theme} />
+          <EntranceTab
+            eventId={eventId}
+            guests={manage.guests}
+            theme={theme}
+            showTip={entranceTip}
+            onDismissTip={() => {
+              markEntranceSeen(eventId);
+              setEntranceTip(false);
+            }}
+          />
         ) : null}
       </ScrollView>
-    </View>
-  );
-}
 
-function SummaryPill({
-  label,
-  value,
-  tone,
-  theme,
-}: {
-  label: string;
-  value: string;
-  tone: string;
-  theme: AppTheme;
-}) {
-  const c = theme.colors;
-  return (
-    <View
-      style={[
-        styles.pill,
-        { backgroundColor: c.surface, borderColor: c.border },
-        shadows.sm,
-      ]}
-    >
-      <Text style={[styles.pillValue, { color: tone }]}>{value}</Text>
-      <Text style={[styles.pillLabel, { color: c.textMuted }]}>{label}</Text>
+      <ManagePostPublishSheet
+        visible={welcomeOpen}
+        theme={theme}
+        onStart={() => {
+          markWelcomeSeen(eventId);
+          setWelcomeOpen(false);
+          setWelcomeFromPublish(false);
+          setTab('invites');
+        }}
+        onLater={() => {
+          markWelcomeSeen(eventId);
+          setWelcomeOpen(false);
+          if (welcomeFromPublish) {
+            setWelcomeFromPublish(false);
+            router.replace('/invitations');
+            return;
+          }
+          setWelcomeFromPublish(false);
+        }}
+      />
     </View>
   );
 }
@@ -296,7 +369,7 @@ function InvitesTab({
   eventName,
   eventSlug,
   guests,
-  drinks,
+  drinks: _drinks,
   tables,
   theme,
 }: {
@@ -311,7 +384,6 @@ function InvitesTab({
   const c = theme.colors;
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [contact, setContact] = useState('');
   const [seats, setSeats] = useState(2);
   const [table, setTable] = useState<string | null>(tables[0] ?? null);
   const [tablesManageOpen, setTablesManageOpen] = useState(false);
@@ -319,6 +391,8 @@ function InvitesTab({
   const [importText, setImportText] = useState('');
   const [ioMessage, setIoMessage] = useState<string | null>(null);
   const [openGuestId, setOpenGuestId] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(guests.length === 0);
+  const firstNameInputRef = useRef<TextInput>(null);
   const canAdd = firstName.trim() && lastName.trim();
 
   const slug = eventSlug?.trim() || 'invitation';
@@ -397,47 +471,231 @@ function InvitesTab({
     setImportOpen(true);
   }, []);
 
+  const openAddForm = () => {
+    setAddOpen(true);
+    setTimeout(() => firstNameInputRef.current?.focus(), 80);
+  };
+
   return (
     <View style={styles.block}>
-      <View style={styles.ioRow}>
-        <Pressable onPress={() => void handleExport()} style={[styles.ioBtn, { borderColor: c.border, backgroundColor: c.surface }]}>
-          <Ionicons name="download-outline" size={16} color={c.accent} />
-          <Text style={[styles.ioBtnLabel, { color: c.textPrimary }]}>Exporter</Text>
-        </Pressable>
-        <Pressable onPress={() => void handleImportPress()} style={[styles.ioBtn, { borderColor: c.border, backgroundColor: c.surface }]}>
-          <Ionicons name="cloud-upload-outline" size={16} color={c.accent} />
-          <Text style={[styles.ioBtnLabel, { color: c.textPrimary }]}>Importer</Text>
-        </Pressable>
+      <View style={styles.invitesHeader}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={[styles.invitesHeaderTitle, { color: c.textPrimary }]}>
+            {guests.length === 0
+              ? 'Qui invitez-vous ?'
+              : `${guests.length} personne${guests.length > 1 ? 's' : ''}`}
+          </Text>
+        </View>
+        {guests.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={openAddForm}
+            style={[styles.addChip, { backgroundColor: c.accent }]}
+          >
+            <Ionicons name="add" size={18} color={c.onAccent} />
+            <Text style={[styles.addChipLabel, { color: c.onAccent }]}>Ajouter</Text>
+          </Pressable>
+        ) : null}
       </View>
-      {ioMessage ? (
-        <Text style={[styles.ioHint, { color: c.textSecondary }]}>{ioMessage}</Text>
-      ) : (
-        <Text style={[styles.ioHint, { color: c.textMuted }]}>
-          L’export inclut code, nom, contact, places, RSVP, boisson, table et check-in (JSON + CSV).
-        </Text>
+
+      {guests.length > 0 ? (
+        <View
+          style={[
+            styles.plainTip,
+            { backgroundColor: c.accentMuted, borderColor: c.accent },
+          ]}
+        >
+          <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+          <Text style={[styles.plainTipText, { color: c.textPrimary }]}>
+            Pour envoyer l’invitation : appuyez sur le bouton vert WhatsApp à côté du nom.
+          </Text>
+        </View>
+      ) : null}
+
+      {guests.length === 0 || addOpen ? (
+        <GuestComposeCard
+          theme={theme}
+          firstName={firstName}
+          lastName={lastName}
+          seats={seats}
+          canSave={Boolean(canAdd)}
+          showClose={guests.length > 0}
+          firstNameRef={firstNameInputRef}
+          tableSlot={
+            <TablePicker
+              theme={theme}
+              tables={tables}
+              value={table}
+              onChange={setTable}
+              onManageTables={() => setTablesManageOpen(true)}
+            />
+          }
+          onChangeFirstName={setFirstName}
+          onChangeLastName={setLastName}
+          onChangeSeats={setSeats}
+          onClose={() => setAddOpen(false)}
+          onImport={() => void handleImportPress()}
+          onSave={() => {
+            if (!canAdd) return;
+            addManagedGuest(eventId, { firstName, lastName, contact: '', seats, table });
+            setFirstName('');
+            setLastName('');
+            setSeats(2);
+            setTable(tables[0] ?? null);
+            if (guests.length > 0) setAddOpen(false);
+          }}
+        />
+      ) : null}
+
+      {guests.length === 0 ? null : (
+        guests.map((guest) => {
+          const open = openGuestId === guest.id;
+          return (
+            <View
+              key={guest.id}
+              style={[styles.guestCard, { backgroundColor: c.surface, borderColor: c.border }]}
+            >
+              <View style={styles.guestHead}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: open }}
+                  accessibilityLabel={`${open ? 'Replier' : 'Déplier'} ${guest.firstName} ${guest.lastName}`}
+                  onPress={() => setOpenGuestId(open ? null : guest.id)}
+                  style={styles.guestHeadMain}
+                >
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[styles.guestName, { color: c.textPrimary }]}>
+                      {guest.firstName} {guest.lastName}
+                    </Text>
+                    <Text style={[styles.guestMeta, { color: c.textMuted }]}>
+                      {RSVP_LABELS[guest.rsvp]}
+                      {' · '}
+                      {guest.seats} place{guest.seats > 1 ? 's' : ''}
+                      {guest.table ? ` · ${guest.table}` : ''}
+                      {guest.checkedIn ? ' · Entré' : ''}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={open ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={c.textMuted}
+                  />
+                </Pressable>
+                {!open ? (
+                  <>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Envoyer l’invitation à ${guest.firstName} sur WhatsApp`}
+                      onPress={() => shareWhatsApp(guest)}
+                      hitSlop={8}
+                      style={[styles.sendWhatsAppBtn, { backgroundColor: '#25D366' }]}
+                    >
+                      <Ionicons name="logo-whatsapp" size={16} color="#FFFFFF" />
+                      <Text style={styles.sendWhatsAppLabel}>Envoyer</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Autre façon de partager le lien de ${guest.firstName}`}
+                      onPress={() => shareGuestLink(guest)}
+                      hitSlop={8}
+                      style={[styles.shareIconBtn, { backgroundColor: c.background, borderColor: c.border }]}
+                    >
+                      <Ionicons name="share-outline" size={16} color={c.textPrimary} />
+                    </Pressable>
+                    <Pressable onPress={() => removeManagedGuest(eventId, guest.id)} hitSlop={8}>
+                      <Ionicons name="trash-outline" size={18} color={semanticColors.danger} />
+                    </Pressable>
+                  </>
+                ) : null}
+              </View>
+
+              {open ? (
+                <View style={styles.guestDetails}>
+                  <View style={styles.guestChoiceGrid}>
+                    <View style={[styles.guestChoiceCell, { backgroundColor: c.background }]}>
+                      <Text style={[styles.guestChoiceLabel, { color: c.textMuted }]}>Réponse</Text>
+                      <Text
+                        style={[styles.guestChoiceValue, { color: RSVP_COLORS[guest.rsvp] }]}
+                        numberOfLines={1}
+                      >
+                        {RSVP_LABELS[guest.rsvp]}
+                      </Text>
+                    </View>
+                    <View style={[styles.guestChoiceCell, { backgroundColor: c.background }]}>
+                      <Text style={[styles.guestChoiceLabel, { color: c.textMuted }]}>Boisson</Text>
+                      <Text style={[styles.guestChoiceValue, { color: c.textPrimary }]} numberOfLines={1}>
+                        {guest.rsvp === 'confirmed' ? guest.drink ?? '—' : '—'}
+                      </Text>
+                    </View>
+                    <View style={[styles.guestChoiceCell, { backgroundColor: c.background }]}>
+                      <Text style={[styles.guestChoiceLabel, { color: c.textMuted }]}>Places</Text>
+                      <Text style={[styles.guestChoiceValue, { color: c.textPrimary }]}>
+                        {guest.seats}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <TablePicker
+                    theme={theme}
+                    tables={tables}
+                    value={guest.table}
+                    onChange={(next) => updateManagedGuest(eventId, guest.id, { table: next })}
+                    onManageTables={() => setTablesManageOpen(true)}
+                    compact
+                  />
+
+                  {guest.checkedIn ? (
+                    <Text style={styles.checkedHint}>
+                      ✓ Entré
+                      {guest.checkedInAt
+                        ? ` · ${new Date(guest.checkedInAt).toLocaleTimeString('fr-FR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}`
+                        : ''}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          );
+        })
       )}
 
-      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Plan de tables</Text>
-      <Pressable
-        onPress={() => setTablesManageOpen(true)}
-        style={[styles.card, styles.tablesSummary, { backgroundColor: c.surface, borderColor: c.border }, shadows.sm]}
-      >
-        <View style={[styles.tablesSummaryIcon, { backgroundColor: c.background }]}>
-          <Ionicons name="grid-outline" size={18} color={c.accent} />
+      <View style={[styles.toolsBlock, { borderTopColor: c.border }]}>
+        <Text style={[styles.toolsTitle, { color: c.textMuted }]}>Aussi disponible</Text>
+        <Pressable
+          onPress={() => setTablesManageOpen(true)}
+          style={[styles.toolsRow, { backgroundColor: c.surface, borderColor: c.border }]}
+        >
+          <Ionicons name="grid-outline" size={16} color={c.accent} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[styles.toolsRowLabel, { color: c.textPrimary }]}>
+              {tables.length === 0
+                ? 'Créer le plan de tables'
+                : `Plan de tables (${tables.length})`}
+            </Text>
+            {tables.length === 0 ? (
+              <Text style={[styles.toolsRowHint, { color: c.textMuted }]}>
+                Pour y placer vos invités ensuite
+              </Text>
+            ) : null}
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
+        </Pressable>
+        <View style={styles.toolsLinks}>
+          <Pressable onPress={() => void handleImportPress()} hitSlop={6}>
+            <Text style={[styles.toolsLink, { color: c.accent }]}>Importer une liste</Text>
+          </Pressable>
+          <Text style={{ color: c.border }}>·</Text>
+          <Pressable onPress={() => void handleExport()} hitSlop={6}>
+            <Text style={[styles.toolsLink, { color: c.accent }]}>Exporter</Text>
+          </Pressable>
         </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[styles.tablesSummaryTitle, { color: c.textPrimary }]}>
-            {tables.length} table{tables.length > 1 ? 's' : ''}
-          </Text>
-          <Text style={[styles.tablesSummaryHint, { color: c.textMuted }]} numberOfLines={1}>
-            {tables.length === 0
-              ? 'Aucune table — toucher pour en créer'
-              : tables.slice(0, 3).join(' · ') + (tables.length > 3 ? '…' : '')}
-          </Text>
-        </View>
-        <Text style={[styles.tablesSummaryAction, { color: c.accent }]}>Gérer</Text>
-        <Ionicons name="chevron-forward" size={16} color={c.textMuted} />
-      </Pressable>
+        {ioMessage ? (
+          <Text style={[styles.ioHint, { color: c.textSecondary }]}>{ioMessage}</Text>
+        ) : null}
+      </View>
 
       <TablesManagerModal
         visible={tablesManageOpen}
@@ -450,251 +708,6 @@ function InvitesTab({
         }}
         onMessage={setIoMessage}
       />
-
-      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Ajouter un invité</Text>
-      <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }, shadows.sm]}>
-        <Field theme={theme} value={firstName} onChangeText={setFirstName} placeholder="Prénom" />
-        <Field theme={theme} value={lastName} onChangeText={setLastName} placeholder="Nom" />
-        <Field theme={theme} value={contact} onChangeText={setContact} placeholder="Téléphone ou e-mail" />
-        <View style={styles.seatRow}>
-          <Text style={[styles.seatLabel, { color: c.textSecondary }]}>Places</Text>
-          {[1, 2, 3, 4].map((n) => (
-            <Pressable
-              key={n}
-              onPress={() => setSeats(n)}
-              style={[
-                styles.seatChip,
-                {
-                  backgroundColor: seats === n ? c.accent : c.background,
-                  borderColor: seats === n ? c.accent : c.border,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.seatChipText,
-                  { color: seats === n ? c.onAccent : c.textMuted },
-                ]}
-              >
-                {n}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <TablePicker theme={theme} tables={tables} value={table} onChange={setTable} />
-        <Pressable
-          disabled={!canAdd}
-          onPress={() => {
-            if (!canAdd) return;
-            addManagedGuest(eventId, { firstName, lastName, contact, seats, table });
-            setFirstName('');
-            setLastName('');
-            setContact('');
-            setSeats(2);
-            setTable(tables[0] ?? null);
-          }}
-          style={[
-            styles.primaryBtn,
-            { backgroundColor: c.accent },
-            !canAdd && styles.disabled,
-          ]}
-        >
-          <Text style={[styles.primaryBtnLabel, { color: c.onAccent }]}>Ajouter</Text>
-        </Pressable>
-      </View>
-
-      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Liste ({guests.length})</Text>
-      {guests.map((guest) => {
-        const open = openGuestId === guest.id;
-        return (
-          <View
-            key={guest.id}
-            style={[styles.guestCard, { backgroundColor: c.surface, borderColor: c.border }]}
-          >
-            <View style={styles.guestHead}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ expanded: open }}
-                accessibilityLabel={`${open ? 'Replier' : 'Déplier'} ${guest.firstName} ${guest.lastName}`}
-                onPress={() => setOpenGuestId(open ? null : guest.id)}
-                style={styles.guestHeadMain}
-              >
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[styles.guestName, { color: c.textPrimary }]}>
-                    {guest.firstName} {guest.lastName}
-                  </Text>
-                  <Text style={[styles.guestMeta, { color: c.textMuted }]}>
-                    {RSVP_LABELS[guest.rsvp]}
-                    {' · '}
-                    {guest.seats} place{guest.seats > 1 ? 's' : ''}
-                    {guest.table ? ` · ${guest.table}` : ''}
-                    {guest.checkedIn ? ' · Entré' : ''}
-                  </Text>
-                </View>
-                <Ionicons
-                  name={open ? 'chevron-up' : 'chevron-down'}
-                  size={18}
-                  color={c.textMuted}
-                />
-              </Pressable>
-              {!open ? (
-                <>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Partager le lien de ${guest.firstName}`}
-                    onPress={() => shareGuestLink(guest)}
-                    hitSlop={8}
-                    style={[styles.shareIconBtn, { backgroundColor: c.background, borderColor: c.border }]}
-                  >
-                    <Ionicons name="share-outline" size={16} color={c.textPrimary} />
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Envoyer le lien à ${guest.firstName} sur WhatsApp`}
-                    onPress={() => shareWhatsApp(guest)}
-                    hitSlop={8}
-                    style={[styles.whatsAppBtn, { backgroundColor: '#25D366' }]}
-                  >
-                    <Ionicons name="logo-whatsapp" size={16} color="#FFFFFF" />
-                  </Pressable>
-                  <Pressable onPress={() => removeManagedGuest(eventId, guest.id)} hitSlop={8}>
-                    <Ionicons name="trash-outline" size={18} color={semanticColors.danger} />
-                  </Pressable>
-                </>
-              ) : null}
-            </View>
-
-            {open ? (
-              <View style={styles.guestDetails}>
-                <View style={styles.shareRow}>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => shareGuestLink(guest)}
-                    style={({ pressed }) => [
-                      styles.shareLinkBtn,
-                      { backgroundColor: c.accent, flex: 1 },
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Ionicons name="share-outline" size={15} color={c.onAccent} />
-                    <Text style={[styles.shareLinkBtnLabel, { color: c.onAccent }]}>Partager le lien</Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => shareWhatsApp(guest)}
-                    style={({ pressed }) => [
-                      styles.shareLinkBtn,
-                      { backgroundColor: '#25D366' },
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Ionicons name="logo-whatsapp" size={15} color="#FFFFFF" />
-                    <Text style={[styles.shareLinkBtnLabel, { color: '#FFFFFF' }]}>WhatsApp</Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Supprimer ${guest.firstName}`}
-                    onPress={() => removeManagedGuest(eventId, guest.id)}
-                    hitSlop={8}
-                    style={[styles.shareIconBtn, { backgroundColor: c.background, borderColor: c.border }]}
-                  >
-                    <Ionicons name="trash-outline" size={16} color={semanticColors.danger} />
-                  </Pressable>
-                </View>
-
-                <View style={styles.rsvpRow}>
-                  {(['confirmed', 'pending', 'declined'] as ManageRsvp[]).map((status) => (
-                    <Pressable
-                      key={status}
-                      onPress={() =>
-                        updateManagedGuest(eventId, guest.id, {
-                          rsvp: status,
-                          drink: status === 'confirmed' ? guest.drink ?? drinks[0] ?? null : null,
-                        })
-                      }
-                      style={[
-                        styles.rsvpChip,
-                        {
-                          backgroundColor: guest.rsvp === status ? RSVP_COLORS[status] : c.background,
-                          borderColor: guest.rsvp === status ? RSVP_COLORS[status] : c.border,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.rsvpChipText,
-                          { color: guest.rsvp === status ? '#FFF' : c.textSecondary },
-                        ]}
-                      >
-                        {RSVP_LABELS[status]}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                <TablePicker
-                  theme={theme}
-                  tables={tables}
-                  value={guest.table}
-                  onChange={(next) => updateManagedGuest(eventId, guest.id, { table: next })}
-                />
-
-                {guest.rsvp === 'confirmed' ? (
-                  <View style={styles.drinkWrap}>
-                    <Text style={[styles.drinkLabel, { color: c.textMuted }]}>Boisson</Text>
-                    <View style={styles.drinkRow}>
-                      {drinks.map((drink) => (
-                        <Pressable
-                          key={drink}
-                          onPress={() => updateManagedGuest(eventId, guest.id, { drink })}
-                          style={[
-                            styles.drinkChip,
-                            {
-                              backgroundColor:
-                                guest.drink === drink ? c.accentMuted : c.background,
-                              borderColor: guest.drink === drink ? c.accent : c.border,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.drinkChipText,
-                              {
-                                color:
-                                  guest.drink === drink
-                                    ? c.accentSoft
-                                    : c.textSecondary,
-                                fontFamily:
-                                  guest.drink === drink
-                                    ? fontFamilies.sansSemiBold
-                                    : fontFamilies.sans,
-                              },
-                            ]}
-                          >
-                            {drink}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </View>
-                ) : null}
-
-                {guest.checkedIn ? (
-                  <Text style={styles.checkedHint}>
-                    ✓ Entré
-                    {guest.checkedInAt
-                      ? ` · ${new Date(guest.checkedInAt).toLocaleTimeString('fr-FR', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}`
-                      : ''}
-                  </Text>
-                ) : null}
-              </View>
-            ) : null}
-          </View>
-        );
-      })}
 
       <Modal visible={importOpen} animationType="slide" transparent onRequestClose={() => setImportOpen(false)}>
         <View style={styles.modalBackdrop}>
@@ -742,28 +755,72 @@ function TablePicker({
   tables,
   value,
   onChange,
+  compact = false,
+  onManageTables,
 }: {
   theme: AppTheme;
   tables: string[];
   value: string | null;
   onChange: (next: string | null) => void;
+  compact?: boolean;
+  onManageTables?: () => void;
 }) {
   const c = theme.colors;
   const [open, setOpen] = useState(false);
 
+  if (tables.length === 0) {
+    return (
+      <View style={compact ? styles.tablePickerCompact : styles.drinkWrap}>
+        {compact ? (
+          <Text style={[styles.guestChoiceLabel, { color: c.textMuted }]}>Table</Text>
+        ) : (
+          <Text style={[styles.drinkLabel, { color: c.textMuted }]}>Table</Text>
+        )}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Créer des tables pour y placer les invités"
+          onPress={onManageTables}
+          style={[
+            styles.tableEmptyCta,
+            compact && styles.tableEmptyCtaCompact,
+            { backgroundColor: c.accentMuted, borderColor: c.accent },
+          ]}
+        >
+          <Ionicons name="grid-outline" size={18} color={c.accent} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[styles.tableEmptyTitle, { color: c.textPrimary }]}>
+              Pas encore de tables
+            </Text>
+            {!compact ? (
+              <Text style={[styles.tableEmptyHint, { color: c.textMuted }]}>
+                Créez-en d’abord, puis assignez vos invités.
+              </Text>
+            ) : null}
+          </View>
+          <Text style={[styles.tableEmptyAction, { color: c.accent }]}>Créer</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.drinkWrap}>
-      <Text style={[styles.drinkLabel, { color: c.textMuted }]}>Table</Text>
+    <View style={compact ? styles.tablePickerCompact : styles.drinkWrap}>
+      {compact ? (
+        <Text style={[styles.guestChoiceLabel, { color: c.textMuted }]}>Table</Text>
+      ) : (
+        <Text style={[styles.drinkLabel, { color: c.textMuted }]}>Table</Text>
+      )}
       <Pressable
         onPress={() => setOpen(true)}
         style={[
           styles.tableSelectBtn,
+          compact && styles.tableSelectBtnCompact,
           { backgroundColor: c.background, borderColor: c.border },
         ]}
       >
         <Ionicons name="grid-outline" size={16} color={c.accent} />
         <Text style={[styles.tableSelectValue, { color: c.textPrimary }]} numberOfLines={1}>
-          {value ?? 'Aucune table'}
+          {value ?? 'Sans table'}
         </Text>
         <Ionicons name="chevron-down" size={16} color={c.textMuted} />
       </Pressable>
@@ -901,7 +958,6 @@ function TablesManagerModal({
   const c = theme.colors;
   const [query, setQuery] = useState('');
   const [newTable, setNewTable] = useState('');
-  const [rangeTo, setRangeTo] = useState('80');
   const [editingTable, setEditingTable] = useState<string | null>(null);
   const [editTableValue, setEditTableValue] = useState('');
 
@@ -921,7 +977,9 @@ function TablesManagerModal({
                 Gérer les tables
               </Text>
               <Text style={[styles.ioHint, { color: c.textMuted }]}>
-                {tables.length} table{tables.length > 1 ? 's' : ''} — recherchez plutôt que scroller.
+                {tables.length === 0
+                  ? 'Ajoutez des tables (ex. Table 1), puis assignez-y vos invités.'
+                  : `${tables.length} table${tables.length > 1 ? 's' : ''} — recherchez plutôt que scroller.`}
               </Text>
             </View>
             <Pressable onPress={onClose} hitSlop={8}>
@@ -970,39 +1028,6 @@ function TablesManagerModal({
             </Pressable>
           </View>
 
-          <View style={[styles.bulkRow, { borderColor: c.border, backgroundColor: c.background }]}>
-            <Text style={[styles.bulkLabel, { color: c.textSecondary }]}>Série Table 1 →</Text>
-            <TextInput
-              value={rangeTo}
-              onChangeText={setRangeTo}
-              keyboardType="number-pad"
-              placeholder="80"
-              placeholderTextColor={c.textMuted}
-              style={[
-                styles.bulkInput,
-                { borderColor: c.border, backgroundColor: c.surface, color: c.textPrimary },
-              ]}
-            />
-            <Pressable
-              onPress={() => {
-                const to = Number(rangeTo);
-                if (!Number.isFinite(to) || to < 1) {
-                  onMessage('Indiquez un nombre valide (ex. 80).');
-                  return;
-                }
-                const added = addEventTableRange(eventId, 1, Math.floor(to));
-                onMessage(
-                  added > 0
-                    ? `${added} table(s) ajoutée(s) (Table 1 → Table ${Math.floor(to)}).`
-                    : 'Ces tables existent déjà.',
-                );
-              }}
-              style={[styles.tableAddBtn, { backgroundColor: c.accent }]}
-            >
-              <Text style={[styles.tableAddBtnLabel, { color: c.onAccent }]}>Créer</Text>
-            </Pressable>
-          </View>
-
           <FlatList
             data={filtered}
             keyExtractor={(item) => item}
@@ -1010,7 +1035,9 @@ function TablesManagerModal({
             style={styles.tableList}
             ListEmptyComponent={
               <Text style={[styles.ioHint, { color: c.textMuted, paddingVertical: 16 }]}>
-                Aucune table.
+                {tables.length === 0
+                  ? 'Aucune table pour l’instant — ajoutez-en ci-dessus.'
+                  : 'Aucune table ne correspond.'}
               </Text>
             }
             renderItem={({ item: name }) => (
@@ -1088,170 +1115,117 @@ function StatsTab({
   theme: AppTheme;
 }) {
   const c = theme.colors;
-  const rsvpTotal = Math.max(1, stats.confirmed + stats.pending + stats.declined);
+  const total = stats.confirmed + stats.pending + stats.declined;
   const drinkEntries = drinks
     .map((drink) => ({ drink, count: stats.drinkCounts[drink] ?? 0 }))
-    .filter((row) => row.count > 0);
-  const drinkMax = Math.max(1, ...drinkEntries.map((row) => row.count));
+    .filter((row) => row.count > 0)
+    .sort((a, b) => b.count - a.count);
   const tableEntries = Object.entries(stats.tableCounts)
     .map(([table, count]) => ({ table, count }))
     .sort((a, b) => b.count - a.count);
-  const tableMax = Math.max(1, ...tableEntries.map((row) => row.count));
+
+  if (total === 0) {
+    return (
+      <View style={styles.block}>
+        <Text style={[styles.invitesHeaderTitle, { color: c.textPrimary }]}>Qui vient ?</Text>
+        <Text style={[styles.plainTipText, { color: c.textMuted }]}>
+          Les réponses de vos invités apparaîtront ici.
+        </Text>
+        <View style={[styles.emptyListCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+          <Ionicons name="mail-open-outline" size={22} color={c.textMuted} />
+          <Text style={[styles.emptyHint, { color: c.textMuted, textAlign: 'center' }]}>
+            Ajoutez des invités et envoyez-leur l’invitation. Leurs réponses s’afficheront ensuite.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.block}>
-      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Réponses RSVP</Text>
-      <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }, shadows.sm]}>
-        <BarRow theme={theme} label="Confirmés" value={stats.confirmed} max={rsvpTotal} color={semanticColors.success} />
-        <BarRow theme={theme} label="En attente" value={stats.pending} max={rsvpTotal} color={semanticColors.warning} />
-        <BarRow theme={theme} label="Refusés" value={stats.declined} max={rsvpTotal} color={semanticColors.danger} />
-        <Text style={[styles.statFoot, { color: c.textMuted }]}>
-          {stats.seatsConfirmed} places confirmées · {stats.checkedIn} entrées
-        </Text>
-      </View>
+      <Text style={[styles.invitesHeaderTitle, { color: c.textPrimary }]}>Qui vient ?</Text>
+      <Text style={[styles.plainTipText, { color: c.textMuted }]}>
+        Un coup d’œil rapide sur les réponses.
+      </Text>
 
-      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Plan de tables</Text>
-      <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }, shadows.sm]}>
-        {tableEntries.length === 0 ? (
-          <Text style={[styles.emptyHint, { color: c.textMuted }]}>Aucune table assignée.</Text>
-        ) : (
-          tableEntries.map((row) => (
-            <BarRow
-              key={row.table}
-              theme={theme}
-              label={row.table}
-              value={row.count}
-              max={tableMax}
-              color={c.accent}
-            />
-          ))
-        )}
-      </View>
-
-      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Choix de boissons</Text>
-      <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }, shadows.sm]}>
-        {drinkEntries.length === 0 ? (
-          <Text style={[styles.emptyHint, { color: c.textMuted }]}>Aucun choix de boisson pour l’instant.</Text>
-        ) : (
-          drinkEntries.map((row) => (
-            <BarRow
-              key={row.drink}
-              theme={theme}
-              label={row.drink}
-              value={row.count}
-              max={drinkMax}
-              color={c.accent}
-            />
-          ))
-        )}
-      </View>
-
-      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Répartition visuelle</Text>
       <View
         style={[
-          styles.card,
-          styles.pieCard,
+          styles.statsHero,
           { backgroundColor: c.surface, borderColor: c.border },
           shadows.sm,
         ]}
       >
-        <MiniPie
-          theme={theme}
-          slices={[
-            { value: stats.confirmed, color: semanticColors.success },
-            { value: stats.pending, color: '#B0894F' },
-            { value: stats.declined, color: semanticColors.danger },
-          ]}
-        />
-        <View style={styles.pieLegend}>
-          <LegendDot theme={theme} color={semanticColors.success} label={`Confirmés (${stats.confirmed})`} />
-          <LegendDot theme={theme} color={semanticColors.warning} label={`En attente (${stats.pending})`} />
-          <LegendDot theme={theme} color={semanticColors.danger} label={`Refusés (${stats.declined})`} />
-        </View>
+        <Text style={[styles.statsHeroNumber, { color: semanticColors.success }]}>
+          {stats.confirmed}
+        </Text>
+        <Text style={[styles.statsHeroLabel, { color: c.textPrimary }]}>
+          {stats.confirmed <= 1 ? 'personne a dit oui' : 'personnes ont dit oui'}
+        </Text>
+        <Text style={[styles.statsHeroMeta, { color: c.textMuted }]}>
+          {stats.pending} en attente · {stats.declined}{' '}
+          {stats.declined <= 1 ? 'a dit non' : 'ont dit non'}
+        </Text>
+        <Text style={[styles.statsHeroMeta, { color: c.textSecondary }]}>
+          {stats.seatsConfirmed} place{stats.seatsConfirmed > 1 ? 's' : ''} · {stats.checkedIn}{' '}
+          déjà entré{stats.checkedIn > 1 ? 's' : ''}
+        </Text>
+      </View>
+
+      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Par table</Text>
+      <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }, shadows.sm]}>
+        {tableEntries.length === 0 ? (
+          <Text style={[styles.emptyHint, { color: c.textMuted }]}>
+            Aucune table assignée pour l’instant.
+          </Text>
+        ) : (
+          tableEntries.map((row) => (
+            <SimpleCountRow
+              key={row.table}
+              label={row.table}
+              value={row.count}
+              theme={theme}
+            />
+          ))
+        )}
+      </View>
+
+      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Boissons</Text>
+      <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }, shadows.sm]}>
+        {drinkEntries.length === 0 ? (
+          <Text style={[styles.emptyHint, { color: c.textMuted }]}>
+            Pas encore de choix de boisson.
+          </Text>
+        ) : (
+          drinkEntries.map((row) => (
+            <SimpleCountRow
+              key={row.drink}
+              label={row.drink}
+              value={row.count}
+              theme={theme}
+            />
+          ))
+        )}
       </View>
     </View>
   );
 }
 
-function BarRow({
+function SimpleCountRow({
   label,
   value,
-  max,
-  color,
   theme,
 }: {
   label: string;
   value: number;
-  max: number;
-  color: string;
   theme: AppTheme;
 }) {
   const c = theme.colors;
-  const width = `${Math.max(6, Math.round((value / max) * 100))}%`;
   return (
-    <View style={styles.barRow}>
-      <View style={styles.barMeta}>
-        <Text style={[styles.barLabel, { color: c.textPrimary }]}>{label}</Text>
-        <Text style={[styles.barValue, { color: c.textSecondary }]}>{value}</Text>
-      </View>
-      <View style={[styles.barTrack, { backgroundColor: c.background }]}>
-        <View style={[styles.barFill, { width: width as `${number}%`, backgroundColor: color }]} />
-      </View>
-    </View>
-  );
-}
-
-function MiniPie({
-  slices,
-  theme,
-}: {
-  slices: { value: number; color: string }[];
-  theme: AppTheme;
-}) {
-  const c = theme.colors;
-  const total = Math.max(1, slices.reduce((sum, slice) => sum + slice.value, 0));
-  let cursor = 0;
-  const stops = slices
-    .filter((slice) => slice.value > 0)
-    .map((slice) => {
-      const start = (cursor / total) * 100;
-      cursor += slice.value;
-      const end = (cursor / total) * 100;
-      return `${slice.color} ${start}% ${end}%`;
-    })
-    .join(', ');
-
-  return (
-    <View
-      style={[
-        styles.pie,
-        {
-          backgroundColor: slices[0]?.color ?? c.border,
-          ...(stops ? ({ backgroundImage: `conic-gradient(${stops})` } as object) : null),
-        },
-      ]}
-    >
-      <View style={[styles.pieHole, { backgroundColor: c.surface }]}>
-        <Text style={[styles.pieHoleText, { color: c.textPrimary }]}>{total}</Text>
-        <Text style={[styles.pieHoleSub, { color: c.textMuted }]}>invités</Text>
-      </View>
-    </View>
-  );
-}
-
-function LegendDot({
-  color,
-  label,
-  theme,
-}: {
-  color: string;
-  label: string;
-  theme: AppTheme;
-}) {
-  return (
-    <View style={styles.legendRow}>
-      <View style={[styles.legendDot, { backgroundColor: color }]} />
-      <Text style={[styles.legendLabel, { color: theme.colors.textSecondary }]}>{label}</Text>
+    <View style={styles.simpleCountRow}>
+      <Text style={[styles.simpleCountLabel, { color: c.textPrimary }]} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text style={[styles.simpleCountValue, { color: c.accent }]}>{value}</Text>
     </View>
   );
 }
@@ -1260,13 +1234,16 @@ function EntranceTab({
   eventId,
   guests,
   theme,
+  showTip,
+  onDismissTip,
 }: {
   eventId: number;
   guests: ManagedGuest[];
   theme: AppTheme;
+  showTip?: boolean;
+  onDismissTip?: () => void;
 }) {
   const c = theme.colors;
-  const [code, setCode] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [last, setLast] = useState<ManagedGuest | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -1276,12 +1253,12 @@ function EntranceTab({
       const normalized = parseGuestQrPayload(raw) || raw.trim();
       const found = findGuestByCode(eventId, normalized);
       if (!found) {
-        setMessage('QR / code non reconnu.');
+        setMessage('QR non reconnu.');
         setLast(null);
         return;
       }
       if (found.rsvp !== 'confirmed') {
-        setMessage(`${found.firstName} n’a pas confirmé sa présence (${RSVP_LABELS[found.rsvp]}).`);
+        setMessage(`${found.firstName} n’a pas encore confirmé sa présence.`);
         setLast(found);
         return;
       }
@@ -1294,7 +1271,6 @@ function EntranceTab({
       setLast(updated);
       const tableHint = found.table ? ` — ${found.table}` : '';
       setMessage(`Bienvenue ${found.firstName} ${found.lastName} !${tableHint}`);
-      setCode('');
     },
     [eventId],
   );
@@ -1304,38 +1280,60 @@ function EntranceTab({
 
   return (
     <View style={styles.block}>
-      <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Contrôle d’entrée</Text>
-      <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }, shadows.sm]}>
-        <Text style={[styles.entranceHint, { color: c.textMuted }]}>
-          Scannez le QR du pass invité avec la caméra, ou saisissez le code manuellement.
+      {showTip ? (
+        <View
+          style={[
+            styles.checkinTip,
+            { backgroundColor: c.accentMuted, borderColor: c.accent },
+          ]}
+        >
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[styles.checkinTipTitle, { color: c.accentSoft }]}>Petit conseil</Text>
+            <Text style={[styles.checkinTipBody, { color: c.textSecondary }]}>
+              L’invité doit d’abord répondre « oui ». Ensuite le QR apparaît sur son téléphone.
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Fermer l’astuce"
+            onPress={onDismissTip}
+            hitSlop={8}
+          >
+            <Ionicons name="close" size={18} color={c.textMuted} />
+          </Pressable>
+        </View>
+      ) : null}
+
+      <View
+        style={[
+          styles.checkinHero,
+          { backgroundColor: c.surface, borderColor: c.border },
+          shadows.sm,
+        ]}
+      >
+        <View style={[styles.checkinHeroIcon, { backgroundColor: c.accentMuted }]}>
+          <Ionicons name="qr-code-outline" size={26} color={c.accent} />
+        </View>
+        <Text style={[styles.checkinHeroTitle, { color: c.textPrimary }]}>
+          Faire entrer les invités
+        </Text>
+        <Text style={[styles.checkinHeroBody, { color: c.textMuted }]}>
+          Demandez le QR sur le téléphone de l’invité, puis scannez-le.
         </Text>
 
         <Pressable
           onPress={() => setScannerOpen(true)}
-          style={[styles.primaryBtn, { backgroundColor: c.accent }]}
+          style={[styles.scannerCta, { backgroundColor: c.accent }]}
         >
-          <Ionicons name="camera-outline" size={18} color={c.onAccent} />
-          <Text style={[styles.primaryBtnLabel, { color: c.onAccent }]}>Ouvrir le scanner QR</Text>
+          <Ionicons name="qr-code-outline" size={22} color={c.onAccent} />
+          <Text style={[styles.scannerCtaLabel, { color: c.onAccent }]}>Scanner le QR</Text>
         </Pressable>
 
-        <Field
-          theme={theme}
-          value={code}
-          onChangeText={setCode}
-          placeholder="INV-1001 ou Prénom Nom"
-          autoCapitalize="characters"
-        />
-        <Pressable
-          onPress={() => processCode(code)}
-          style={[
-            styles.primaryBtn,
-            styles.secondaryBtn,
-            { backgroundColor: c.surface, borderWidth: 1.4, borderColor: c.accent },
-          ]}
-        >
-          <Ionicons name="keypad-outline" size={18} color={c.accent} />
-          <Text style={[styles.primaryBtnLabel, { color: c.accent }]}>Vérifier le code</Text>
-        </Pressable>
+        {Platform.OS === 'web' ? (
+          <Text style={[styles.webCamNote, { color: c.textMuted }]}>
+            Autorisez la caméra du navigateur si demandé.
+          </Text>
+        ) : null}
 
         {message ? (
           <Text style={[styles.scanMessage, { color: c.textPrimary }]}>{message}</Text>
@@ -1357,7 +1355,6 @@ function EntranceTab({
                 <Text style={[styles.guestName, { color: c.textPrimary }]}>
                   {last.firstName} {last.lastName}
                 </Text>
-                <Text style={[styles.guestMeta, { color: c.textMuted }]}>{last.id}</Text>
               </View>
               {last.checkedIn ? (
                 <View style={styles.doorBadge}>
@@ -1398,10 +1395,17 @@ function EntranceTab({
       />
 
       <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>
-        En attente d’entrée ({waiting.length})
+        En attente ({waiting.length})
       </Text>
       {waiting.length === 0 ? (
-        <Text style={[styles.emptyHint, { color: c.textMuted }]}>Tous les confirmés sont entrés.</Text>
+        <View style={[styles.emptyListCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+          <Ionicons name="checkmark-circle-outline" size={22} color={c.textMuted} />
+          <Text style={[styles.emptyHint, { color: c.textMuted, textAlign: 'center' }]}>
+            {guests.some((g) => g.rsvp === 'confirmed')
+              ? 'Tous les confirmés sont entrés.'
+              : 'Aucun invité confirmé pour le moment.'}
+          </Text>
+        </View>
       ) : (
         waiting.map((guest) => (
           <Pressable
@@ -1413,9 +1417,7 @@ function EntranceTab({
               {guest.firstName} {guest.lastName}
             </Text>
             <Text style={[styles.guestMeta, { color: c.textMuted }]}>
-              {guest.id}
-              {guest.table ? ` · ${guest.table}` : ''}
-              {guest.drink ? ` · ${guest.drink}` : ''}
+              {[guest.table, guest.drink].filter(Boolean).join(' · ') || 'Confirmé'}
               {' · Toucher pour faire entrer'}
             </Text>
           </Pressable>
@@ -1425,25 +1427,34 @@ function EntranceTab({
       <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>
         Déjà entrés ({inside.length})
       </Text>
-      {inside.map((guest) => (
-        <View
-          key={guest.id}
-          style={[styles.guestCard, { backgroundColor: c.surface, borderColor: c.border }]}
-        >
-          <Text style={[styles.guestName, { color: c.textPrimary }]}>
-            {guest.firstName} {guest.lastName}
-          </Text>
-          <Text style={[styles.guestMeta, { color: c.textMuted }]}>
-            {guest.table ? `${guest.table} · ` : ''}
-            {guest.checkedInAt
-              ? new Date(guest.checkedInAt).toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : '—'}
+      {inside.length === 0 ? (
+        <View style={[styles.emptyListCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+          <Ionicons name="enter-outline" size={22} color={c.textMuted} />
+          <Text style={[styles.emptyHint, { color: c.textMuted, textAlign: 'center' }]}>
+            Les entrées validées apparaîtront ici.
           </Text>
         </View>
-      ))}
+      ) : (
+        inside.map((guest) => (
+          <View
+            key={guest.id}
+            style={[styles.guestCard, { backgroundColor: c.surface, borderColor: c.border }]}
+          >
+            <Text style={[styles.guestName, { color: c.textPrimary }]}>
+              {guest.firstName} {guest.lastName}
+            </Text>
+            <Text style={[styles.guestMeta, { color: c.textMuted }]}>
+              {guest.table ? `${guest.table} · ` : ''}
+              {guest.checkedInAt
+                ? new Date(guest.checkedInAt).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : '—'}
+            </Text>
+          </View>
+        ))
+      )}
     </View>
   );
 }
@@ -1455,6 +1466,7 @@ function Field({
   placeholder,
   style,
   autoCapitalize,
+  inputRef,
 }: {
   theme: AppTheme;
   value: string;
@@ -1462,19 +1474,25 @@ function Field({
   placeholder: string;
   style?: object;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  inputRef?: RefObject<TextInput | null>;
 }) {
   const c = theme.colors;
+  const [focused, setFocused] = useState(false);
   return (
     <TextInput
+      ref={inputRef}
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
       placeholderTextColor={c.textMuted}
       autoCapitalize={autoCapitalize}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      selectionColor={c.accent}
       style={[
         styles.input,
         {
-          borderColor: c.border,
+          borderColor: focused ? c.accent : c.border,
           backgroundColor: c.background,
           color: c.textPrimary,
         },
@@ -1502,7 +1520,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  topCopy: { flex: 1 },
+  topCopy: { flex: 1, minWidth: 0 },
   topKicker: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 10,
@@ -1512,6 +1530,24 @@ const styles = StyleSheet.create({
   topTitle: {
     fontFamily: fontFamilies.serifMedium,
     fontSize: 18,
+  },
+  topSubtitle: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  helpBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  helpBtnLabel: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 16,
   },
   tabs: {
     flexDirection: 'row',
@@ -1526,9 +1562,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 6,
     borderRadius: 14,
     borderWidth: 1,
+    minHeight: 44,
   },
   tabLabel: {
     fontFamily: fontFamilies.sansMedium,
@@ -1658,6 +1696,34 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sansMedium,
     fontSize: 14,
   },
+  tableEmptyCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  tableEmptyCtaCompact: {
+    flex: 1,
+    minHeight: 40,
+    paddingVertical: 8,
+  },
+  tableEmptyTitle: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 13.5,
+  },
+  tableEmptyHint: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  tableEmptyAction: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 13,
+  },
   modalCardTall: {
     borderRadius: 18,
     borderWidth: 1,
@@ -1684,29 +1750,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     marginBottom: 6,
-  },
-  bulkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  bulkLabel: {
-    fontFamily: fontFamilies.sansMedium,
-    fontSize: 12,
-  },
-  bulkInput: {
-    width: 56,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    textAlign: 'center',
-    fontFamily: fontFamilies.sansSemiBold,
-    fontSize: 14,
   },
   modalBackdrop: {
     flex: 1,
@@ -1738,6 +1781,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sans,
     fontSize: 14,
     width: '100%',
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none', outlineWidth: 0 } as object) : null),
   },
   seatRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   seatLabel: {
@@ -1784,7 +1828,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  guestDetails: { gap: 10, paddingTop: 2 },
+  guestDetails: { gap: 8, paddingTop: 4 },
   shareRow: { flexDirection: 'row', gap: 8 },
   shareLinkBtn: {
     flexDirection: 'row',
@@ -1835,6 +1879,62 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sansMedium,
     fontSize: 11,
   },
+  guestChoiceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  guestChoiceGrid: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  guestChoiceCell: {
+    flex: 1,
+    minWidth: 0,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    gap: 2,
+  },
+  guestChoiceLabel: {
+    fontFamily: fontFamilies.sansMedium,
+    fontSize: 10,
+  },
+  guestChoiceValue: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 12.5,
+  },
+  guestChoiceBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  guestChoiceBadgeText: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
+  tableEditHint: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginTop: -2,
+  },
+  tablePickerCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tableSelectBtnCompact: {
+    flex: 1,
+    minHeight: 40,
+    paddingVertical: 8,
+  },
   drinkWrap: { gap: 6 },
   drinkLabel: {
     fontFamily: fontFamilies.sansMedium,
@@ -1856,6 +1956,46 @@ const styles = StyleSheet.create({
     color: semanticColors.success,
   },
   barRow: { gap: 6, marginBottom: 8 },
+  statsHero: {
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingVertical: 22,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statsHeroNumber: {
+    fontFamily: fontFamilies.serifMedium,
+    fontSize: 48,
+    lineHeight: 54,
+  },
+  statsHeroLabel: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  statsHeroMeta: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  simpleCountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  simpleCountLabel: {
+    flex: 1,
+    fontFamily: fontFamilies.sansMedium,
+    fontSize: 14,
+  },
+  simpleCountValue: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 16,
+  },
   barMeta: { flexDirection: 'row', justifyContent: 'space-between' },
   barLabel: { fontFamily: fontFamilies.sansMedium, fontSize: 13 },
   barValue: { fontFamily: fontFamilies.sansSemiBold, fontSize: 13 },
@@ -1905,6 +2045,230 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sans,
     fontSize: 13,
     lineHeight: 19,
+  },
+  inviteLinkHint: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  invitesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  invitesHeaderTitle: {
+    fontFamily: fontFamilies.serifMedium,
+    fontSize: 20,
+  },
+  plainTip: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  plainTipText: {
+    flex: 1,
+    fontFamily: fontFamilies.sans,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  sendWhatsAppBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  sendWhatsAppLabel: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 12,
+    color: '#FFFFFF',
+  },
+  addChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  addChipLabel: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 13,
+  },
+  addFormHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  toolsBlock: {
+    marginTop: 8,
+    paddingTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: 10,
+  },
+  toolsTitle: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 11,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  toolsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  toolsRowLabel: {
+    fontFamily: fontFamilies.sansMedium,
+    fontSize: 13,
+  },
+  toolsRowHint: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 11.5,
+    lineHeight: 15,
+    marginTop: 2,
+  },
+  toolsLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 2,
+  },
+  toolsLink: {
+    fontFamily: fontFamilies.sansMedium,
+    fontSize: 13,
+  },
+  emptyInvites: {
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 10,
+  },
+  emptyInvitesIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emptyInvitesTitle: {
+    fontFamily: fontFamilies.serifMedium,
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  emptyInvitesHint: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    maxWidth: 280,
+  },
+  emptyInvitesActions: {
+    flexDirection: 'row',
+    gap: 8,
+    width: '100%',
+    marginTop: 8,
+  },
+  shareTextBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+  },
+  shareTextBtnLabel: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 11,
+  },
+  checkinTip: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+  },
+  checkinTipTitle: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 13,
+  },
+  checkinTipBody: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  checkinHero: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 18,
+    gap: 12,
+    alignItems: 'stretch',
+  },
+  checkinHeroIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+  checkinHeroTitle: {
+    fontFamily: fontFamilies.serifMedium,
+    fontSize: 20,
+  },
+  checkinHeroBody: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: -4,
+  },
+  scannerCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    minHeight: 54,
+    borderRadius: 16,
+    marginTop: 4,
+  },
+  scannerCtaLabel: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 16,
+  },
+  webCamNote: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 11,
+    lineHeight: 15,
+    textAlign: 'center',
+  },
+  checkinSecondaryLabel: {
+    fontFamily: fontFamilies.sansMedium,
+    fontSize: 12,
+    marginTop: 4,
+  },
+  emptyListCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    gap: 8,
   },
   scanMessage: {
     fontFamily: fontFamilies.sansMedium,

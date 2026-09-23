@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Registre des modèles d’invitation.
+ * MK EVENTS — Registre des modèles d’invitation.
  */
 
 import type { EventType } from '@/types';

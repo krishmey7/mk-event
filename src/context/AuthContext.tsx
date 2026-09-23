@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — CONTEXTE D'AUTHENTIFICATION GLOBAL
+ *  MK EVENTS — CONTEXTE D'AUTHENTIFICATION GLOBAL
  * ──────────────────────────────────────────────────────────────
  *  • AuthProvider + useAuth() : session { user, tokens } partagée ;
  *  • persistance via expo-secure-store (natif) / localStorage (web) ;
@@ -24,7 +24,11 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 import type { AuthSession } from '@/services/authService';
-import { setAccessToken } from '@/services/sessionToken';
+import {
+  setOnSessionCleared,
+  setOnTokensRefreshed,
+  setSessionTokens,
+} from '@/services/sessionToken';
 import type { AuthTokens, User } from '@/types';
 
 const SESSION_KEY = 'mkevent.auth.session';
@@ -93,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (session?.user && session?.tokens) {
             setUser(session.user);
             setTokens(session.tokens);
-            setAccessToken(session.tokens.access);
+            setSessionTokens(session.tokens);
           }
         }
       } catch {
@@ -109,17 +113,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  /* apiClient peut rafraîchir / invalider la session hors React. */
+  useEffect(() => {
+    setOnTokensRefreshed((next) => {
+      setTokens((prev) => {
+        if (!prev) return prev;
+        const merged: AuthTokens = {
+          access: next.access,
+          refresh: next.refresh ?? prev.refresh,
+        };
+        void (async () => {
+          const raw = await sessionStorage.get();
+          if (!raw) return;
+          try {
+            const session = JSON.parse(raw) as AuthSession;
+            await sessionStorage.set(JSON.stringify({ ...session, tokens: merged }));
+          } catch {
+            /* ignore */
+          }
+        })();
+        return merged;
+      });
+    });
+    setOnSessionCleared(() => {
+      setUser(null);
+      setTokens(null);
+      void sessionStorage.clear();
+    });
+    return () => {
+      setOnTokensRefreshed(null);
+      setOnSessionCleared(null);
+    };
+  }, []);
+
   const signIn = useCallback(async (session: AuthSession) => {
     setUser(session.user);
     setTokens(session.tokens);
-    setAccessToken(session.tokens.access);
+    setSessionTokens(session.tokens);
     await sessionStorage.set(JSON.stringify(session));
   }, []);
 
   const signOut = useCallback(async () => {
     setUser(null);
     setTokens(null);
-    setAccessToken(null);
+    setSessionTokens(null);
     await sessionStorage.clear();
   }, []);
 

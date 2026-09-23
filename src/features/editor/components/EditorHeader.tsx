@@ -9,8 +9,8 @@ import { useRouter } from 'expo-router';
 
 import { fontFamilies } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
+import { rememberEditorTemplate, rememberEditorTheme } from '../navigation';
 import { useEditor } from '../EditorContext';
-import { useStudioNavMode } from '../StudioNavModeContext';
 
 export function EditorHeader({
   title,
@@ -23,20 +23,32 @@ export function EditorHeader({
   onBack: () => void;
   leftLabel?: string;
   showPreview?: boolean;
-  /** Ex. « Étape 2 sur 5 » — affiché sous le titre en mode guidé. */
+  /** Ex. « Étape 2 sur 5 » — affiché sous le titre. */
   stepMeta?: string | null;
 }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { dirty, boundEventId } = useEditor();
+  const { dirty, boundEventId, template, cover } = useEditor();
   const { theme } = useAppTheme();
-  const { mode, setMode } = useStudioNavMode();
   const c = theme.colors;
   const status = !boundEventId
-    ? 'Pas encore dans Mes invitations'
+    ? 'Pas encore enregistré'
     : dirty
       ? 'Modifications non enregistrées'
-      : 'Enregistré dans Mes invitations';
+      : 'Enregistré dans Mes événements';
+
+  const openPreview = () => {
+    rememberEditorTemplate(template.key);
+    rememberEditorTheme(cover.themeKey);
+    router.push({
+      pathname: '/editor/previsualisation',
+      params: {
+        template: template.key,
+        theme: cover.themeKey,
+        ...(boundEventId ? { event: boundEventId } : {}),
+      },
+    });
+  };
 
   return (
     <View
@@ -55,29 +67,21 @@ export function EditorHeader({
       </Pressable>
 
       <View style={styles.center}>
-        <Text numberOfLines={1} style={[styles.title, { color: c.textPrimary }]}>{title}</Text>
+        <Text numberOfLines={1} style={[styles.title, { color: c.textPrimary }]}>
+          {title}
+        </Text>
         {stepMeta ? (
           <Text style={[styles.saved, { color: c.textMuted }]}>{stepMeta}</Text>
         ) : (
           <Text style={[styles.saved, { color: c.textMuted }]}>{status}</Text>
         )}
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setMode(mode === 'guided' ? 'free' : 'guided')}
-          hitSlop={6}
-          style={styles.modeLink}
-        >
-          <Text style={[styles.modeLinkText, { color: c.accent }]}>
-            {mode === 'guided' ? 'Mode libre' : 'Mode guidé'}
-          </Text>
-        </Pressable>
       </View>
 
       {showPreview ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Voir l'invitation comme un invité"
-          onPress={() => router.push('/editor/previsualisation')}
+          onPress={openPreview}
           style={({ pressed }) => [
             styles.pill,
             { backgroundColor: c.surfaceElevated, borderColor: c.border },
@@ -111,11 +115,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sans,
     fontSize: 10,
     marginTop: 1,
-  },
-  modeLink: { marginTop: 2 },
-  modeLinkText: {
-    fontFamily: fontFamilies.sansSemiBold,
-    fontSize: 11,
   },
   pill: {
     flexDirection: 'row',

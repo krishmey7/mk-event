@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — UI / GlowBackground
+ *  MK EVENTS — UI / GlowBackground
  * ──────────────────────────────────────────────────────────────
  *  Fond d'ambiance : orbes champagne très discrets (quiet luxury).
  *

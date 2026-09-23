@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Modèle « Élégance » · VUE 8 — Sélecteur de thème.
+ * MK EVENTS — Modèle « Élégance » · VUE 8 — Sélecteur de thème.
  * Feuille basse : 6 pastilles rondes (Champagne par défaut, Rose
  * poudré, Vert sauge, Bleu marine, Bordeaux, Noir élégant),
  * légende de la sélection + bouton « Appliquer ». Le thème actif

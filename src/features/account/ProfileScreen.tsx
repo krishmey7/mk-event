@@ -54,7 +54,12 @@ export function ProfileScreen() {
 
   const persistEvent = (nextType: EventType, nextThemeSelection: string) => {
     const nextTheme = toStoredThemeKey(nextThemeSelection);
-    setActiveEvent({ eventId, type: nextType, themeKey: nextTheme });
+    setActiveEvent({
+      eventId,
+      type: nextType,
+      themeKey: nextTheme,
+      preferencesReady: true,
+    });
     if (eventId != null) {
       void eventsService.updateEvent(eventId, {
         type: nextType,

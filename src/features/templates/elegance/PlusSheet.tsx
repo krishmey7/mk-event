@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Modèle « Élégance » · feuille « Plus » (onglet ⋯).
+ * MK EVENTS — Modèle « Élégance » · feuille « Plus » (onglet ⋯).
  * Raccourcis vers les vues secondaires + sélecteur de thème
  * + sortie de l'aperçu.
  */

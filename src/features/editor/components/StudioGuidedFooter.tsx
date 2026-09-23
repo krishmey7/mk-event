@@ -1,12 +1,12 @@
 /**
- * Pied sticky du studio en mode guidé — Retour / Continuer.
+ * Pied sticky du studio guidé — Retour / Continuer.
+ * Dernière étape : Retour seul (la publication se fait dans la page).
  */
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { useRouter } from 'expo-router';
 
 import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
@@ -20,10 +20,9 @@ import {
 
 export function StudioGuidedFooter({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { template } = useEditor();
   const { type: activeType } = useActiveEvent();
-  const eventType = template.category || activeType;
+  const eventType = activeType || template.category;
   const { theme } = useAppTheme();
   const c = theme.colors;
 
@@ -65,6 +64,7 @@ export function StudioGuidedFooter({ state, navigation }: BottomTabBarProps) {
             onPress={() => goTo(prev.route)}
             style={({ pressed }) => [
               styles.backBtn,
+              isLast && styles.backBtnGrow,
               { borderColor: c.border, backgroundColor: c.surfaceElevated },
               pressed && styles.pressed,
             ]}
@@ -76,31 +76,23 @@ export function StudioGuidedFooter({ state, navigation }: BottomTabBarProps) {
           <View style={styles.backSpacer} />
         )}
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={isLast ? 'Voir l’aperçu' : 'Étape suivante'}
-          onPress={() => {
-            if (next) {
-              goTo(next.route);
-              return;
-            }
-            router.push('/editor/previsualisation');
-          }}
-          style={({ pressed }) => [
-            styles.cta,
-            { backgroundColor: c.accent },
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={[styles.ctaLabel, { color: c.onAccent }]}>
-            {isLast ? 'Aperçu & publier' : 'Continuer'}
-          </Text>
-          <Ionicons
-            name={isLast ? 'eye-outline' : 'arrow-forward'}
-            size={18}
-            color={c.onAccent}
-          />
-        </Pressable>
+        {!isLast ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Étape suivante"
+            onPress={() => {
+              if (next) goTo(next.route);
+            }}
+            style={({ pressed }) => [
+              styles.cta,
+              { backgroundColor: c.accent },
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={[styles.ctaLabel, { color: c.onAccent }]}>Continuer</Text>
+            <Ionicons name="arrow-forward" size={18} color={c.onAccent} />
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -122,6 +114,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
   },
+  backBtnGrow: { flex: 1, justifyContent: 'center' },
   backSpacer: { width: 0 },
   backLabel: { fontFamily: fontFamilies.sansSemiBold, fontSize: 14 },
   cta: {

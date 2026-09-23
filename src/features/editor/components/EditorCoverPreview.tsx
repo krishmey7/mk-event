@@ -19,17 +19,18 @@ export function EditorCoverPreview({ embedded = false }: { embedded?: boolean })
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <TemplateCover
+        key={`cover-${cover.coupleFrame}-${cover.couplePhotoUri}-${cover.photoUri}-${cover.title}-${cover.dateLabel}-${cover.couple}`}
         layout={template.coverLayout}
         ornaments={template.ornaments}
         colors={theme.colors}
         isDark={theme.isDark}
         coverUri={cover.photoUri}
-        couplePhoto={{ uri: cover.couplePhotoUri, frame: normalizePhotoFrame(cover.coupleFrame) }}
+        couplePhoto={{ uri: cover.couplePhotoUri, frame: normalizePhotoFrame(cover.coupleFrame, template.key) }}
         guest={guest}
         title={cover.title}
         dateLabel={cover.dateLabel}
         couple={cover.couple}
-        phrase={cover.guestLine}
+        phrase={cover.kicker?.trim() || 'Pour notre grand jour'}
         guestSentence={cover.guestLine}
         kicker={cover.kicker}
         venueName={venue.name}

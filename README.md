@@ -1,4 +1,4 @@
-# MK Event
+# MK Events
 
 Application SaaS haut de gamme de gestion d'événements et d'**invitations numériques interactives** — iOS, Android & Web.
 

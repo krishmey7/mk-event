@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — VALIDATION LOCALE DES FORMULAIRES
+ *  MK EVENTS — VALIDATION LOCALE DES FORMULAIRES
  * ──────────────────────────────────────────────────────────────
  *  Règles simples côté client (les mêmes contraintes restent
  *  validées côté Django — jamais de confiance aveugle au client).

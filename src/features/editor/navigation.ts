@@ -5,9 +5,10 @@ import type { Event } from '@/types';
 import { getTemplate, getTemplateById, getTemplatesForCategory } from '@/features/templates/registry';
 
 let pendingTemplateKey: string | undefined;
+let pendingThemeKey: string | undefined;
 const listeners = new Set<() => void>();
 
-function emitEditorTemplate(): void {
+function emitEditorBoot(): void {
   listeners.forEach((listener) => listener());
 }
 
@@ -17,10 +18,21 @@ function parseTemplateParam(fromUrl?: string | string[]): string | undefined {
   return undefined;
 }
 
+function parseThemeParam(fromUrl?: string | string[]): string | undefined {
+  const raw = Array.isArray(fromUrl) ? fromUrl[0] : fromUrl;
+  return raw?.trim() || undefined;
+}
+
 /** Mémorise le modèle choisi au clic (le layout Expo n’a pas toujours la query). */
 export function rememberEditorTemplate(key: string): void {
   pendingTemplateKey = key;
-  emitEditorTemplate();
+  emitEditorBoot();
+}
+
+/** Mémorise le thème (sinon perdu en naviguant vers Voir). */
+export function rememberEditorTheme(key: string): void {
+  pendingThemeKey = key;
+  emitEditorBoot();
 }
 
 /** Clé du modèle à ouvrir : query d’URL, sinon dernier clic catalogue. */
@@ -36,6 +48,21 @@ export function useResolvedEditorTemplate(fromUrl?: string | string[]): string |
     () => pendingTemplateKey,
   );
   return parseTemplateParam(fromUrl) ?? remembered;
+}
+
+/** Thème : query d’URL, sinon dernière valeur mémorisée. */
+export function useResolvedEditorTheme(fromUrl?: string | string[]): string | undefined {
+  const remembered = useSyncExternalStore(
+    (onStoreChange) => {
+      listeners.add(onStoreChange);
+      return () => {
+        listeners.delete(onStoreChange);
+      };
+    },
+    () => pendingThemeKey,
+    () => pendingThemeKey,
+  );
+  return parseThemeParam(fromUrl) ?? remembered;
 }
 
 /**
@@ -60,6 +87,7 @@ export function openTemplateEditor(
   themeKey?: string | null,
 ): void {
   rememberEditorTemplate(templateKey);
+  if (themeKey) rememberEditorTheme(themeKey);
   router.navigate({
     pathname: '/editor',
     params: {
@@ -79,6 +107,7 @@ export function openEventEditor(
   const template =
     byId && byId.category === event.type ? byId : byCategory ?? getTemplate();
   rememberEditorTemplate(template.key);
+  if (event.theme_key) rememberEditorTheme(event.theme_key);
   router.navigate({
     pathname: '/editor',
     params: {

@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — MODÈLE « ÉLÉGANCE » · CONTENEUR (planche 3)
+ *  MK EVENTS — MODÈLE « ÉLÉGANCE » · CONTENEUR (planche 3)
  * ──────────────────────────────────────────────────────────────
  *  Orchestre les 7 vues interactives + compte à rebours :
  *  couverture, histoire, programme, compteur, RSVP, galerie,

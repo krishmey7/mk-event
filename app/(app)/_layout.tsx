@@ -1,7 +1,7 @@
 /**
  * Groupe (app) — espace organisateur connecté.
  * Règle n°3 : mobile → dock flottant ; desktop → Sidebar.
- * Sans événement configuré → wizard /setup obligatoire.
+ * Sans préférences configurées → wizard /setup obligatoire.
  */
 
 import { useEffect } from 'react';
@@ -67,7 +67,7 @@ export default function AppLayout() {
           }}
         >
           <Tabs.Screen name="dashboard" options={{ title: 'Accueil' }} />
-          <Tabs.Screen name="invitations" options={{ title: 'Invitations' }} />
+          <Tabs.Screen name="invitations" options={{ title: 'Événements' }} />
           <Tabs.Screen name="modeles" options={{ title: 'Modèles' }} />
           <Tabs.Screen name="profil" options={{ title: 'Profil' }} />
           <Tabs.Screen name="setup" options={{ href: null, title: 'Configuration' }} />

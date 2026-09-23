@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — UI / Badge
+ *  MK EVENTS — UI / Badge
  * ──────────────────────────────────────────────────────────────
  *  Pastille RSVP : Confirmé (sauge), En attente (ocre),
  *  Peut-être (ardoise), Refusé (terre cuite).

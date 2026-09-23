@@ -1,9 +1,9 @@
 /**
- * Ornements Élégance — feuillage SVG + entrée cover.
+ * Ornements Élégance — feuillage SVG (sans Animated opacity :
+ * l’anim sur calque plein écran créait des artefacts GPU sur Android).
  */
 
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 export function EleganceOrnaments({
@@ -13,33 +13,10 @@ export function EleganceOrnaments({
   accent: string;
   compact?: boolean;
 }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const drift = useRef(new Animated.Value(8)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: compact ? 420 : 700,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(drift, {
-        toValue: 0,
-        duration: compact ? 480 : 780,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [compact, drift, opacity]);
-
   const size = compact ? 56 : 88;
 
   return (
-    <Animated.View
-      pointerEvents="none"
-      style={[StyleSheet.absoluteFill, { opacity, transform: [{ translateY: drift }] }]}
-    >
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <View style={[styles.corner, styles.tl, { width: size, height: size }]}>
         <LeafSpray color={accent} size={size} flip />
       </View>
@@ -52,7 +29,7 @@ export function EleganceOrnaments({
       <View style={[styles.corner, styles.br, { width: size * 0.85, height: size * 0.85 }]}>
         <LeafSpray color={accent} size={size * 0.85} rotate={180} />
       </View>
-    </Animated.View>
+    </View>
   );
 }
 

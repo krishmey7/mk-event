@@ -1,5 +1,5 @@
 /**
- * MK EVENT — QR déterministe (zéro dépendance).
+ * MK EVENTS — QR déterministe (zéro dépendance).
  * Motif de démonstration stable à partir d'une graine (guestId,
  * slug…) : le QR final scannable sera généré par le serveur.
  */

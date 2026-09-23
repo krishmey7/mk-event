@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — LANDING / BentoCard
+ *  MK EVENTS — LANDING / BentoCard
  * ──────────────────────────────────────────────────────────────
  *  Carte du « Bento Grid » de la landing (univers Dark Luxury) :
  *  icône or dans une pastille teintée, titre et description.

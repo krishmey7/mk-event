@@ -8,10 +8,13 @@
       content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, shrink-to-fit=no"
     />
     <meta name="theme-color" content="#2A1824" />
-    <meta name="application-name" content="MK Event" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#2A1824" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2A1824" />
+    <meta name="application-name" content="MK Events" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="MK Event" />
+    <meta name="apple-mobile-web-app-title" content="MK Events" />
     <meta
       name="description"
       content="Créez et envoyez des invitations numériques élégantes."
@@ -23,31 +26,84 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <style id="expo-reset">
+      /* Plein écran PWA : le fond doit peindre sous status bar + home indicator. */
       html,
-      body {
+      body,
+      #root {
+        margin: 0;
+        padding: 0;
+        width: 100%;
         height: 100%;
+        background-color: #2a1824;
+      }
+      html {
+        /* Safari onglet */
+        min-height: 100%;
+        min-height: -webkit-fill-available;
+        min-height: 100dvh;
       }
       body {
         overflow: hidden;
+        min-height: 100%;
+        min-height: -webkit-fill-available;
+        min-height: 100dvh;
+        /* iOS standalone : 100vh inclut la safe area (bug WebKit #254868). */
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
       }
       #root {
         display: flex;
-        height: 100%;
+        flex-direction: column;
         flex: 1;
+        min-height: 100%;
+        min-height: -webkit-fill-available;
+        min-height: 100dvh;
+      }
+      /* Installé sur l’écran d’accueil — forcer la hauteur physique. */
+      @media all and (display-mode: standalone),
+        all and (display-mode: fullscreen),
+        all and (display-mode: minimal-ui) {
+        html,
+        body,
+        #root {
+          height: 100vh;
+          min-height: 100vh;
+        }
       }
     </style>
 
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('/sw.js').catch(function () {});
+          var refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+          });
+
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then(function (reg) {
+              function check() {
+                try {
+                  reg.update();
+                } catch (e) {}
+              }
+              check();
+              document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') check();
+              });
+              setInterval(check, 5 * 60 * 1000);
+            })
+            .catch(function () {});
         });
       }
     </script>
   </head>
 
   <body>
-    <noscript>Activez JavaScript pour utiliser MK Event.</noscript>
+    <noscript>Activez JavaScript pour utiliser MK Events.</noscript>
     <div id="root"></div>
   </body>
 </html>

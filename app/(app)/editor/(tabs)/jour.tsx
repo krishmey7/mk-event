@@ -1,10 +1,9 @@
 /**
- * Étape 3 — récit de l’invitation (histoire, journée, compte à rebours).
- * Un seul bouton du bas ; le choix se fait par les pastilles.
+ * Étape 3 — récit : histoire, journée et compteur dans un seul flux.
+ * Défilement naturel, sans pastilles à choisir.
  */
 
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { useEditor } from '@/features/editor/EditorContext';
@@ -16,80 +15,52 @@ import HistoireTabScreen from './histoire';
 import ProgrammeTabScreen from './programme';
 import CompteurTabScreen from './compteur';
 
-const PANES = [
-  { key: 'histoire', label: 'Histoire' },
-  { key: 'programme', label: 'Journée' },
-  { key: 'compteur', label: 'Compteur' },
-] as const;
-
-type PaneKey = (typeof PANES)[number]['key'];
-
 export default function JourTabScreen() {
-  const [pane, setPane] = useState<PaneKey>('histoire');
   const c = useStudioChrome();
   const { template } = useEditor();
   const { type: activeType } = useActiveEvent();
   const hint = studioStepHint('jour', activeType || template.category);
 
   return (
-    <View style={[styles.root, { backgroundColor: c.bg }]}>
+    <ScrollView
+      style={[styles.root, { backgroundColor: c.bg }]}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       {hint ? (
         <View style={styles.hintWrap}>
           <EditorHint>{hint}</EditorHint>
         </View>
       ) : null}
-      <View style={styles.pills}>
-        {PANES.map((item) => {
-          const on = pane === item.key;
-          return (
-            <Pressable
-              key={item.key}
-              accessibilityRole="button"
-              accessibilityState={{ selected: on }}
-              onPress={() => setPane(item.key)}
-              style={[
-                styles.pill,
-                { backgroundColor: c.surface, borderColor: c.border },
-                on && { backgroundColor: c.primary, borderColor: c.primary },
-              ]}
-            >
-              <Text style={[styles.pillLabel, { color: on ? c.onPrimary : c.textMuted }]}>
-                {item.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
 
-      <View style={styles.body}>
-        {pane === 'histoire' ? <HistoireTabScreen /> : null}
-        {pane === 'programme' ? <ProgrammeTabScreen /> : null}
-        {pane === 'compteur' ? <CompteurTabScreen /> : null}
-      </View>
-    </View>
+      <HistoireTabScreen embedded />
+
+      <View style={[styles.divider, { backgroundColor: c.border }]} />
+      <ProgrammeTabScreen embedded />
+
+      <View style={[styles.divider, { backgroundColor: c.border }]} />
+      <Text style={[styles.sectionLabel, { color: c.textMuted }]}>Compte à rebours</Text>
+      <CompteurTabScreen embedded />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  hintWrap: { paddingHorizontal: 16, paddingTop: 12 },
-  pills: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
+  content: { paddingBottom: 40, paddingTop: 4 },
+  hintWrap: { paddingHorizontal: 16, paddingTop: 8 },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: 20,
+    marginVertical: 8,
   },
-  pill: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  pillLabel: {
+  sectionLabel: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 12.5,
+    fontSize: 12,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    paddingHorizontal: 20,
+    marginBottom: 4,
   },
-  body: { flex: 1 },
 });

@@ -8,7 +8,6 @@ import {
   DEFAULT_DIETS,
   DEFAULT_DRINKS,
   DEFAULT_VENUE,
-  DEMO_GUESTS,
   getInvitationConfig,
 } from './guestRegistry';
 import type { Guest, Venue } from './types';
@@ -25,8 +24,8 @@ function asString(value: unknown, fallback = ''): string {
 }
 
 function asGuestList(value: unknown): Guest[] {
-  if (!Array.isArray(value)) return DEMO_GUESTS;
-  const guests = value
+  if (!Array.isArray(value)) return [];
+  return value
     .map((item) => {
       const row = asRecord(item);
       if (!row) return null;
@@ -40,7 +39,6 @@ function asGuestList(value: unknown): Guest[] {
       } as Guest;
     })
     .filter((item): item is Guest => item !== null);
-  return guests.length > 0 ? guests : DEMO_GUESTS;
 }
 
 function asStringList(value: unknown, fallback: string[]): string[] {

@@ -8,12 +8,10 @@ import { Tabs, useRouter, usePathname } from 'expo-router';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 import { EditorHeader } from '@/features/editor/components/EditorHeader';
-import { EditorTabBar } from '@/features/editor/components/EditorTabBar';
 import { StudioGuidedFooter } from '@/features/editor/components/StudioGuidedFooter';
 import { StudioProgressRail } from '@/features/editor/components/StudioProgressRail';
 import { StudioStepsSheet } from '@/features/editor/components/StudioStepsSheet';
 import { safeExitEditor } from '@/features/editor/navigation';
-import { useStudioNavMode } from '@/features/editor/StudioNavModeContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useEditor } from '@/features/editor/EditorContext';
@@ -29,7 +27,6 @@ export default function EditorTabsLayout() {
   const { theme } = useAppTheme();
   const { type: activeType } = useActiveEvent();
   const { template } = useEditor();
-  const { mode } = useStudioNavMode();
   const [stepsOpen, setStepsOpen] = useState(false);
   const tabNavigationRef = useRef<BottomTabBarProps['navigation'] | null>(null);
 
@@ -43,10 +40,6 @@ export default function EditorTabsLayout() {
     steps.find((step) => step.route === resolvedKey)?.headerTitle
     ?? steps[0]?.headerTitle
     ?? 'Studio';
-  const stepMeta =
-    mode === 'guided' && stepIndex >= 0
-      ? `Étape ${stepIndex + 1} sur ${steps.length}`
-      : null;
 
   const hrefFor = useMemo(
     () => (route: string) => (isStudioRouteVisible(route, eventType) ? undefined : null),
@@ -55,10 +48,7 @@ export default function EditorTabsLayout() {
 
   const renderTabBar = (props: BottomTabBarProps) => {
     tabNavigationRef.current = props.navigation;
-    if (mode === 'guided') {
-      return <StudioGuidedFooter {...props} />;
-    }
-    return <EditorTabBar {...props} />;
+    return <StudioGuidedFooter {...props} />;
   };
 
   return (
@@ -67,16 +57,13 @@ export default function EditorTabsLayout() {
         title={title}
         onBack={() => safeExitEditor(router)}
         leftLabel="Quitter"
-        stepMeta={stepMeta}
       />
 
-      {mode === 'guided' ? (
-        <StudioProgressRail
-          stepIndex={Math.max(0, stepIndex)}
-          stepCount={steps.length}
-          onOpenSteps={() => setStepsOpen(true)}
-        />
-      ) : null}
+      <StudioProgressRail
+        stepIndex={Math.max(0, stepIndex)}
+        stepCount={steps.length}
+        onOpenSteps={() => setStepsOpen(true)}
+      />
 
       <Tabs
         tabBar={renderTabBar}
@@ -91,7 +78,7 @@ export default function EditorTabsLayout() {
         <Tabs.Screen name="programme" options={{ title: 'Agenda', href: hrefFor('programme') }} />
         <Tabs.Screen name="histoire" options={{ title: 'Speakers', href: hrefFor('histoire') }} />
         <Tabs.Screen name="theme" options={{ title: 'Décor', href: hrefFor('theme') }} />
-        <Tabs.Screen name="plus" options={{ title: 'Invités', href: hrefFor('plus') }} />
+        <Tabs.Screen name="plus" options={{ title: 'RSVP', href: hrefFor('plus') }} />
         <Tabs.Screen name="publier" options={{ title: 'Publier', href: hrefFor('publier') }} />
         <Tabs.Screen name="voix" options={{ title: 'Voix', href: null }} />
         <Tabs.Screen name="compteur" options={{ href: null }} />

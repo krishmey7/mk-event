@@ -36,6 +36,12 @@ export function LandingScreen() {
   const cardRise = useRef(new Animated.Value(28)).current;
 
   useEffect(() => {
+    void import('@/features/onboarding/onboardingHeroes')
+      .then((m) => m.prefetchOnboardingHeroes())
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
     Animated.stagger(120, [
       Animated.parallel([
         Animated.timing(fade, {

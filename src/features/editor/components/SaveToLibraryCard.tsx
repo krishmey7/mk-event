@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { fontFamilies } from '@/constants/theme';
-import { ApiError } from '@/services/apiClient';
+import { ApiError, formatApiMessage } from '@/services/apiClient';
 import { useEditor } from '../EditorContext';
 import { useStudioChrome } from '../useStudioChrome';
 
@@ -18,18 +18,16 @@ export function SaveToLibraryCard() {
   const onSave = async () => {
     setError(null);
     try {
-      await saveToLibrary();
-      router.replace('/invitations');
+      const eventId = await saveToLibrary();
+      router.replace(`/invitations/${eventId}?welcome=1`);
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(
-          err.fieldErrors[0]?.message
-            ?? err.message
-            ?? 'Publication impossible. Vérifiez votre connexion et réessayez.',
-        );
-        return;
-      }
-      setError('Publication impossible. Vérifiez votre connexion et réessayez.');
+      const readable =
+        formatApiMessage(err instanceof ApiError ? (err.fieldErrors[0]?.message ?? err.message) : err)
+        ?? (err instanceof ApiError ? err.message : null)
+        ?? 'Publication impossible. Vérifiez votre connexion et réessayez.';
+      setError(readable === '[object Object]'
+        ? 'Publication impossible. Vérifiez votre connexion et réessayez.'
+        : readable);
     }
   };
 

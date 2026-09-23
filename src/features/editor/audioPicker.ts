@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Sélection d’un fichier audio (ambiance uploadée).
+ * MK EVENTS — Sélection d’un fichier audio (ambiance uploadée).
  */
 
 import * as DocumentPicker from 'expo-document-picker';

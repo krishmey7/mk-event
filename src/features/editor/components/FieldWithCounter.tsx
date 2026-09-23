@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Studio d'édition · champ à compteur de caractères.
+ * MK EVENTS — Studio d'édition · champ à compteur de caractères.
  */
 
 import type { ReactNode } from 'react';

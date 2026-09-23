@@ -2,10 +2,11 @@
  * Histoire (mariage) ou Intervenants (conférence).
  */
 
+import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 
+import { HistoireStepSheet } from '@/features/editor/components/HistoireStepSheet';
 import { useEditor } from '@/features/editor/EditorContext';
 import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useStudioChrome } from '@/features/editor/useStudioChrome';
@@ -14,12 +15,12 @@ import { EditorInput } from '@/features/editor/components/EditorInput';
 import { confirmDelete } from '@/features/editor/confirmDelete';
 import { studioStepHint } from '@/features/editor/studioSteps';
 
-export default function HistoireTabScreen() {
-  const router = useRouter();
+export default function HistoireTabScreen({ embedded = false }: { embedded?: boolean }) {
   const { story, removeStoryStep, speakers, saveSpeaker, removeSpeaker, template } = useEditor();
   const { type: activeType } = useActiveEvent();
   const eventType = activeType || template.category;
   const colors = useStudioChrome();
+  const [sheetIndex, setSheetIndex] = useState<number | null>(null);
 
   if (eventType === 'corporate') {
     return (
@@ -30,7 +31,7 @@ export default function HistoireTabScreen() {
       >
         <EditorHint>
           {studioStepHint('histoire', 'corporate')
-            ?? 'Présentez vos intervenants (photo, bio, rôle).'}
+            ?? 'Nom, rôle et bio de chaque intervenant.'}
         </EditorHint>
         <Text style={[styles.heading, { color: colors.text }]}>Intervenants</Text>
         {speakers.map((speaker, index) => (
@@ -84,15 +85,13 @@ export default function HistoireTabScreen() {
     );
   }
 
-  return (
-    <ScrollView
-      style={{ backgroundColor: colors.bg }}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <EditorHint>
-        Touchez une étape pour la modifier, ou la corbeille pour la retirer.
-      </EditorHint>
+  const body = (
+    <>
+      {embedded ? null : (
+        <EditorHint>
+          Touchez une étape pour la modifier, ou la corbeille pour la retirer.
+        </EditorHint>
+      )}
       <Text style={[styles.heading, { color: colors.text }]}>Notre histoire</Text>
 
       {story.length === 0 ? (
@@ -108,12 +107,7 @@ export default function HistoireTabScreen() {
             >
               <Pressable
                 accessibilityRole="button"
-                onPress={() =>
-                  router.push({
-                    pathname: '/editor/histoire-etape',
-                    params: { index: String(index) },
-                  })
-                }
+                onPress={() => setSheetIndex(index)}
                 style={({ pressed }) => [styles.rowMain, pressed && styles.pressed]}
               >
                 {item.image ? (
@@ -146,20 +140,40 @@ export default function HistoireTabScreen() {
       )}
 
       <Pressable
-        onPress={() =>
-          router.push({ pathname: '/editor/histoire-etape', params: { index: '-1' } })
-        }
+        onPress={() => setSheetIndex(-1)}
         style={[styles.addBtn, { backgroundColor: colors.primary }]}
       >
         <Ionicons name="add" size={16} color={colors.onPrimary} />
         <Text style={[styles.addLabel, { color: colors.onPrimary }]}>Ajouter une étape</Text>
       </Pressable>
-    </ScrollView>
+    </>
+  );
+
+  return (
+    <>
+      {embedded ? (
+        <View style={styles.contentEmbedded}>{body}</View>
+      ) : (
+        <ScrollView
+          style={{ backgroundColor: colors.bg }}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {body}
+        </ScrollView>
+      )}
+      <HistoireStepSheet
+        visible={sheetIndex !== null}
+        editIndex={sheetIndex ?? -1}
+        onClose={() => setSheetIndex(null)}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 40 },
+  contentEmbedded: { padding: 20, paddingBottom: 12 },
   heading: { fontFamily: 'Inter_600SemiBold', fontSize: 16, marginBottom: 12 },
   empty: { fontFamily: 'Inter_400Regular', fontSize: 13, marginBottom: 16 },
   list: { gap: 10 },

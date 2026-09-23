@@ -1,15 +1,16 @@
 {
-  "short_name": "MK Event",
-  "name": "MK Event — Invitations",
+  "short_name": "MK Events",
+  "name": "MK Events — Invitations",
   "description": "Créez et envoyez des invitations numériques élégantes.",
   "lang": "fr",
   "dir": "ltr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "theme_color": "#2A1824",
-  "background_color": "#F7F0E8",
+  "background_color": "#2A1824",
   "categories": ["lifestyle", "productivity"],
   "icons": [
     {

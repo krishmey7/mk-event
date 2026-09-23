@@ -1,13 +1,13 @@
 /**
- * MK EVENT — Modèle « Élégance » · VUE 7 — Livre d'or / Vœux.
- * « Laisse-nous un petit mot » — champ 0/500, ajout photo
- * (optionnel), envoi + remerciement « Merci d'être là ! ».
+ * MK EVENTS — Modèle « Élégance » · VUE 7 — Livre d'or / Vœux.
+ * Avec `slug` : persistance API. Sans slug : mode local (démo template).
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { guestbookService } from '@/services/guestbookService';
 import { LabeledField, PillButton, SectionHeader, ThemedInput } from '../widgets';
 import { WEDDING } from '../data';
 import type { TemplateTheme } from '../themes';
@@ -16,22 +16,83 @@ interface GuestNote {
   id: number;
   text: string;
   when: string;
+  author: string;
 }
 
-export function GuestbookView({ theme }: { theme: TemplateTheme }) {
+export function GuestbookView({
+  theme,
+  slug,
+}: {
+  theme: TemplateTheme;
+  /** Slug public — si absent, messages locaux uniquement. */
+  slug?: string | null;
+}) {
   const [text, setText] = useState('');
   const [notes, setNotes] = useState<GuestNote[]>([]);
   const [error, setError] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const c = theme.colors;
+  const remote = Boolean(slug);
 
-  const send = () => {
+  useEffect(() => {
+    if (!slug) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const entries = await guestbookService.listPublic(slug);
+        if (!alive) return;
+        setNotes(
+          entries.map((entry) => ({
+            id: entry.id,
+            text: entry.message,
+            author: entry.author_name,
+            when: guestbookService.formatRelative(entry.created_at),
+          })),
+        );
+      } catch {
+        if (alive) setNotes([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [slug]);
+
+  const send = async () => {
     if (text.trim().length === 0) {
       setError(true);
       return;
     }
-    setNotes((prev) => [{ id: Date.now(), text: text.trim(), when: 'À l\u2019instant' }, ...prev]);
-    setText('');
-    setError(false);
+    setSubmitError(null);
+    if (!remote || !slug) {
+      setNotes((prev) => [
+        { id: Date.now(), text: text.trim(), when: 'À l\u2019instant', author: 'Invité' },
+        ...prev,
+      ]);
+      setText('');
+      setError(false);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const entry = await guestbookService.createPublic(slug, { message: text.trim() });
+      setNotes((prev) => [
+        {
+          id: entry.id,
+          text: entry.message,
+          author: entry.author_name,
+          when: guestbookService.formatRelative(entry.created_at),
+        },
+        ...prev,
+      ]);
+      setText('');
+      setError(false);
+    } catch {
+      setSubmitError('Impossible d’envoyer le message. Réessayez.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -68,13 +129,21 @@ export function GuestbookView({ theme }: { theme: TemplateTheme }) {
       {error ? (
         <Text style={styles.error}>{"Écris d\u2019abord un petit mot 💛"}</Text>
       ) : null}
+      {submitError ? <Text style={styles.error}>{submitError}</Text> : null}
 
-      <PillButton label="Envoyer mon message" onPress={send} theme={theme} />
+      <PillButton
+        label={submitting ? 'Envoi…' : 'Envoyer mon message'}
+        onPress={send}
+        disabled={submitting}
+        theme={theme}
+      />
 
       {notes.map((note) => (
         <View key={note.id} style={[styles.note, { backgroundColor: c.surface, borderColor: c.border }]}>
           <Text style={[styles.noteText, { color: c.text }]}>{note.text}</Text>
-          <Text style={[styles.noteWhen, { color: c.textMuted }]}>{note.when}</Text>
+          <Text style={[styles.noteWhen, { color: c.textMuted }]}>
+            {note.author} · {note.when}
+          </Text>
         </View>
       ))}
 

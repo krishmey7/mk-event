@@ -1,6 +1,5 @@
 /**
- * « Mes invitations » — liste complète des invitations de
- * l'organisateur (mêmes cartes que le tableau de bord).
+ * « Mes événements » — liste complète des événements de l’organisateur.
  */
 
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -27,8 +26,8 @@ export function InvitationsScreen() {
 
   const handleDelete = (id: number, name: string) => {
     confirmDelete(
-      'Supprimer cette invitation ?',
-      `« ${name} » sera définitivement supprimée.`,
+      'Supprimer cet événement ?',
+      `« ${name} » sera définitivement supprimé.`,
       () => {
         void (async () => {
           try {
@@ -49,9 +48,9 @@ export function InvitationsScreen() {
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
 
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-        <Text style={[theme.typography.h2, { color: c.textPrimary }]}>Mes invitations</Text>
+        <Text style={[theme.typography.h2, { color: c.textPrimary }]}>Mes événements</Text>
         <Text style={[styles.subtitle, { color: c.textMuted }]}>
-          Suivez les réponses RSVP de tous vos événements.
+          Appuyez sur un événement pour gérer les invités.
         </Text>
       </View>
 
@@ -66,7 +65,7 @@ export function InvitationsScreen() {
           <Text style={styles.errorText}>{error}</Text>
         ) : events.length === 0 ? (
           <Text style={[styles.empty, { color: c.textMuted }]}>
-            Aucune invitation. Créez-en une depuis Accueil ou Modèles.
+            Aucun événement. Créez-en un depuis Accueil ou Modèles.
           </Text>
         ) : (
           <View style={styles.cards}>

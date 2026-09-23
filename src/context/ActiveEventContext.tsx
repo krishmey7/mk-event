@@ -1,6 +1,7 @@
 /**
  * Événement actif (type + thème) — choisi au wizard, consommé par Modèles / Studio.
- * `needsSetup` se base sur les événements serveur (pas seulement le stockage local).
+ * Le wizard ne crée plus d’événement serveur : seulement des préférences locales.
+ * `needsSetup` = préférences pas encore choisies (et aucun événement API).
  */
 
 import {
@@ -23,11 +24,13 @@ export interface ActiveEventState {
   eventId: number | null;
   type: EventType;
   themeKey: string;
+  /** Wizard type/thème terminé — sans événement créé côté API. */
+  preferencesReady?: boolean;
 }
 
 interface ActiveEventContextValue extends ActiveEventState {
   ready: boolean;
-  /** True seulement après sync serveur, s’il n’existe aucun événement. */
+  /** True seulement après sync serveur, s’il faut encore passer le wizard. */
   needsSetup: boolean;
   setActiveEvent: (next: ActiveEventState) => void;
   clearActiveEvent: () => void;
@@ -39,6 +42,7 @@ const DEFAULT: ActiveEventState = {
   eventId: null,
   type: 'wedding',
   themeKey: 'sauge',
+  preferencesReady: false,
 };
 
 const ActiveEventContext = createContext<ActiveEventContextValue | null>(null);
@@ -52,12 +56,24 @@ function themeFromEvent(event: Event): string {
   return typeof fromConfig === 'string' && fromConfig.trim() ? fromConfig : 'sauge';
 }
 
+function normalizeStored(raw: ActiveEventState | null): ActiveEventState | null {
+  if (!raw) return null;
+  return {
+    eventId: raw.eventId ?? null,
+    type: raw.type || 'wedding',
+    themeKey: raw.themeKey || 'sauge',
+    /* Anciens comptes avec un eventId : déjà « setup ». Sans id : dépend du flag. */
+    preferencesReady:
+      raw.preferencesReady === true || raw.eventId != null,
+  };
+}
+
 async function readStored(): Promise<ActiveEventState | null> {
   try {
     if (Platform.OS === 'web') {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
-      return JSON.parse(raw) as ActiveEventState;
+      return normalizeStored(JSON.parse(raw) as ActiveEventState);
     }
   } catch {
     /* ignore */
@@ -87,14 +103,18 @@ export function ActiveEventProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void readStored().then((stored) => {
-      if (stored?.eventId != null && stored.themeKey) setState(stored);
+      if (stored) setState(stored);
       setStorageReady(true);
     });
   }, []);
 
   const setActiveEvent = useCallback((next: ActiveEventState) => {
-    setState(next);
-    void writeStored(next);
+    const normalized: ActiveEventState = {
+      ...next,
+      preferencesReady: next.preferencesReady ?? next.eventId != null,
+    };
+    setState(normalized);
+    void writeStored(normalized);
   }, []);
 
   const clearActiveEvent = useCallback(() => {
@@ -106,6 +126,23 @@ export function ActiveEventProvider({ children }: { children: ReactNode }) {
     try {
       const { results } = await eventsService.getEvents();
       if (results.length === 0) {
+        const stored = await readStored();
+        if (stored?.preferencesReady) {
+          setState({
+            eventId: null,
+            type: stored.type,
+            themeKey: stored.themeKey,
+            preferencesReady: true,
+          });
+          void writeStored({
+            eventId: null,
+            type: stored.type,
+            themeKey: stored.themeKey,
+            preferencesReady: true,
+          });
+          setServerSynced(true);
+          return false;
+        }
         setState(DEFAULT);
         void writeStored(null);
         setServerSynced(true);
@@ -122,21 +159,23 @@ export function ActiveEventProvider({ children }: { children: ReactNode }) {
         eventId: pick.id,
         type: pick.type,
         themeKey: themeFromEvent(pick),
+        preferencesReady: true,
       };
       setState(next);
       void writeStored(next);
       setServerSynced(true);
       return false;
     } catch {
-      /* Réseau KO : ne force pas le wizard si un id local existe. */
+      /* Réseau KO : ne force pas le wizard si préférences déjà choisies. */
       const stored = await readStored();
       setServerSynced(true);
-      return stored?.eventId == null;
+      return !(stored?.preferencesReady || stored?.eventId != null);
     }
   }, []);
 
   const ready = storageReady;
-  const needsSetup = serverSynced && state.eventId == null;
+  const needsSetup =
+    serverSynced && state.eventId == null && state.preferencesReady !== true;
 
   const value = useMemo(
     () => ({
@@ -159,8 +198,6 @@ export function ActiveEventProvider({ children }: { children: ReactNode }) {
 
 export function useActiveEvent(): ActiveEventContextValue {
   const ctx = useContext(ActiveEventContext);
-  if (!ctx) {
-    throw new Error('useActiveEvent doit être utilisé dans ActiveEventProvider.');
-  }
+  if (!ctx) throw new Error('useActiveEvent must be used within ActiveEventProvider');
   return ctx;
 }

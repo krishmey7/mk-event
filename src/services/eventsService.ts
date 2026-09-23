@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — SERVICE ÉVÉNEMENTS (prêt pour Django REST)
+ *  MK EVENTS — SERVICE ÉVÉNEMENTS (prêt pour Django REST)
  * ──────────────────────────────────────────────────────────────
  *  • getEvents() → GET /api/events/ (PaginatedResponse<Event>) ;
  *  • tant que le backend est absent (SIMULATE_BACKEND), renvoie le
@@ -120,6 +120,18 @@ export const eventsService = {
       };
     }
     return apiClient.get<PaginatedResponse<Event>>('/events/');
+  },
+
+  /** GET /api/events/{id}/ — détail d’une invitation (studio_config inclus). */
+  async getEvent(id: number): Promise<Event> {
+    if (SIMULATE_BACKEND) {
+      hydrateLibrary(MOCK_EVENTS);
+      await delay(180);
+      const event = MOCK_EVENTS.find((item) => item.id === id);
+      if (!event) throw new Error('Invitation introuvable');
+      return event;
+    }
+    return apiClient.get<Event>(`/events/${id}/`);
   },
 
   /**

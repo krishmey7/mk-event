@@ -65,21 +65,20 @@ for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
 }
 copyDir(dist, out);
 
-/* PWA — forcer plum / cream (l’ancien eucalyptus #2F6F69 restait dans meta/manifest). */
+/* PWA — fond plein écran (plum) sous status bar / home indicator. */
 const THEME = '#2A1824';
-const BG = '#F7F0E8';
 for (const name of ['index.html', 'manifest.json']) {
   const p = path.join(out, name);
   if (!fs.existsSync(p)) continue;
   let text = fs.readFileSync(p, 'utf8');
   text = text
     .replaceAll('#2F6F69', THEME)
-    .replaceAll('#EEF1F4', BG)
+    .replaceAll('#EEF1F4', THEME)
     .replace(/content="default"/g, 'content="black-translucent"');
   if (name === 'manifest.json') {
     text = text
       .replace(/"theme_color"\s*:\s*"[^"]+"/g, `"theme_color": "${THEME}"`)
-      .replace(/"background_color"\s*:\s*"[^"]+"/g, `"background_color": "${BG}"`);
+      .replace(/"background_color"\s*:\s*"[^"]+"/g, `"background_color": "${THEME}"`);
   }
   if (name === 'index.html' && !text.includes(`content="${THEME}"`)) {
     text = text.replace(
@@ -97,12 +96,48 @@ if (fs.existsSync(publicManifest)) {
 const nm = path.join(out, 'assets', 'node_modules');
 if (fs.existsSync(nm)) fs.renameSync(nm, path.join(out, 'assets', 'nm'));
 patchFiles(out);
-fs.writeFileSync(path.join(out, '.vercelignore'), '.env*\n.vercel\n.gitignore\n');
+fs.writeFileSync(
+  path.join(out, '.vercelignore'),
+  '.env*\n.vercel\n.gitignore\n',
+);
 fs.writeFileSync(
   path.join(out, 'vercel.json'),
-  JSON.stringify({
-    rewrites: [{ source: '/((?!_expo/|assets/|.*\\..*).*)', destination: '/index.html' }],
-  }),
+  JSON.stringify(
+    {
+      rewrites: [{ source: '/((?!_expo/|assets/|.*\\..*).*)', destination: '/index.html' }],
+      headers: [
+        {
+          source: '/sw.js',
+          headers: [
+            { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+            { key: 'Service-Worker-Allowed', value: '/' },
+          ],
+        },
+        {
+          source: '/index.html',
+          headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }],
+        },
+        {
+          source: '/manifest.json',
+          headers: [{ key: 'Cache-Control', value: 'no-cache, must-revalidate' }],
+        },
+        {
+          source: '/favicon.png',
+          headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, must-revalidate' }],
+        },
+        {
+          source: '/apple-touch-icon.png',
+          headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, must-revalidate' }],
+        },
+        {
+          source: '/(.*)\\.(js|css|woff2|ttf|png|webp|jpg|jpeg|svg|ico)',
+          headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+        },
+      ],
+    },
+    null,
+    2,
+  ),
 );
 
 console.log('deploy prêt —', out);

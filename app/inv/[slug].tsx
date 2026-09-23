@@ -18,11 +18,17 @@ import type { Guest } from '@/features/invitation/types';
 import type { InvitationConfig } from '@/features/invitation/guestRegistry';
 import { guestsService } from '@/services/guestsService';
 
+const ANONYMOUS_GUEST: Guest = {
+  id: '',
+  firstName: 'Invité',
+  lastName: '',
+  contact: '',
+  seats: 1,
+};
+
 function mapApiGuestToLocal(guest: {
   id: number;
   full_name: string;
-  email: string | null;
-  phone: string | null;
   adults_count: number;
   children_count: number;
   access_token: string;
@@ -31,11 +37,43 @@ function mapApiGuestToLocal(guest: {
   const firstName = parts[0] || 'Invité';
   const lastName = parts.slice(1).join(' ');
   return {
-    id: guest.access_token || String(guest.id),
+    id: guest.access_token,
+    accessToken: guest.access_token,
     firstName,
     lastName,
-    contact: guest.email || guest.phone || '',
+    contact: '',
     seats: Math.max(1, guest.adults_count + guest.children_count),
+  };
+}
+
+function emptyPublishedConfig(slug: string, event: {
+  name: string;
+  venue_name: string;
+  venue_city: string;
+  event_date: string;
+  cover_image_url: string | null;
+  message: string | null;
+}): InvitationConfig {
+  const base = getInvitationConfig(slug);
+  return {
+    ...base,
+    guests: [],
+    venue: {
+      ...base.venue,
+      name: event.venue_name || base.venue.name,
+      city: event.venue_city || base.venue.city,
+    },
+    cover: {
+      ...base.cover,
+      title: event.name || base.cover.title,
+      dateLabel: new Date(event.event_date).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+      photoUri: event.cover_image_url || base.cover.photoUri,
+    },
+    dressCode: event.message || base.dressCode,
   };
 }
 
@@ -77,45 +115,30 @@ export default function PublicInvitationScreen() {
         const event = payload.event;
         const mappedGuest = payload.guest
           ? mapApiGuestToLocal(payload.guest)
-          : localGuest;
+          : ANONYMOUS_GUEST;
 
         let nextConfig: InvitationConfig;
         if (hasStudioConfig(event.studio_config)) {
           nextConfig = invitationConfigFromStudio(event.studio_config, slug);
           if (payload.guest) {
             nextConfig = { ...nextConfig, guests: [mappedGuest] };
+          } else {
+            nextConfig = { ...nextConfig, guests: [] };
           }
         } else {
-          /* Anciennes invitations sans snapshot — overlay minimal sur le seed. */
-          nextConfig = {
-            ...localConfig,
-            venue: {
-              ...localConfig.venue,
-              name: event.venue_name || localConfig.venue.name,
-              city: event.venue_city || localConfig.venue.city,
-            },
-            cover: {
-              ...localConfig.cover,
-              title: event.name || localConfig.cover.title,
-              dateLabel: new Date(event.event_date).toLocaleDateString('fr-FR', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              }),
-              photoUri: event.cover_image_url || localConfig.cover.photoUri,
-            },
-            dressCode: event.message || localConfig.dressCode,
-            guests: payload.guest ? [mappedGuest] : localConfig.guests,
-          };
+          nextConfig = emptyPublishedConfig(slug, event);
+          if (payload.guest) {
+            nextConfig = { ...nextConfig, guests: [mappedGuest] };
+          }
         }
 
         setConfig(nextConfig);
         setGuest(mappedGuest);
       } catch {
         if (!alive) return;
-        setConfig(localConfig);
-        setGuest(localGuest);
-        setError(null);
+        setConfig(null);
+        setGuest(null);
+        setError('Invitation introuvable ou indisponible.');
       } finally {
         if (alive) setLoading(false);
       }
@@ -126,11 +149,18 @@ export default function PublicInvitationScreen() {
     };
   }, [slug, guestParam, localConfig, localGuest]);
 
-  if (loading || !config || !guest) {
+  if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={brandColors.goldSoft} />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+      </View>
+    );
+  }
+
+  if (error || !config || !guest) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.error}>{error ?? 'Invitation introuvable.'}</Text>
       </View>
     );
   }
@@ -139,6 +169,11 @@ export default function PublicInvitationScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  error: { color: '#A45A45', fontFamily: 'Inter_500Medium', fontSize: 13 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+  error: {
+    color: '#A45A45',
+    fontFamily: 'Inter_500Medium',
+    fontSize: 14,
+    textAlign: 'center',
+  },
 });

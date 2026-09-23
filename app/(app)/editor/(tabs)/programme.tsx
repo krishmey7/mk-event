@@ -4,28 +4,27 @@
  * (Classique, Minimaliste, Icônes, Personnalisé) + ajout d'étape.
  */
 
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 
-import { EditorInput } from '@/features/editor/components/EditorInput';
 import { EditorHint } from '@/features/editor/components/EditorHint';
+import { ProgrammeStepSheet } from '@/features/editor/components/ProgrammeStepSheet';
 import { confirmDelete } from '@/features/editor/confirmDelete';
 import { useEditor } from '@/features/editor/EditorContext';
 import { studioStepHint } from '@/features/editor/studioSteps';
 import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import type { ProgramStep } from '@/features/templates/elegance/data';
 
-export default function ProgrammeTabScreen() {
-  const router = useRouter();
-  const { program, programStyle, venue, updateVenue, removeProgramStep, template } = useEditor();
+export default function ProgrammeTabScreen({ embedded = false }: { embedded?: boolean }) {
+  const { program, programStyle, removeProgramStep, template } = useEditor();
   const colors = useStudioChrome();
   const isConference = template.category === 'corporate';
+  const [sheetIndex, setSheetIndex] = useState<number | null>(null);
 
   /* 4 layouts — le choix met à jour la liste instantanément. */
   const renderStep = (step: ProgramStep, index: number) => {
-    const open = () =>
-      router.push({ pathname: '/editor/programme-etape', params: { index: String(index) } });
+    const open = () => setSheetIndex(index);
     const key = `${index}-${step.time}-${step.title}`;
     const remove = () =>
       confirmDelete(
@@ -105,14 +104,16 @@ export default function ProgrammeTabScreen() {
     );
   };
 
-  return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <EditorHint>
-        {isConference
-          ? (studioStepHint('programme', 'corporate')
-            ?? 'Construisez l’agenda : horaires, sessions et salles.')
-          : 'Modifiez ou supprimez chaque moment. Le crayon ouvre le détail, la corbeille l’enlève.'}
-      </EditorHint>
+  const body = (
+    <>
+      {embedded ? null : (
+        <EditorHint>
+          {isConference
+            ? (studioStepHint('programme', 'corporate')
+              ?? 'Construisez l’agenda : horaires, sessions et salles.')
+            : 'Modifiez ou supprimez chaque moment. Le crayon ouvre le détail, la corbeille l’enlève.'}
+        </EditorHint>
+      )}
       <Text style={[styles.heading, { color: colors.text }]}>
         {isConference ? 'Agenda' : 'Programme de la journée'}
       </Text>
@@ -127,60 +128,46 @@ export default function ProgrammeTabScreen() {
         <View style={styles.list}>{program.map(renderStep)}</View>
       )}
 
-      {/* Lieu — adresse affichée sur l'invitation */}
-      <Text style={[styles.sectionLabel, { color: colors.text }]}>
-        {isConference ? 'Lieu de l’événement' : 'Lieu du mariage'}
-      </Text>
-      <View style={[styles.venueCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <EditorInput
-          value={venue.name}
-          onChangeText={(value) => updateVenue({ name: value })}
-          placeholder="Nom du domaine / de la salle"
-          leftIcon="business-outline"
-        />
-        <EditorInput
-          value={venue.street}
-          onChangeText={(value) => updateVenue({ street: value })}
-          placeholder="Rue, numéro"
-          leftIcon="location-outline"
-        />
-        <View style={styles.venueRow}>
-          <EditorInput
-            value={venue.zip}
-            onChangeText={(value) => updateVenue({ zip: value })}
-            placeholder="Code postal"
-            keyboardType="number-pad"
-            maxLength={5}
-            containerStyle={styles.venueHalf}
-          />
-          <EditorInput
-            value={venue.city}
-            onChangeText={(value) => updateVenue({ city: value })}
-            placeholder="Ville"
-            containerStyle={styles.venueHalf}
-          />
-        </View>
-        <Text style={[styles.venueNote, { color: colors.textMuted }]}>
-          Affiché sur l'invitation avec le bouton « Voir l'itinéraire » (Maps).
-        </Text>
-      </View>
-
-      <EditorHint>Le style du programme est figé par le modèle. Ajoutez ou modifiez les étapes.</EditorHint>
+      {embedded ? null : (
+        <EditorHint>Le style du programme est figé par le modèle. Ajoutez ou modifiez les étapes.</EditorHint>
+      )}
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => router.push('/editor/programme-etape')}
+        onPress={() => setSheetIndex(-1)}
         style={({ pressed }) => [styles.addBtn, { backgroundColor: colors.primary }, pressed && styles.pressed]}
       >
         <Ionicons name="add" size={16} color={colors.onPrimary} />
         <Text style={[styles.addLabel, { color: colors.onPrimary }]}>Ajouter une étape</Text>
       </Pressable>
-    </ScrollView>
+    </>
+  );
+
+  return (
+    <>
+      {embedded ? (
+        <View style={styles.contentEmbedded}>{body}</View>
+      ) : (
+        <ScrollView
+          style={{ backgroundColor: colors.bg }}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {body}
+        </ScrollView>
+      )}
+      <ProgrammeStepSheet
+        visible={sheetIndex !== null}
+        editIndex={sheetIndex ?? -1}
+        onClose={() => setSheetIndex(null)}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 32 },
+  contentEmbedded: { padding: 20, paddingBottom: 12 },
   heading: { fontFamily: 'Inter_600SemiBold', fontSize: 17, color: '#121318', marginBottom: 12 },
   empty: { fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 19, color: '#8A7E6E', marginBottom: 8 },
   list: { gap: 10 },
@@ -221,34 +208,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.2, alignItems: 'center', justifyContent: 'center',
     backgroundColor: 'transparent',
   },
-  sectionLabel: {
-    fontFamily: 'Inter_600SemiBold', fontSize: 14, color: '#121318',
-    marginTop: 20, marginBottom: 10,
-  },
-  venueCard: {
-    gap: 10,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E6DCCB',
-    borderRadius: 14,
-    padding: 14,
-  },
-  venueRow: { flexDirection: 'row', gap: 10 },
-  venueHalf: { flex: 1 },
-  venueNote: { fontFamily: 'Inter_400Regular', fontSize: 10.5, lineHeight: 15, color: '#9A9EA7' },
-  styleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  styleCard: {
-    flexGrow: 1,
-    flexBasis: '47%',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.4,
-    borderColor: '#E6DCCB',
-    borderRadius: 14,
-    paddingVertical: 14,
-  },
-  styleLabel: { fontFamily: 'Inter_500Medium', fontSize: 12.5, color: '#8A8278' },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',

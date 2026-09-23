@@ -1,5 +1,6 @@
 /**
- * Accueil — header atmosphère landing + contenu atelier.
+ * Accueil — header atmosphère + atelier.
+ * Premier passage (0 événement) : parcours guidé « par où commencer ».
  */
 
 import { useMemo, useState } from 'react';
@@ -26,19 +27,34 @@ import { openEventManage } from '@/features/editor/navigation';
 import { eventsService } from '@/services/eventsService';
 import { LandingAtmosphere } from '@/features/landing/LandingAtmosphere';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import {
-  fontFamilies,
-  shadows,
-  spacing,
-} from '@/constants/theme';
+import { fontFamilies, shadows, spacing } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
+import { EVENT_TYPE_LABELS } from '@/types';
+
+const FIRST_STEPS = [
+  {
+    n: '1',
+    title: 'Choisissez un modèle',
+    hint: 'Un design adapté à votre événement.',
+  },
+  {
+    n: '2',
+    title: 'Personnalisez dans le studio',
+    hint: 'Textes, photos, programme, RSVP.',
+  },
+  {
+    n: '3',
+    title: 'Publiez et invitez',
+    hint: 'Ajoutez vos invités depuis la Gestion.',
+  },
+] as const;
 
 export function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { events, isLoading, error, reload } = useEvents();
-  const { eventId, syncFromServer } = useActiveEvent();
+  const { eventId, type, syncFromServer } = useActiveEvent();
   const { isDesktop, isWide } = useBreakpoint();
   const { theme } = useAppTheme();
   const c = theme.colors;
@@ -46,15 +62,19 @@ export function DashboardScreen() {
   const [headerHeight, setHeaderHeight] = useState(260);
 
   const recent = events.slice(0, isDesktop ? 4 : 2);
+  const isEmpty = events.length === 0;
+  const showFirstRun = isEmpty && !isLoading && !error;
+  const eventLabel = EVENT_TYPE_LABELS[type] ?? 'événement';
+
   const firstName = useMemo(() => {
     const name = user?.full_name?.trim();
-    return name ? name.split(/\s+/)[0] : 'Sarah';
+    return name ? name.split(/\s+/)[0] : 'là';
   }, [user?.full_name]);
 
   const handleDelete = (id: number, name: string) => {
     confirmDelete(
-      'Supprimer cette invitation ?',
-      `« ${name} » sera définitivement supprimée.`,
+      'Supprimer cet événement ?',
+      `« ${name} » sera définitivement supprimé.`,
       () => {
         void (async () => {
           try {
@@ -68,6 +88,8 @@ export function DashboardScreen() {
       },
     );
   };
+
+  const goCreate = () => router.push('/modeles');
 
   const sent = events.reduce((sum, event) => sum + event.rsvp_summary.confirmed, 0);
   const totalGuests = events.reduce((sum, event) => sum + event.guests_count, 0);
@@ -114,17 +136,27 @@ export function DashboardScreen() {
           <View style={styles.hero}>
             <Text style={styles.greeting}>Bonjour {firstName}</Text>
             <Text style={[styles.subtitle, isDark && styles.subtitleDark]}>
-              Créez et envoyez vos invitations en quelques minutes.
+              {showFirstRun || (isEmpty && !error)
+                ? `Créons votre invitation ${eventLabel.toLowerCase()} — c’est simple.`
+                : 'Créez et gérez vos événements en quelques minutes.'}
             </Text>
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Créer une invitation"
-              onPress={() => router.push('/modeles')}
+              accessibilityLabel={
+                showFirstRun || isEmpty ? 'Choisir un modèle' : 'Créer un nouvel événement'
+              }
+              onPress={goCreate}
               style={({ pressed }) => [styles.primaryCta, pressed && styles.pressed]}
             >
-              <Ionicons name="add" size={18} color="#FFFFFF" />
-              <Text style={styles.primaryCtaLabel}>Nouvelle invitation</Text>
+              <Ionicons
+                name={showFirstRun || isEmpty ? 'color-palette-outline' : 'add'}
+                size={18}
+                color="#FFFFFF"
+              />
+              <Text style={styles.primaryCtaLabel}>
+                {showFirstRun || isEmpty ? 'Choisir un modèle' : 'Nouvel événement'}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -139,68 +171,111 @@ export function DashboardScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.shortcuts, isWide && styles.shortcutsWide]}>
-          <Shortcut
-            icon="mail-outline"
-            label="Invitations"
-            hint={`${events.length} en cours`}
-            color={c.textPrimary}
-            muted={c.textMuted}
-            border={c.border}
-            surface={c.surface}
-            onPress={() => router.push('/invitations')}
-          />
-          <Shortcut
-            icon="people-outline"
-            label="Réponses"
-            hint={totalGuests ? `${sent}/${totalGuests} confirmés` : 'À venir'}
-            color={c.textPrimary}
-            muted={c.textMuted}
-            border={c.border}
-            surface={c.surface}
-            onPress={() => router.push('/reponses')}
-          />
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Récents</Text>
-          <Pressable
-            accessibilityRole="link"
-            onPress={() => router.push('/invitations')}
-            hitSlop={8}
-            style={({ pressed }) => [styles.seeAllBtn, pressed && styles.pressed]}
-          >
-            <Text style={[styles.seeAll, { color: c.accent }]}>Tout voir</Text>
-            <Ionicons name="arrow-forward" size={14} color={c.accent} />
-          </Pressable>
-        </View>
-
         {isLoading ? (
           <ActivityIndicator color={c.accent} style={styles.loader} />
-        ) : error ? (
+        ) : error && isEmpty ? (
           <Text style={[styles.errorText, { color: theme.semantic.danger }]}>{error}</Text>
-        ) : recent.length === 0 ? (
-          <View style={[styles.empty, { backgroundColor: c.surface, borderColor: c.border }]}>
-            <Ionicons name="mail-open-outline" size={26} color={c.accent} />
-            <Text style={[styles.emptyTitle, { color: c.textPrimary }]}>
-              Aucune invitation pour l’instant
+        ) : showFirstRun ? (
+          <View style={styles.firstRun}>
+            <Text style={[styles.firstRunEyebrow, { color: c.accent }]}>Par où commencer</Text>
+            <Text style={[styles.firstRunTitle, { color: c.textPrimary }]}>
+              3 étapes jusqu’à votre invitation
             </Text>
-            <Text style={[styles.emptyHint, { color: c.textMuted }]}>
-              Choisissez un modèle pour commencer.
+
+            <View style={styles.steps}>
+              {FIRST_STEPS.map((step) => (
+                <View key={step.n} style={styles.stepRow}>
+                  <View style={[styles.stepBadge, { backgroundColor: c.accent }]}>
+                    <Text style={styles.stepBadgeText}>{step.n}</Text>
+                  </View>
+                  <View style={styles.stepCopy}>
+                    <Text style={[styles.stepTitle, { color: c.textPrimary }]}>{step.title}</Text>
+                    <Text style={[styles.stepHint, { color: c.textMuted }]}>{step.hint}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Commencer — choisir un modèle"
+              onPress={goCreate}
+              style={({ pressed }) => [
+                styles.firstRunCta,
+                { backgroundColor: c.accent },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.firstRunCtaLabel, { color: c.onAccent }]}>
+                Commencer avec un modèle
+              </Text>
+              <Ionicons name="arrow-forward" size={18} color={c.onAccent} />
+            </Pressable>
+
+            <Text style={[styles.firstRunFoot, { color: c.textMuted }]}>
+              Les réponses RSVP et la liste d’invités arriveront après la publication.
             </Text>
           </View>
         ) : (
-          <View style={[styles.cards, isWide && styles.cardsWide]}>
-            {recent.map((event) => (
-              <EventCard
-                key={event.id}
-                event={event}
-                onPress={() => openEventManage(router, event)}
-                onDelete={() => handleDelete(event.id, event.name)}
-                style={isWide ? styles.cardWide : undefined}
+          <>
+            <View style={[styles.shortcuts, isWide && styles.shortcutsWide]}>
+              <Shortcut
+                icon="calendar-outline"
+                label="Événements"
+                hint={`${events.length} en cours`}
+                color={c.textPrimary}
+                muted={c.textMuted}
+                border={c.border}
+                surface={c.surface}
+                onPress={() => router.push('/invitations')}
               />
-            ))}
-          </View>
+              <Shortcut
+                icon="people-outline"
+                label="Réponses"
+                hint={totalGuests ? `${sent}/${totalGuests} confirmés` : 'À venir'}
+                color={c.textPrimary}
+                muted={c.textMuted}
+                border={c.border}
+                surface={c.surface}
+                onPress={() => router.push('/reponses')}
+              />
+            </View>
+
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Récents</Text>
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => router.push('/invitations')}
+                hitSlop={8}
+                style={({ pressed }) => [styles.seeAllBtn, pressed && styles.pressed]}
+              >
+                <Text style={[styles.seeAll, { color: c.accent }]}>Tout voir</Text>
+                <Ionicons name="arrow-forward" size={14} color={c.accent} />
+              </Pressable>
+            </View>
+
+            {recent.length > 0 ? (
+              <Text style={[styles.manageTip, { color: c.textMuted }]}>
+                Appuyez sur l’événement pour gérer les invités.
+              </Text>
+            ) : null}
+
+            {error ? (
+              <Text style={[styles.errorText, { color: theme.semantic.danger }]}>{error}</Text>
+            ) : (
+              <View style={[styles.cards, isWide && styles.cardsWide]}>
+                {recent.map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    onPress={() => openEventManage(router, event)}
+                    onDelete={() => handleDelete(event.id, event.name)}
+                    style={isWide ? styles.cardWide : undefined}
+                  />
+                ))}
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
     </View>
@@ -321,7 +396,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sans,
     fontSize: 15,
     lineHeight: 22,
-    maxWidth: 340,
+    maxWidth: 360,
     marginBottom: 6,
     color: 'rgba(242, 244, 247, 0.58)',
   },
@@ -343,6 +418,71 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 14.5,
     color: '#FFFFFF',
+  },
+
+  firstRun: {
+    gap: 14,
+    paddingTop: 4,
+  },
+  firstRunEyebrow: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 12,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  firstRunTitle: {
+    fontFamily: fontFamilies.serifSemiBold,
+    fontSize: 24,
+    lineHeight: 30,
+    letterSpacing: -0.3,
+    marginBottom: 4,
+  },
+  steps: { gap: 18, marginTop: 6, marginBottom: 8 },
+  stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
+  stepBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  stepBadgeText: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  stepCopy: { flex: 1, gap: 3 },
+  stepTitle: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 15.5,
+  },
+  stepHint: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 13.5,
+    lineHeight: 19,
+  },
+  firstRunCta: {
+    marginTop: 8,
+    minHeight: 54,
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    ...shadows.sm,
+  },
+  firstRunCtaLabel: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 15.5,
+  },
+  firstRunFoot: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: 4,
   },
 
   shortcuts: { gap: 10 },
@@ -386,6 +526,12 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sansMedium,
     fontSize: 13.5,
   },
+  manageTip: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: -10,
+  },
 
   loader: { marginVertical: spacing.xl },
   errorText: {
@@ -403,26 +549,6 @@ const styles = StyleSheet.create({
     width: '48.5%',
     flexGrow: 0,
     minWidth: 280,
-  },
-
-  empty: {
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 36,
-    paddingHorizontal: 20,
-    borderRadius: 18,
-    borderWidth: 1,
-  },
-  emptyTitle: {
-    fontFamily: fontFamilies.sansSemiBold,
-    fontSize: 15,
-    marginTop: 4,
-  },
-  emptyHint: {
-    fontFamily: fontFamilies.sans,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: 'center',
   },
   pressed: { opacity: 0.84 },
 });

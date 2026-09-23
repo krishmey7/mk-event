@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — MODÈLE « ÉLÉGANCE » · DONNÉES DE DÉMONSTRATION
+ *  MK EVENTS — MODÈLE « ÉLÉGANCE » · DONNÉES DE DÉMONSTRATION
  * ──────────────────────────────────────────────────────────────
  *  Jeu de données statique fidèle à la planche 3 (Léa & Thomas,
  *  14 juin 2025). Sera remplacé par les réponses du backend Django

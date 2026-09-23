@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — STUDIO D'ÉDITION · ÉTAT PARTAGÉ (contexte)
+ *  MK EVENTS — STUDIO D'ÉDITION · ÉTAT PARTAGÉ (contexte)
  * ──────────────────────────────────────────────────────────────
  *  Le studio est instancié DEPUIS un modèle (/editor?template={key})
  *  : la définition (thèmes, contenus par défaut) vient du registre
@@ -38,6 +38,7 @@ import {
 } from '@/features/templates/conference/data';
 import { parseFrenchDateLabel, toRemoteImageUrl, type EditorSnapshot } from './snapshot';
 import { resolvePublishableImage } from './resolvePublishableImage';
+import { ensureGuestNameToken, lockGuestNameToken } from './guestNameToken';
 import { useActiveEvent } from '@/context/ActiveEventContext';
 
 export type { VoicePersonaKey };
@@ -173,20 +174,35 @@ interface EditorContextValue {
 
 const EditorContext = createContext<EditorContextValue | null>(null);
 
-function bootFromParams(eventId?: string | null) {
+function bootFromParams(
+  eventId?: string | null,
+  initialSnapshot?: EditorSnapshot | null,
+) {
   const id = eventId ? Number(eventId) : Number.NaN;
   if (!Number.isFinite(id)) return { id: null as number | null, snap: null as EditorSnapshot | null };
+  if (initialSnapshot) return { id, snap: initialSnapshot };
   return { id, snap: eventsService.readSnapshot(id) };
 }
 
-export function EditorProvider({ templateKey, initialThemeKey, eventId, children }: {
+export function EditorProvider({
+  templateKey,
+  initialThemeKey,
+  eventId,
+  initialSnapshot,
+  children,
+}: {
   templateKey?: string;
   initialThemeKey?: string;
   eventId?: string;
+  /** Snapshot déjà résolu (serveur / local) — évite un second read au mount. */
+  initialSnapshot?: EditorSnapshot | null;
   children: ReactNode;
 }) {
   const activeEvent = useActiveEvent();
-  const boot = useMemo(() => bootFromParams(eventId), [eventId]);
+  const boot = useMemo(
+    () => bootFromParams(eventId, initialSnapshot),
+    [eventId, initialSnapshot],
+  );
   const snap = boot.snap;
   const template = useMemo(
     () => getTemplate(snap?.templateKey ?? templateKey),
@@ -201,9 +217,7 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
       ?? template.defaultThemeKey,
   );
 
-  const [boundEventId, setBoundEventId] = useState<number | null>(
-    boot.id ?? activeEvent.eventId,
-  );
+  const [boundEventId, setBoundEventId] = useState<number | null>(boot.id);
   const [dressCode, setDressCode] = useState(snap?.dressCode ?? '');
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(!snap);
@@ -214,13 +228,14 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
         ...snap.cover,
         coupleFrame: normalizePhotoFrame(snap.cover.coupleFrame, template.key),
         kicker: snap.cover.kicker ?? template.defaultKicker ?? '',
+        guestLine: ensureGuestNameToken(snap.cover.guestLine),
       }
     : {
     photoUri: template.coverImage,
     title: template.defaultCover.title,
     dateLabel: template.defaultCover.dateLabel,
     couple: template.defaultCover.couple,
-    guestLine: template.defaultCover.guestLine,
+    guestLine: ensureGuestNameToken(template.defaultCover.guestLine),
     couplePhotoUri: template.couplePhoto?.uri ?? DEFAULT_COUPLE_PHOTO.uri,
     coupleFrame: normalizePhotoFrame(template.couplePhoto?.frame, template.key),
     themeKey: resolvedThemeKey ?? template.defaultThemeKey,
@@ -230,7 +245,14 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
 
   const updateCover = useCallback((patch: Partial<CoverConfig>) => {
     // Thème verrouillé (choix wizard / événement) — le studio ne redesign pas.
-    setCover((prev) => ({ ...prev, ...patch, themeKey: prev.themeKey }));
+    // {{Nom}} verrouillé dans le message invité.
+    setCover((prev) => {
+      const next = { ...prev, ...patch, themeKey: prev.themeKey };
+      if (patch.guestLine !== undefined) {
+        next.guestLine = lockGuestNameToken(patch.guestLine, prev.guestLine);
+      }
+      return next;
+    });
   }, []);
 
   const [story, setStory] = useState<StoryMilestone[]>(() => snap?.story ?? template.story);
@@ -495,8 +517,16 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
         template: template.id,
         theme_key: cover.themeKey,
       };
-      const publishedCoverPhoto = await resolvePublishableImage(cover.photoUri);
-      const publishedCouplePhoto = await resolvePublishableImage(cover.couplePhotoUri);
+
+      /* Créer / lier l’événement avant upload médias (besoin de l’id). */
+      let event = boundEventId
+        ? await eventsService.updateEvent(boundEventId, base)
+        : await eventsService.createEvent(base);
+      setBoundEventId(event.id);
+
+      const uploadOpts = { eventId: event.id };
+      const publishedCoverPhoto = await resolvePublishableImage(cover.photoUri, uploadOpts);
+      const publishedCouplePhoto = await resolvePublishableImage(cover.couplePhotoUri, uploadOpts);
       const publishedGallerySource = gallery.length > 0
         ? gallery
         : template.galleryImages.map((uri, index) => ({
@@ -506,32 +536,31 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
           }));
       const publishedGallery = await Promise.all(
         publishedGallerySource.map(async (item) => ({
-          uri: await resolvePublishableImage(item.uri),
+          uri: await resolvePublishableImage(item.uri, uploadOpts),
           category: item.category,
         })),
       );
       const publishedStory = await Promise.all(
         story.map(async (step) => ({
           ...step,
-          image: step.image ? await resolvePublishableImage(step.image) : step.image,
+          image: step.image
+            ? await resolvePublishableImage(step.image, uploadOpts)
+            : step.image,
         })),
       );
-      const publishedCountdown = await resolvePublishableImage(template.countdownImage);
+      const publishedCountdown = await resolvePublishableImage(
+        template.countdownImage,
+        uploadOpts,
+      );
 
       const extras = {
         cover_image_url: toRemoteImageUrl(publishedCoverPhoto),
         theme_key: cover.themeKey,
       };
-      const event = boundEventId
-        ? await eventsService.updateEvent(boundEventId, { ...base, ...extras })
-        : await eventsService.updateEvent(
-          (await eventsService.createEvent(base)).id,
-          extras,
-        );
+      event = await eventsService.updateEvent(event.id, extras);
 
       const studioConfig = {
         templateKey: template.key,
-        guests,
         drinks,
         diets,
         themeKey: cover.themeKey,
@@ -644,6 +673,7 @@ export function EditorProvider({ templateKey, initialThemeKey, eventId, children
   }, [
     cover, story, program, guests, drinks, diets, voix, venue, dressCode,
     revealEffect, galleryStyle, programStyle, countdownStyle, gallery,
+    speakers, practical,
   ]);
 
   useEffect(() => {

@@ -44,7 +44,7 @@ interface StepConfig {
 const STEPS: StepConfig[] = [
   {
     id: 'name',
-    question: 'Comment vous appelez-vous ?',
+    question: 'Quel est votre nom ?',
     hint: 'Prénom et nom, comme sur vos invitations.',
   },
   {

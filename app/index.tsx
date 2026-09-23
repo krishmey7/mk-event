@@ -1,5 +1,5 @@
 /**
- * Route « / » — Landing MK Event (Écran 1 des maquettes).
+ * Route « / » — Landing MK Events (Écran 1 des maquettes).
  * Garde de route : un utilisateur connecté est renvoyé vers /dashboard.
  */
 

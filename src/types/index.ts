@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — CONTRAT DE DONNÉES API (prêt pour Django REST Framework)
+ *  MK Events — CONTRAT DE DONNÉES API (prêt pour Django REST Framework)
  * ──────────────────────────────────────────────────────────────
  *  Conventions alignées sur un backend DRF à venir :
  *  • champs en snake_case (sérialiseurs Django) ;
@@ -110,7 +110,7 @@ export const ANSWER_TO_STATUS: Record<RsvpAnswer, RsvpStatus> = {
 
 /* ════════════════════════ Authentification ════════════════════════ */
 
-/** Utilisateur MK Event (organisateur). */
+/** Utilisateur MK Events (organisateur). */
 export interface User {
   id: ID;
   email: string;

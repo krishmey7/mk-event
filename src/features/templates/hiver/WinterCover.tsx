@@ -6,6 +6,7 @@
 import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import { Logo } from '@/components/ui/Logo';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
@@ -73,6 +74,7 @@ export function WinterCover({
         {/* 2 · Photo */}
         <View style={[styles.hero, compact && styles.heroCompact]}>
           <WinterCouplePhotoFrame
+            key={`${couplePhoto.frame}-${couplePhoto.uri}`}
             couplePhoto={couplePhoto}
             gold={gold}
             frost={icy}
@@ -107,7 +109,7 @@ export function WinterCover({
           </Text>
           {phrase.trim() ? (
             <Text style={[styles.phrase, { color: icy }]} numberOfLines={compact ? 2 : 3}>
-              {personalize(phrase, guest.firstName)}
+              {fillGuestNameToken(phrase, guest.firstName)}
             </Text>
           ) : null}
         </View>
@@ -151,10 +153,6 @@ export function WinterCover({
       </View>
     </View>
   );
-}
-
-function personalize(text: string, firstName: string): string {
-  return text.replace(/\{\{\s*Nom\s*\}\}/gi, firstName);
 }
 
 function formatSaveTheDate(title: string): string {

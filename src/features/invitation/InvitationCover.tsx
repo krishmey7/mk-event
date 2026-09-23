@@ -4,10 +4,11 @@
  */
 
 import { type ReactNode } from 'react';
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Logo } from '@/components/ui/Logo';
+import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import { CouplePhotoFrame } from './CouplePhotoFrame';
 import type { CouplePhoto, Guest } from './types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
@@ -51,17 +52,35 @@ export function InvitationCover({
 }) {
   const padTop = paddingTop ?? (compact ? 18 : 22);
   const padBottom = paddingBottom ?? (compact ? 16 : 14);
+  const personalized = fillGuestNameToken(guestSentence, guest.firstName);
+  /* Évite le doublon si phrase = message invité. */
+  const rawPhrase = (phrase ?? '').trim();
+  const heroPhrase =
+    rawPhrase && rawPhrase !== guestSentence.trim()
+      ? fillGuestNameToken(rawPhrase, guest.firstName)
+      : 'Pour notre grand jour';
 
   return (
-    <ImageBackground source={{ uri: coverUri }} style={styles.fill} resizeMode="cover">
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.coverOverlay }]} />
-      <View style={[StyleSheet.absoluteFill, styles.coverDeep, { backgroundColor: colors.coverOverlayDeep }]} />
+    <View style={styles.fill}>
+      <Image source={{ uri: coverUri }} style={styles.coverImage} resizeMode="cover" />
+      <View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { backgroundColor: colors.coverOverlay }]}
+      />
+      <View
+        pointerEvents="none"
+        style={[styles.coverDeep, { backgroundColor: colors.coverOverlayDeep }]}
+      />
 
       <View style={[styles.content, { paddingTop: padTop, paddingBottom: padBottom }]}>
         <Logo size="sm" color={ELEGANCE_LOGO} wordmarkColor={ELEGANCE_LOGO_SOFT} />
 
         <View style={styles.photoSlot}>
-          <CouplePhotoFrame couplePhoto={couplePhoto} accent={colors.accent} />
+          <CouplePhotoFrame
+            key={`${couplePhoto.frame}-${couplePhoto.uri}`}
+            couplePhoto={couplePhoto}
+            accent={colors.accent}
+          />
         </View>
 
         <View style={styles.hero}>
@@ -73,7 +92,7 @@ export function InvitationCover({
           </View>
           <Text style={[styles.date, { paddingLeft: 3 }]}>{dateLabel}</Text>
           <Text style={styles.names}>{couple}</Text>
-          <Text style={styles.phrase}>{phrase}</Text>
+          <Text style={styles.phrase}>{heroPhrase}</Text>
           {dressCode?.trim() && !compact ? (
             <Text style={styles.dress}>{dressCode.trim()}</Text>
           ) : null}
@@ -82,8 +101,9 @@ export function InvitationCover({
         <View style={styles.spacer} />
 
         <View style={[styles.guestCard, { borderColor: `${colors.accent}66` }]}>
+          <View pointerEvents="none" style={styles.guestCardFill} />
           <Text style={styles.guestHello}>Bonjour {guest.firstName}</Text>
-          <Text style={styles.guestSentence}>{guestSentence}</Text>
+          <Text style={styles.guestSentence}>{personalized}</Text>
           <View style={styles.seatRow}>
             <Ionicons name="people" size={13} color={colors.accent} />
             <Text style={[styles.seatText, { color: colors.accent }]}>
@@ -109,14 +129,19 @@ export function InvitationCover({
           )
         ) : null}
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1, width: '100%', height: '100%', backgroundColor: '#14110E' },
-  coverDeep: { bottom: '46%' },
-  content: { flex: 1, paddingHorizontal: 18, alignItems: 'center' },
+  fill: { flex: 1, width: '100%', height: '100%', backgroundColor: '#14110E', overflow: 'hidden' },
+  coverImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  coverDeep: { ...StyleSheet.absoluteFillObject, bottom: '46%' },
+  content: { flex: 1, paddingHorizontal: 18, alignItems: 'center', zIndex: 1 },
   photoSlot: {
     flex: 1,
     alignSelf: 'stretch',
@@ -163,13 +188,19 @@ const styles = StyleSheet.create({
   spacer: { flex: 1 },
   guestCard: {
     alignSelf: 'stretch',
-    backgroundColor: 'rgba(16, 14, 11, 0.55)',
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 16,
     alignItems: 'center',
     gap: 6,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+  },
+  guestCardFill: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#100E0B',
+    opacity: 0.55,
   },
   guestHello: {
     fontFamily: 'Fraunces_400Regular_Italic',

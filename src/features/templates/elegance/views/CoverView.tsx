@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Modèle « Élégance » · VUE 1 — Couverture « SAVE THE DATE ».
+ * MK EVENTS — Modèle « Élégance » · VUE 1 — Couverture « SAVE THE DATE ».
  * Photo plein écran + voile du thème, logo MK compact, sélecteur de
  * thème (bouton pastel en haut à droite), carte flottante ivoire
  * « Bonjour Sarah 👋 » et chevron d'entrée dans l'invitation.
@@ -63,6 +63,7 @@ export function CoverView({ theme, onThemePress, onEnter }: {
 
           {/* Bienvenue — carte sombre translucide, bordure fine du thème */}
           <View style={[styles.guestCard, { borderColor: `${theme.colors.accent}66` }]}>
+            <View pointerEvents="none" style={styles.guestCardFill} />
             <Text style={styles.guestHello}>Bonjour {WEDDING.guestName}</Text>
             <Text style={styles.guestSentence}>{WEDDING.guestSentence}</Text>
           </View>
@@ -108,13 +109,19 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.85)',
   },
   guestCard: {
-    backgroundColor: 'rgba(16, 14, 11, 0.55)',
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 16,
     alignItems: 'center',
     gap: 6,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+  },
+  guestCardFill: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#100E0B',
+    opacity: 0.55,
   },
   guestHello: {
     fontFamily: 'Fraunces_400Regular_Italic',

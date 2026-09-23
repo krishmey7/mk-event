@@ -1,8 +1,7 @@
 /**
  * STUDIO — Gestion des invités (fin d’édition).
- * Ajout d’invités (Prénom, Nom, Téléphone/Email, places attribuées).
- * Lien / QR personnels : visibles après publication (pas de partage ici
- * pour éviter d’envoyer un lien provisoire INV-…).
+ * Ajout d’invités (Prénom, Nom, places). Le contact n’est pas requis.
+ * Lien / QR personnels : visibles après publication.
  */
 
 import { useState } from 'react';
@@ -27,7 +26,6 @@ export default function InvitesScreen() {
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [contact, setContact] = useState('');
   const [seats, setSeats] = useState(2);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -36,10 +34,9 @@ export default function InvitesScreen() {
 
   const submit = () => {
     if (!canAdd) return;
-    addGuest({ firstName, lastName, contact, seats });
+    addGuest({ firstName, lastName, contact: '', seats });
     setFirstName('');
     setLastName('');
-    setContact('');
     setSeats(2);
   };
 
@@ -78,13 +75,6 @@ export default function InvitesScreen() {
               containerStyle={styles.halfField}
             />
           </View>
-          <EditorInput
-            value={contact}
-            onChangeText={setContact}
-            placeholder="Téléphone ou email"
-            keyboardType="email-address"
-            leftIcon="call-outline"
-          />
           <View style={styles.seatsRow}>
             <Text style={[styles.seatsLabel, { color: colors.text }]}>Places attribuées</Text>
             <View style={[styles.seatsStepper, { backgroundColor: colors.chip }]}>
@@ -159,9 +149,6 @@ export default function InvitesScreen() {
                 <View style={styles.guestBody}>
                   <Text style={[styles.guestName, { color: colors.text }]}>
                     {guest.firstName} {guest.lastName}
-                  </Text>
-                  <Text style={[styles.guestContact, { color: colors.textMuted }]}>
-                    {guest.contact || 'Contact non renseigné'}
                   </Text>
                   <Text style={[styles.guestId, { color: colors.primary }]}>
                     {published ? 'Publié' : guest.id} · {guest.seats} place

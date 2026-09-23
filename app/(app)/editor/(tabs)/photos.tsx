@@ -1,5 +1,5 @@
 /**
- * Étape Photos — galerie uniquement (style d’affichage figé par le modèle).
+ * Étape Photos — ajouter / retirer. Pas de catégories ni filtres.
  */
 
 import { useState } from 'react';
@@ -7,21 +7,12 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 
 import { EditorHint } from '@/features/editor/components/EditorHint';
-import { useEditor, type GalleryCategory } from '@/features/editor/EditorContext';
+import { useEditor } from '@/features/editor/EditorContext';
 import { pickLibraryImages } from '@/features/editor/imagePicker';
 import { studioStepHint } from '@/features/editor/studioSteps';
 import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { fontFamilies, spacing } from '@/constants/theme';
-
-const FILTERS = [
-  { key: 'toutes', label: 'Toutes' },
-  { key: 'ceremonie', label: 'Cérémonie' },
-  { key: 'cocktail', label: 'Cocktail' },
-  { key: 'soiree', label: 'Soirée' },
-] as const;
-
-const CATEGORIES: GalleryCategory[] = ['ceremonie', 'cocktail', 'soiree'];
 
 export default function PhotosTabScreen() {
   const { gallery, addGalleryPhotos, removeGalleryPhoto, template } = useEditor();
@@ -29,20 +20,15 @@ export default function PhotosTabScreen() {
   const eventType = activeType || template.category;
   const { theme } = useAppTheme();
   const c = theme.colors;
-  const [filter, setFilter] = useState<'toutes' | GalleryCategory>('toutes');
-  const [target, setTarget] = useState<GalleryCategory>('ceremonie');
   const [importing, setImporting] = useState(false);
   const hint = studioStepHint('photos', eventType);
-
-  const visible = filter === 'toutes' ? gallery : gallery.filter((item) => item.category === filter);
 
   const handleImport = async () => {
     if (importing) return;
     setImporting(true);
     try {
       const uris = await pickLibraryImages();
-      addGalleryPhotos(uris, target);
-      if (filter !== 'toutes') setFilter(target);
+      addGalleryPhotos(uris, 'ceremonie');
     } finally {
       setImporting(false);
     }
@@ -56,28 +42,6 @@ export default function PhotosTabScreen() {
     >
       {hint ? <EditorHint>{hint}</EditorHint> : null}
 
-      <Text style={[styles.label, { color: c.textPrimary }]}>Catégorie d’import</Text>
-      <View style={styles.row}>
-        {CATEGORIES.map((key) => {
-          const on = target === key;
-          return (
-            <Pressable
-              key={key}
-              onPress={() => setTarget(key)}
-              style={[
-                styles.chip,
-                { borderColor: c.border, backgroundColor: c.surface },
-                on && { borderColor: c.accent, backgroundColor: c.accentSoft },
-              ]}
-            >
-              <Text style={{ color: on ? c.accent : c.textMuted, fontFamily: fontFamilies.sansMedium, fontSize: 12 }}>
-                {key}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
       <Pressable
         accessibilityRole="button"
         onPress={() => void handleImport()}
@@ -89,29 +53,8 @@ export default function PhotosTabScreen() {
         </Text>
       </Pressable>
 
-      <View style={styles.row}>
-        {FILTERS.map((item) => {
-          const on = filter === item.key;
-          return (
-            <Pressable
-              key={item.key}
-              onPress={() => setFilter(item.key)}
-              style={[
-                styles.chip,
-                { borderColor: c.border, backgroundColor: c.surface },
-                on && { borderColor: c.accent, backgroundColor: c.accentSoft },
-              ]}
-            >
-              <Text style={{ color: on ? c.accent : c.textMuted, fontFamily: fontFamilies.sansMedium, fontSize: 12 }}>
-                {item.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
       <View style={styles.grid}>
-        {visible.map((item) => (
+        {gallery.map((item) => (
           <View key={item.id} style={styles.cell}>
             <Image source={{ uri: item.uri }} style={styles.thumb} />
             <Pressable
@@ -126,8 +69,10 @@ export default function PhotosTabScreen() {
         ))}
       </View>
 
-      {visible.length === 0 ? (
-        <Text style={[styles.empty, { color: c.textMuted }]}>Aucune photo pour ce filtre.</Text>
+      {gallery.length === 0 ? (
+        <Text style={[styles.empty, { color: c.textMuted }]}>
+          Aucune photo pour l’instant.
+        </Text>
       ) : null}
     </ScrollView>
   );
@@ -135,14 +80,6 @@ export default function PhotosTabScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: 40, gap: 12 },
-  label: { fontFamily: fontFamilies.sansSemiBold, fontSize: 14 },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
   importBtn: {
     flexDirection: 'row',
     alignItems: 'center',

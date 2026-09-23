@@ -1,4 +1,4 @@
-# MK Event — Architecture & Arborescence
+# MK Events — Architecture & Arborescence
 
 SaaS haut de gamme de gestion d'événements et d'invitations numériques interactives.
 **Frontend :** React Native + Expo (Expo Router v6, Reanimated, Ionicons) — iOS, Android, Web.

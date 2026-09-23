@@ -1,9 +1,10 @@
 {
   "expo": {
-    "name": "MK Event",
+    "name": "MK Events",
     "slug": "mk-event",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "mkevent",
     "userInterfaceStyle": "automatic",
     "platforms": [
@@ -22,12 +23,12 @@
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/favicon.png",
-      "name": "MK Event",
-      "shortName": "MK Event",
+      "name": "MK Events",
+      "shortName": "MK Events",
       "description": "Créez et envoyez des invitations numériques élégantes.",
       "lang": "fr",
       "themeColor": "#2A1824",
-      "backgroundColor": "#F7F0E8"
+      "backgroundColor": "#2A1824"
     },
     "plugins": [
       "expo-router",
@@ -35,7 +36,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "MK Event utilise la caméra pour scanner les QR des invités à l’entrée.",
+          "cameraPermission": "MK Events utilise la caméra pour scanner les QR des invités à l’entrée.",
           "barcodeScannerEnabled": true,
           "recordAudioAndroid": false
         }

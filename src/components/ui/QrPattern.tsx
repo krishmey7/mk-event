@@ -1,5 +1,5 @@
 /**
- * MK EVENT — UI / QrPattern · rendu d'un motif QR déterministe.
+ * MK EVENTS — UI / QrPattern · rendu d'un motif QR déterministe.
  * Utilisé par la gestion des invités et le pass invité.
  * Le QR final scannable est généré côté serveur (règle zéro
  * dépendance locale — simple grille de vues).

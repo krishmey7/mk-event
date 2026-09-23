@@ -1,16 +1,11 @@
 /**
- * STUDIO — Prévisualisation fidèle (mode invité).
- * Rend la page publique /inv/{slug} : scroll
- * continu sans TabBar, couverture pré-personnalisée, flèche
- * animée, effets d'apparition au défilement — avec la
- * configuration EN DIRECT du studio (thème, boissons, invités,
- * effet de reveal). Chaque changement se voit immédiatement.
+ * Prévisualisation fidèle — toujours calée sur l’état LIVE du studio.
  */
 
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GuestInvitation } from '@/features/invitation/GuestInvitation';
@@ -21,11 +16,32 @@ export default function PrevisualisationScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const {
-    template, cover, guests, drinks, diets, revealEffect, galleryStyle, venue,
-    invitationSlug, dressCode, story, program, gallery, voix,
+    template,
+    cover,
+    guests,
+    drinks,
+    diets,
+    revealEffect,
+    galleryStyle,
+    venue,
+    invitationSlug,
+    dressCode,
+    story,
+    program,
+    gallery,
+    voix,
+    speakers,
+    practical,
   } = useEditor();
 
-  /* Config en DIRECT du studio — fidélité totale au rendu invité. */
+  /** Remonte GuestInvitation à chaque ouverture de Voir. */
+  const [visitId, setVisitId] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      setVisitId((n) => n + 1);
+    }, []),
+  );
+
   const config = useMemo(
     () => ({
       templateKey: template.key,
@@ -48,22 +64,61 @@ export default function PrevisualisationScreen() {
       },
       story,
       program,
-      gallery: (gallery.length > 0 ? gallery : template.galleryImages.map((uri, index) => ({
-        uri,
-        category: (['ceremonie', 'cocktail', 'soiree'] as const)[index % 3],
-      }))).map((item) => ({ uri: item.uri, category: item.category })),
+      gallery: (gallery.length > 0
+        ? gallery
+        : template.galleryImages.map((uri, index) => ({
+            uri,
+            category: (['ceremonie', 'cocktail', 'soiree'] as const)[index % 3],
+          }))
+      ).map((item) => ({ uri: item.uri, category: item.category })),
       countdownImage: template.countdownImage,
       voix,
+      speakers,
+      practical,
     }),
-    [template, cover, guests, drinks, diets, revealEffect, galleryStyle, venue, dressCode, story, program, gallery, voix],
+    [
+      template,
+      cover,
+      guests,
+      drinks,
+      diets,
+      revealEffect,
+      galleryStyle,
+      venue,
+      dressCode,
+      story,
+      program,
+      gallery,
+      voix,
+      speakers,
+      practical,
+    ],
   );
 
-  /* Message d’accueil = prénom de l’invité (échantillon studio si liste vide). */
+  const liveKey = [
+    visitId,
+    cover.coupleFrame,
+    cover.couplePhotoUri,
+    cover.photoUri,
+    cover.title,
+    cover.dateLabel,
+    cover.couple,
+    cover.kicker,
+    cover.guestLine,
+    dressCode,
+    venue.name,
+    venue.city,
+    story.length,
+    program.length,
+    gallery.length,
+    speakers.length,
+  ].join('|');
+
   const guest = guests[0] ?? STUDIO_PREVIEW_GUEST;
 
   const exit = () => {
     if (router.canGoBack()) router.back();
-    else router.replace('/editor?template=elegance');
+    else router.replace('/editor');
   };
 
   return (
@@ -80,7 +135,7 @@ export default function PrevisualisationScreen() {
       ) : null}
 
       <View style={styles.body}>
-        <GuestInvitation slug={invitationSlug} config={config} guest={guest} />
+        <GuestInvitation key={liveKey} slug={invitationSlug} config={config} guest={guest} />
       </View>
 
       {Platform.OS !== 'web' ? (

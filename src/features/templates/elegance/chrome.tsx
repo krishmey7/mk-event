@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Modèle « Élégance » · chrome : header (← / ♥)
+ * MK EVENTS — Modèle « Élégance » · chrome : header (← / ♥)
  * et barre d'onglets basse à 5 slots (4ᵉ libellé dynamique :
  * RSVP / Galerie / Livre d'or — Vues 2, 3, 5, 6, 7).
  */

@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Modèle « Élégance » · VUE 3 — « LE PROGRAMME ».
+ * MK EVENTS — Modèle « Élégance » · VUE 3 — « LE PROGRAMME ».
  * Timeline dorée à icônes : 15h00 → 23h00 + motif floral en pied
  * de page (rappel botanique de la maquette).
  */

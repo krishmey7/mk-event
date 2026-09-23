@@ -1,5 +1,5 @@
 /**
- * Décor (anniversaire) / Lieu & pratiques (conférence) / Dress code (mariage).
+ * Décor (anniversaire) / Lieu & pratiques (conférence).
  */
 
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -38,16 +38,8 @@ export default function ThemeTabScreen() {
         showsVerticalScrollIndicator={false}
       >
         {hint ? <EditorHint>{hint}</EditorHint> : null}
-        <Text style={[styles.heading, { color: c.textPrimary }]}>Ambiance</Text>
-        <Text style={[styles.lead, { color: c.textMuted }]}>
-          Palette active : {theme.label}. Les couleurs d’origine du modèle s’appliquent si vous
-          avez choisi « Aucun ».
-        </Text>
-        <EditorInput
-          value={dressCode}
-          onChangeText={setDressCode}
-          placeholder="Ex. À 21h · tenue chic festive"
-        />
+        <Text style={[styles.heading, { color: c.textPrimary }]}>Palette</Text>
+        <Text style={[styles.lead, { color: c.textMuted }]}>{theme.label}</Text>
         <View style={[styles.swatch, { backgroundColor: theme.swatch || c.accent }]} />
       </ScrollView>
     );
@@ -91,24 +83,16 @@ export default function ThemeTabScreen() {
     );
   }
 
+  /* Mariage : dress code déjà dans Infos — cet écran n’est pas dans le parcours. */
   return (
     <ScrollView
       style={{ backgroundColor: c.background }}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <EditorHint>
-        Le design et les couleurs viennent du thème choisi à la création. Ici : dress code uniquement.
-      </EditorHint>
-      <Text style={[styles.heading, { color: c.textPrimary }]}>Dress code ou ambiance</Text>
       <Text style={[styles.lead, { color: c.textMuted }]}>
-        Palette active : {theme.label}. Non modifiable dans le studio.
+        Le dress code se règle à l’étape Infos.
       </Text>
-      <EditorInput
-        value={dressCode}
-        onChangeText={setDressCode}
-        placeholder="Ex. Tenue de cocktail, champagne et ivoire"
-      />
     </ScrollView>
   );
 }
@@ -117,6 +101,5 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 36 },
   heading: { fontFamily: fontFamilies.sansSemiBold, fontSize: 16, marginTop: 8, marginBottom: 6 },
   lead: { fontFamily: fontFamilies.sans, fontSize: 13.5, lineHeight: 19, marginBottom: 10 },
-  gap: { height: 10 },
-  swatch: { width: 36, height: 36, borderRadius: 18, marginTop: 16 },
+  swatch: { width: 48, height: 48, borderRadius: 24, marginTop: 8 },
 });

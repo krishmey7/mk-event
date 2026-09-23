@@ -1,6 +1,6 @@
 /**
  * ──────────────────────────────────────────────────────────────
- *  MK EVENT — MODÈLE « ÉLÉGANCE » · THÈMES DE COULEUR (planche 3)
+ *  MK EVENTS — MODÈLE « ÉLÉGANCE » · THÈMES DE COULEUR (planche 3)
  * ──────────────────────────────────────────────────────────────
  *  6 thèmes sélectionnables par les mariés (Vue 8 de la maquette) :
  *  Champagne (défaut) · Rose poudré · Vert sauge · Bleu marine ·

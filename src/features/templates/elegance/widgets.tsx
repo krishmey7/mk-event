@@ -1,5 +1,5 @@
 /**
- * MK EVENT — Modèle « Élégance » · briques UI thématisées partagées.
+ * MK EVENTS — Modèle « Élégance » · briques UI thématisées partagées.
  * Règles : zéro Text hors <Text />, ombres via `shadows.*`.
  */
 

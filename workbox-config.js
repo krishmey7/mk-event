@@ -1,7 +1,8 @@
 module.exports = {
   globDirectory: 'dist/',
-  globPatterns: ['**/*.{js,css,html,png,ico,json,woff,woff2,ttf,svg,webp}'],
+  globPatterns: ['**/*.{js,css,html,png,ico,json,woff,woff2,ttf,svg,webp,jpg,jpeg}'],
   swDest: 'dist/sw.js',
+  maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
   ignoreURLParametersMatching: [/^utm_/, /^fbclid$/],
   skipWaiting: true,
   clientsClaim: true,
@@ -14,14 +15,6 @@ module.exports = {
         expiration: { maxEntries: 64, maxAgeSeconds: 60 * 60 * 24 * 7 },
       },
     },
-    {
-      urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'mk-event-api',
-        networkTimeoutSeconds: 8,
-        expiration: { maxEntries: 32, maxAgeSeconds: 60 * 5 },
-      },
-    },
+    // Les /api/ (JWT + RSVP) ne doivent jamais être mis en cache PWA.
   ],
 };

@@ -2,8 +2,10 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    EventGuestbookViewSet,
     EventViewSet,
     GuestViewSet,
+    PublicGuestbookView,
     PublicInvitationView,
     PublicRSVPView,
     TableViewSet,
@@ -42,6 +44,21 @@ urlpatterns = [
         TableViewSet.as_view({"get": "retrieve", "patch": "partial_update", "delete": "destroy"}),
         name="event-table-detail",
     ),
+    path(
+        "events/<int:event_id>/guestbook/",
+        EventGuestbookViewSet.as_view({"get": "list"}),
+        name="event-guestbook",
+    ),
+    path(
+        "events/<int:event_id>/guestbook/<int:pk>/",
+        EventGuestbookViewSet.as_view({"delete": "destroy"}),
+        name="event-guestbook-detail",
+    ),
     path("inv/<slug:slug>/", PublicInvitationView.as_view(), name="public-invitation"),
     path("inv/<slug:slug>/rsvp/", PublicRSVPView.as_view(), name="public-rsvp"),
+    path(
+        "inv/<slug:slug>/guestbook/",
+        PublicGuestbookView.as_view(),
+        name="public-guestbook",
+    ),
 ]

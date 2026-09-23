@@ -3,17 +3,24 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Event, Guest, RSVPResponse, Table
+from .media_upload import MediaUploadError, absolute_media_url, save_event_image
+from .models import Event, Guest, GuestbookEntry, RSVPResponse, Table
 from .serializers import (
     EventDraftSerializer,
     EventSerializer,
+    GuestbookCreateSerializer,
+    GuestbookEntrySerializer,
     GuestSerializer,
     GuestWriteSerializer,
+    PublicEventSerializer,
+    PublicGuestSerializer,
     RSVPSubmitSerializer,
     TableSerializer,
+    sanitize_public_studio_config,
 )
 
 
@@ -46,6 +53,7 @@ def annotate_events(qs):
 class EventViewSet(viewsets.ModelViewSet):
     serializer_class = EventSerializer
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get_queryset(self):
         return annotate_events(
@@ -134,7 +142,9 @@ class EventViewSet(viewsets.ModelViewSet):
         update_fields = ["slug", "status", "updated_at"]
         studio_config = request.data.get("studio_config")
         if isinstance(studio_config, dict):
-            event.studio_config = studio_config
+            # Ne pas persister la liste d'invités dans le snapshot (PII) —
+            # les invités sont synchronisés via le tableau `guests` ci-dessus.
+            event.studio_config = sanitize_public_studio_config(studio_config)
             update_fields.append("studio_config")
             theme_from_config = studio_config.get("themeKey")
             if isinstance(theme_from_config, str) and theme_from_config.strip():
@@ -152,6 +162,21 @@ class EventViewSet(viewsets.ModelViewSet):
                 "event": EventSerializer(event).data,
                 "guests": synced_guests,
             }
+        )
+
+    @action(detail=True, methods=["post"], url_path="media")
+    def upload_media(self, request, pk=None):
+        """POST multipart — enregistre une image sur le volume MEDIA_ROOT."""
+        event = self.get_object()
+        uploaded = request.FILES.get("file")
+        try:
+            relative = save_event_image(event.id, uploaded)
+        except MediaUploadError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"url": absolute_media_url(request, relative)},
+            status=status.HTTP_201_CREATED,
         )
 
 
@@ -227,14 +252,13 @@ class PublicInvitationView(APIView):
 
     def get(self, request, slug: str):
         event = get_object_or_404(
-            annotate_events(
-                Event.objects.filter(status=Event.Status.PUBLISHED).select_related("template")
-            ),
+            Event.objects.filter(status=Event.Status.PUBLISHED).select_related("template"),
             slug=slug,
         )
-        token = request.query_params.get("guest") or request.query_params.get("guestId")
+        # Uniquement access_token — pas de studio_key / pk (énumération).
+        token = (request.query_params.get("guest") or "").strip()
         payload = {
-            "event": EventSerializer(event).data,
+            "event": PublicEventSerializer(event).data,
             "guest": None,
         }
         if token:
@@ -243,20 +267,8 @@ class PublicInvitationView(APIView):
                 .select_related("table")
                 .first()
             )
-            if guest is None:
-                guest = (
-                    Guest.objects.filter(event=event, studio_key=token)
-                    .select_related("table")
-                    .first()
-                )
-            if guest is None and token.isdigit():
-                guest = (
-                    Guest.objects.filter(event=event, pk=int(token))
-                    .select_related("table")
-                    .first()
-                )
             if guest:
-                payload["guest"] = GuestSerializer(guest).data
+                payload["guest"] = PublicGuestSerializer(guest).data
         return Response(payload)
 
 
@@ -269,11 +281,7 @@ class PublicRSVPView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        token = (
-            data.get("access_token")
-            or request.query_params.get("guest")
-            or request.query_params.get("guestId")
-        )
+        token = (data.get("access_token") or "").strip()
         if not token:
             return Response(
                 {"detail": "Jeton invité manquant (access_token)."},
@@ -281,10 +289,6 @@ class PublicRSVPView(APIView):
             )
 
         guest = Guest.objects.filter(event=event, access_token=token).first()
-        if guest is None:
-            guest = Guest.objects.filter(event=event, studio_key=token).first()
-        if guest is None and str(token).isdigit():
-            guest = Guest.objects.filter(event=event, pk=int(token)).first()
         if guest is None:
             return Response({"detail": "Invité introuvable."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -327,7 +331,64 @@ class PublicRSVPView(APIView):
                 "children_count": rsvp.children_count,
                 "message": rsvp.message,
                 "responded_at": rsvp.responded_at,
-                "guest_detail": GuestSerializer(guest).data,
+                "guest_detail": PublicGuestSerializer(guest).data,
             },
             status=status.HTTP_200_OK,
         )
+
+
+class PublicGuestbookView(APIView):
+    """GET/POST livre d’or public — invitation publiée uniquement."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, slug: str):
+        event = get_object_or_404(Event, slug=slug, status=Event.Status.PUBLISHED)
+        qs = GuestbookEntry.objects.filter(event=event, is_visible=True)
+        return Response(GuestbookEntrySerializer(qs, many=True).data)
+
+    def post(self, request, slug: str):
+        event = get_object_or_404(Event, slug=slug, status=Event.Status.PUBLISHED)
+        serializer = GuestbookCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        message = serializer.validated_data["message"].strip()
+        if not message:
+            return Response(
+                {"detail": "Le message ne peut pas être vide."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        token = (serializer.validated_data.get("access_token") or "").strip()
+        guest = None
+        author_name = "Invité"
+        if token:
+            guest = Guest.objects.filter(event=event, access_token=token).first()
+            if guest:
+                author_name = (guest.full_name or "").strip() or "Invité"
+
+        entry = GuestbookEntry.objects.create(
+            event=event,
+            guest=guest,
+            author_name=author_name[:120],
+            message=message[:500],
+            is_visible=True,
+        )
+        return Response(
+            GuestbookEntrySerializer(entry).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class EventGuestbookViewSet(EventNestedMixin, viewsets.ViewSet):
+    """Liste / suppression des messages — organisateur."""
+
+    def list(self, request, event_id=None):
+        event = self.get_event()
+        qs = GuestbookEntry.objects.filter(event=event)
+        return Response(GuestbookEntrySerializer(qs, many=True).data)
+
+    def destroy(self, request, event_id=None, pk=None):
+        event = self.get_event()
+        entry = get_object_or_404(GuestbookEntry, pk=pk, event=event)
+        entry.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

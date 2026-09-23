@@ -1,7 +1,22 @@
+from copy import deepcopy
+
 from django.db.models import Count, Q
 from rest_framework import serializers
 
-from .models import Event, Guest, InvitationTemplate, RSVPResponse, Table
+from .models import Event, Guest, GuestbookEntry, InvitationTemplate, RSVPResponse, Table
+
+# Champs PII / liste d'invités — jamais exposés sur l'API publique.
+_PUBLIC_STUDIO_STRIP_KEYS = ("guests",)
+
+
+def sanitize_public_studio_config(value):
+    """Retire la liste d'invités (contacts) du snapshot studio servi aux invités."""
+    if not isinstance(value, dict):
+        return value
+    cleaned = deepcopy(value)
+    for key in _PUBLIC_STUDIO_STRIP_KEYS:
+        cleaned.pop(key, None)
+    return cleaned
 
 
 class InvitationTemplateSerializer(serializers.ModelSerializer):
@@ -200,10 +215,86 @@ class EventDraftSerializer(serializers.ModelSerializer):
         )
 
 
+class PublicGuestSerializer(serializers.ModelSerializer):
+    """Invité courant uniquement — pas d'email/téléphone/studio_key."""
+
+    table_detail = TableSerializer(source="table", read_only=True)
+
+    class Meta:
+        model = Guest
+        fields = (
+            "id",
+            "full_name",
+            "avatar_url",
+            "rsvp_status",
+            "adults_count",
+            "children_count",
+            "table",
+            "table_detail",
+            "drink",
+            "access_token",
+            "responded_at",
+        )
+        read_only_fields = fields
+
+
+class PublicEventSerializer(serializers.ModelSerializer):
+    """Événement publié — studio_config sans liste d'invités."""
+
+    template_detail = InvitationTemplateSerializer(source="template", read_only=True)
+    studio_config = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Event
+        fields = (
+            "id",
+            "name",
+            "type",
+            "status",
+            "template",
+            "template_detail",
+            "event_date",
+            "venue_name",
+            "venue_city",
+            "message",
+            "slug",
+            "cover_image_url",
+            "theme_key",
+            "studio_config",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = fields
+
+    def get_studio_config(self, obj: Event):
+        return sanitize_public_studio_config(obj.studio_config)
+
+
 class RSVPSubmitSerializer(serializers.Serializer):
-    access_token = serializers.CharField(required=False, allow_blank=True)
+    access_token = serializers.CharField(required=True, allow_blank=False)
     answer = serializers.ChoiceField(choices=RSVPResponse.Answer.choices)
     adults_count = serializers.IntegerField(min_value=0, default=1)
     children_count = serializers.IntegerField(min_value=0, default=0)
     message = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     drink = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+
+class GuestbookEntrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GuestbookEntry
+        fields = (
+            "id",
+            "event",
+            "guest",
+            "author_name",
+            "message",
+            "is_visible",
+            "created_at",
+        )
+        read_only_fields = ("id", "event", "guest", "created_at")
+
+
+class GuestbookCreateSerializer(serializers.Serializer):
+    message = serializers.CharField(max_length=500, allow_blank=False, trim_whitespace=True)
+    access_token = serializers.CharField(required=False, allow_blank=True, default="")
+

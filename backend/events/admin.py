@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Event, Guest, InvitationTemplate, RSVPResponse, Table
+from .models import Event, Guest, GuestbookEntry, InvitationTemplate, RSVPResponse, Table
 
 
 @admin.register(InvitationTemplate)
@@ -32,3 +32,10 @@ class GuestAdmin(admin.ModelAdmin):
 @admin.register(RSVPResponse)
 class RSVPResponseAdmin(admin.ModelAdmin):
     list_display = ("guest", "event", "answer", "responded_at")
+
+
+@admin.register(GuestbookEntry)
+class GuestbookEntryAdmin(admin.ModelAdmin):
+    list_display = ("author_name", "event", "is_visible", "created_at")
+    list_filter = ("is_visible",)
+    search_fields = ("author_name", "message")

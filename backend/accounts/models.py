@@ -31,7 +31,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    """Organisateur MK Event — connexion e-mail (ou téléphone)."""
+    """Organisateur MK Events — connexion e-mail (ou téléphone)."""
 
     class Role(models.TextChoices):
         ORGANIZER = "organizer", "Organisateur"

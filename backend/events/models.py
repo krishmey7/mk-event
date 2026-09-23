@@ -190,3 +190,30 @@ class RSVPResponse(models.Model):
 
     def __str__(self) -> str:
         return f"{self.guest_id} → {self.answer}"
+
+
+class GuestbookEntry(models.Model):
+    """Message texte du livre d’or (invité → organisateur)."""
+
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name="guestbook_entries",
+    )
+    guest = models.ForeignKey(
+        Guest,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="guestbook_entries",
+    )
+    author_name = models.CharField(max_length=120, default="Invité")
+    message = models.CharField(max_length=500)
+    is_visible = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.event_id} · {self.author_name[:40]}"

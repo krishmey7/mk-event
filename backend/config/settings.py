@@ -1,5 +1,5 @@
 """
-MK Event — settings Django / DRF / JWT.
+MK Events — settings Django / DRF / JWT.
 """
 
 from datetime import timedelta
@@ -17,7 +17,14 @@ SECRET_KEY = os.getenv(
     "dev-only-mk-event-change-me-in-production-32chars",
 )
 
-DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() in {"1", "true", "yes"}
+# Défaut false (prod-safe). En local : DJANGO_DEBUG=true dans backend/.env
+DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() in {"1", "true", "yes"}
+
+_DEFAULT_SECRET = "dev-only-mk-event-change-me-in-production-32chars"
+if not DEBUG and SECRET_KEY == _DEFAULT_SECRET:
+    raise RuntimeError(
+        "DJANGO_SECRET_KEY doit être défini en production (DEBUG=false)."
+    )
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -141,7 +148,10 @@ STORAGES = {
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# studio_config peut contenir des images en data URL (JPEG compressés).
+# URL publique de l’API (Railway) — URLs absolues des médias pour les invités.
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").rstrip("/")
+
+# Uploads images (multipart) + ancienne limite data URL.
 DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("DATA_UPLOAD_MAX_MEMORY_SIZE", str(25 * 1024 * 1024)))
 FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("FILE_UPLOAD_MAX_MEMORY_SIZE", str(25 * 1024 * 1024)))
 
@@ -177,3 +187,14 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
+
+# E-mails (Resend) + front pour les liens de reset.
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL",
+    "MK Events <onboarding@resend.dev>",
+)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://mk-event-five.vercel.app").rstrip("/")
+
+# Client IDs Google OAuth (séparés par des virgules si web + natifs).
+GOOGLE_OAUTH_CLIENT_IDS = os.getenv("GOOGLE_OAUTH_CLIENT_IDS", "").strip()

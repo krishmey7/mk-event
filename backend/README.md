@@ -1,4 +1,4 @@
-# MK Event API (Django + DRF + JWT)
+# MK Events API (Django + DRF + JWT)
 
 ## Démarrage
 
@@ -26,6 +26,7 @@ Compte démo :
 | GET/POST | `/api/events/` | JWT |
 | GET/PATCH | `/api/events/{id}/` | JWT |
 | POST | `/api/events/{id}/publish/` | JWT |
+| POST | `/api/events/{id}/media/` | JWT (multipart `file`) |
 | GET/POST | `/api/events/{id}/guests/` | JWT |
 | PATCH/DELETE | `/api/events/{id}/guests/{id}/` | JWT |
 | POST | `/api/events/{id}/guests/{id}/check-in/` | JWT |
@@ -62,8 +63,12 @@ Préparation locale déjà faite : `Procfile`, `railway.toml`, `DATABASE_URL` op
    - `DJANGO_SECRET_KEY=…`
    - `DJANGO_ALLOWED_HOSTS=.up.railway.app`
    - `CORS_ALLOWED_ORIGINS=https://votre-app.vercel.app`
-4. Le démarrage exécute `migrate` + `collectstatic` + `gunicorn`
-5. Seed démo (une fois déployé) :
+   - `PUBLIC_BASE_URL=https://<votre-api>.up.railway.app`
+4. **Volume** : monter un volume Railway sur le dossier `media/` du service
+   (chemin conteneur typique `/app/media`) pour persister les photos
+   d’invitation hors Postgres.
+5. Le démarrage exécute `migrate` + `collectstatic` + `gunicorn`
+6. Seed démo (optionnel, une fois) :
    `railway run python manage.py seed_demo`
 
 ### Vercel (front)

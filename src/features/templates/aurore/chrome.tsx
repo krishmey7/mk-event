@@ -200,6 +200,49 @@ export function AuroreProgramItem({
   );
 }
 
+/** Lieu + carte + bouton itinéraire, dans le langage Aurore. */
+export function AuroreVenueCard({
+  venueName,
+  address,
+  gold,
+  muted,
+  ink,
+  map,
+  onDirections,
+}: {
+  venueName: string;
+  address: string;
+  gold: string;
+  muted: string;
+  ink: string;
+  map?: ReactNode;
+  onDirections: () => void;
+}) {
+  if (!address && !venueName) return null;
+  return (
+    <View style={styles.venue}>
+      <AuroreBreak gold={gold} />
+      <GoldText gold={gold} style={styles.venueKicker}>LE LIEU</GoldText>
+      <GoldText gold={gold} style={styles.venueName}>{venueName || 'Lieu à définir'}</GoldText>
+      {address ? <Text style={[styles.venueAddress, { color: muted }]}>{address}</Text> : null}
+      {map ? <View style={[styles.venueMap, { borderColor: gold }]}>{map}</View> : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Y aller"
+        onPress={onDirections}
+        style={({ pressed }) => [
+          styles.venueBtn,
+          { backgroundColor: gold },
+          pressed && { opacity: 0.88 },
+        ]}
+      >
+        <Ionicons name="navigate-outline" size={15} color={ink} />
+        <Text style={[styles.venueBtnLabel, { color: ink }]}>Y aller</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   page: { paddingHorizontal: 26, paddingTop: 28, paddingBottom: 36, position: 'relative', overflow: 'hidden' },
   pageInner: { zIndex: 1 },
@@ -280,4 +323,48 @@ const styles = StyleSheet.create({
   time: { fontFamily: 'Inter_600SemiBold', fontSize: 11, letterSpacing: 1.6 },
   programTitle: { fontFamily: 'CormorantGaramond_600SemiBold', fontSize: 22, lineHeight: 26 },
   place: { fontFamily: 'CormorantGaramond_400Regular', fontSize: 15, lineHeight: 20 },
+  venue: { alignItems: 'center', marginTop: 20, gap: 6, width: '100%' },
+  venueKicker: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+    letterSpacing: 3.2,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  venueName: {
+    fontFamily: 'CormorantGaramond_500Medium',
+    fontSize: 28,
+    lineHeight: 32,
+    textAlign: 'center',
+  },
+  venueAddress: {
+    fontFamily: 'CormorantGaramond_400Regular',
+    fontSize: 15,
+    lineHeight: 21,
+    textAlign: 'center',
+    paddingHorizontal: 8,
+  },
+  venueMap: {
+    width: '100%',
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  venueBtn: {
+    marginTop: 14,
+    minHeight: 44,
+    paddingHorizontal: 22,
+    borderRadius: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  venueBtnLabel: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
 });

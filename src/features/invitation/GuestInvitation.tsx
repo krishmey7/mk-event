@@ -43,6 +43,7 @@ import {
   AuroreProgramItem,
   AuroreSectionHeader,
   AuroreStoryItem,
+  AuroreVenueCard,
 } from '@/features/templates/aurore/chrome';
 import { GuestQr } from '@/components/ui/GuestQr';
 import { buildGuestLink, guestAccessKey } from '@/features/invitation/qr';
@@ -941,7 +942,26 @@ function GuestProgramSection({ theme, winter, aurore, venue, program, dateLabel 
             void Linking.openURL(venueDirectionsUrl(venue, platform));
           }}
         />
-      ) : aurore ? null : (
+      ) : aurore ? (
+        <Reveal effect={revealEffect} delay={120}>
+          <AuroreVenueCard
+            venueName={venue.name || 'Lieu à définir'}
+            address={[venue.street, [venue.zip, venue.city].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}
+            gold={c.accent}
+            muted={c.textMuted}
+            ink={c.bg}
+            map={
+              venueHasCoords(venue) ? (
+                <VenueMap lat={venue.lat!} lng={venue.lng!} height={180} />
+              ) : null
+            }
+            onDirections={() => {
+              const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+              void Linking.openURL(venueDirectionsUrl(venue, platform));
+            }}
+          />
+        </Reveal>
+      ) : (
         <VenueCard venue={venue} theme={theme} />
       )}
 

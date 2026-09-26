@@ -18,6 +18,7 @@ import { fontFamilies } from '@/constants/theme';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
+import { EditorialPhotoShape } from './EditorialPhotoShape';
 
 function splitCouple(couple: string): [string, string] {
   const parts = couple.split(/\s*[&+]\s*/).map((part) => part.trim()).filter(Boolean);
@@ -69,6 +70,8 @@ export function EditorialCover({
   const [first, second] = splitCouple(couple);
   const guestLine = fillGuestNameToken(phrase, guest.firstName);
   const photoUri = couplePhoto.uri || coverUri || '';
+  const frame = couplePhoto.frame || 'soft';
+  const centered = frame === 'circle' || frame === 'circleFloral' || frame === 'hex' || frame === 'hexFloral';
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -158,16 +161,24 @@ export function EditorialCover({
         <View style={[styles.rule, { backgroundColor: colors.text }]} />
       </Animated.View>
 
-      <View style={[styles.plateWrap, compact && styles.plateCompact]}>
-        <View style={[styles.plate, { borderColor: colors.text }]}>
-          {photoUri ? (
-            <Animated.View style={[styles.photoClip, { transform: [{ scale }, { translateY: shift }] }]}>
-              <Image source={{ uri: photoUri }} style={styles.photo} resizeMode="cover" />
-            </Animated.View>
-          ) : (
-            <View style={[styles.photo, { backgroundColor: colors.surfaceAlt }]} />
-          )}
-          <View style={[styles.plateShade, { backgroundColor: isDark ? colors.coverOverlay : 'transparent' }]} />
+      <View
+        style={[
+          centered ? styles.plateCenter : styles.plateWrap,
+          !centered && compact && styles.plateCompact,
+          frame === 'circle' || frame === 'circleFloral' ? styles.plateNarrow : null,
+        ]}
+      >
+        <View style={centered ? styles.plateSquare : styles.plateRatio}>
+          <EditorialPhotoShape
+            uri={photoUri}
+            frame={frame}
+            color={colors.text}
+            fallbackColor={colors.surfaceAlt}
+            imageStyle={{ transform: [{ scale }, { translateY: shift }] }}
+          />
+          {isDark ? (
+            <View pointerEvents="none" style={[styles.plateShade, { backgroundColor: colors.coverOverlay }]} />
+          ) : null}
         </View>
         <Text style={[styles.credit, { color: colors.textMuted }]} numberOfLines={2}>
           {guestLine}
@@ -329,14 +340,10 @@ const styles = StyleSheet.create({
   },
   plateWrap: { alignSelf: 'flex-end', width: '78%', marginBottom: 16 },
   plateCompact: { width: '70%' },
-  plate: {
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-    aspectRatio: 3 / 4,
-    backgroundColor: '#000',
-  },
-  photoClip: { ...StyleSheet.absoluteFillObject },
-  photo: { width: '100%', height: '120%' },
+  plateCenter: { alignSelf: 'center', width: '74%', marginBottom: 16 },
+  plateNarrow: { width: '62%' },
+  plateRatio: { width: '100%', aspectRatio: 3 / 4 },
+  plateSquare: { width: '100%', aspectRatio: 1 },
   plateShade: { ...StyleSheet.absoluteFillObject },
   credit: {
     marginTop: 8,

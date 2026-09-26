@@ -8,6 +8,7 @@ import { fontFamilies } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { CouplePhotoFrame } from '@/features/invitation/CouplePhotoFrame';
 import type { PhotoFrameKey, PhotoFrameOption } from '@/features/invitation/types';
+import { EditorialPhotoShape } from '@/features/templates/editorial/EditorialPhotoShape';
 import { WinterCouplePhotoFrame } from '@/features/templates/hiver/WinterCouplePhotoFrame';
 
 function optionLabel(option: PhotoFrameOption): string {
@@ -27,13 +28,25 @@ function FramePreview({
   frame,
   accent,
   size,
+  editorial = false,
 }: {
   uri: string;
   frame: PhotoFrameKey;
   accent: string;
   size: number;
+  editorial?: boolean;
 }) {
   const couplePhoto = { uri, frame };
+
+  if (editorial) {
+    const portrait = frame === 'soft';
+    return (
+      <View style={{ width: size, height: portrait ? Math.round(size * 1.15) : size }}>
+        <EditorialPhotoShape uri={uri} frame={frame} color={accent} fallbackColor="#E7DFD2" />
+      </View>
+    );
+  }
+
   const isHex = frame === 'hex' || frame === 'hexFloral';
 
   if (isHex) {
@@ -57,6 +70,7 @@ export function CoupleFramePicker({
   accent,
   onChangeFrame,
   onChangePhoto,
+  editorial = false,
 }: {
   uri: string;
   frame: PhotoFrameKey;
@@ -64,6 +78,8 @@ export function CoupleFramePicker({
   accent: string;
   onChangeFrame: (key: PhotoFrameKey) => void;
   onChangePhoto: () => void;
+  /** Formes et libellés propres au modèle Revue. */
+  editorial?: boolean;
 }) {
   const { theme } = useAppTheme();
   const muted = theme.colors.textMuted;
@@ -74,7 +90,7 @@ export function CoupleFramePicker({
     <View style={styles.root}>
       <View style={[styles.stage, { backgroundColor: surface, borderColor: border }]}>
         {uri ? (
-          <FramePreview uri={uri} frame={frame} accent={accent} size={128} />
+          <FramePreview uri={uri} frame={frame} accent={accent} size={128} editorial={editorial} />
         ) : (
           <View style={[styles.emptyStage, { borderColor: accent }]}>
             <Text style={[styles.emptyText, { color: muted }]}>Aperçu du cadre</Text>
@@ -115,7 +131,7 @@ export function CoupleFramePicker({
                 ]}
               >
                 {uri ? (
-                  <FramePreview uri={uri} frame={option.key} accent={accent} size={72} />
+                  <FramePreview uri={uri} frame={option.key} accent={accent} size={72} editorial={editorial} />
                 ) : (
                   <Text style={[styles.thumbFallback, { color: accent }]}>
                     {optionLabel(option).slice(0, 1)}
@@ -130,7 +146,7 @@ export function CoupleFramePicker({
                 ]}
                 numberOfLines={1}
               >
-                {optionLabel(option)}
+                {editorial ? option.label : optionLabel(option)}
               </Text>
             </Pressable>
           );

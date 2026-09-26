@@ -11,7 +11,10 @@ import { CoupleFramePicker } from '@/features/editor/components/CoupleFramePicke
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { EditorInput } from '@/features/editor/components/EditorInput';
 import { FieldWithCounter } from '@/features/editor/components/FieldWithCounter';
+import { StudioField } from '@/features/editor/components/StudioField';
+import { TemplateThemePicker } from '@/features/editor/components/TemplateThemePicker';
 import { useEditor } from '@/features/editor/EditorContext';
+import { templateStudio } from '@/features/templates/studioCapabilities';
 import { pickLibraryImage } from '@/features/editor/imagePicker';
 import { studioStepHint } from '@/features/editor/studioSteps';
 import { VenuePlaceEditor } from '@/features/venue/VenuePlaceEditor';
@@ -40,6 +43,7 @@ export default function EditorInfosScreen() {
   const conference = eventType === 'corporate';
   const wedding = !birthday && !conference;
   const hint = studioStepHint('index', eventType);
+  const studio = templateStudio(template.coverLayout);
 
   const importCouplePhoto = async () => {
     const uri = await pickLibraryImage();
@@ -55,28 +59,34 @@ export default function EditorInfosScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {hint ? <EditorHint>{hint}</EditorHint> : null}
+        <TemplateThemePicker />
 
         {wedding ? (
           <>
             <Text style={[styles.heading, { color: c.textPrimary }]}>Couverture</Text>
 
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Changer la photo de fond"
-              onPress={() => setPhotoSheet(true)}
-              style={({ pressed }) => [styles.photoZone, pressed && styles.pressed]}
+            <StudioField
+              enabled={studio.backgroundPhoto}
+              note="Ce modèle n’utilise pas la photo de fond."
             >
-              <Image
-                source={{ uri: cover.photoUri }}
-                style={StyleSheet.absoluteFill}
-                resizeMode="cover"
-              />
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10, 8, 6, 0.38)' }]} />
-              <View style={styles.photoPill}>
-                <Ionicons name="camera-outline" size={16} color="#121318" />
-                <Text style={styles.photoPillLabel}>Changer la photo de fond</Text>
-              </View>
-            </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Changer la photo de fond"
+                onPress={() => setPhotoSheet(true)}
+                style={({ pressed }) => [styles.photoZone, pressed && styles.pressed]}
+              >
+                <Image
+                  source={{ uri: cover.photoUri }}
+                  style={StyleSheet.absoluteFill}
+                  resizeMode="cover"
+                />
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10, 8, 6, 0.38)' }]} />
+                <View style={styles.photoPill}>
+                  <Ionicons name="camera-outline" size={16} color="#121318" />
+                  <Text style={styles.photoPillLabel}>Changer la photo de fond</Text>
+                </View>
+              </Pressable>
+            </StudioField>
 
             <FieldWithCounter label="Titre principal" value={cover.title} maxLength={40}>
               <EditorInput
@@ -116,15 +126,21 @@ export default function EditorInfosScreen() {
               />
             </FieldWithCounter>
 
-            <Text style={[styles.heading, { color: c.textPrimary }]}>Photo du couple</Text>
-            <CoupleFramePicker
-              uri={cover.couplePhotoUri}
-              frame={cover.coupleFrame}
-              options={template.photoFrames}
-              accent={theme.colors.accent}
-              onChangeFrame={(key) => updateCover({ coupleFrame: key })}
-              onChangePhoto={() => void importCouplePhoto()}
-            />
+            <StudioField
+              enabled={studio.couplePhoto}
+              note="Ce modèle n’utilise pas la photo du couple."
+            >
+              <Text style={[styles.heading, { color: c.textPrimary }]}>Photo du couple</Text>
+              <CoupleFramePicker
+                uri={cover.couplePhotoUri}
+                frame={cover.coupleFrame}
+                options={template.photoFrames}
+                accent={theme.colors.accent}
+                editorial={template.coverLayout === 'editorial'}
+                onChangeFrame={(key) => updateCover({ coupleFrame: key })}
+                onChangePhoto={() => void importCouplePhoto()}
+              />
+            </StudioField>
 
             <VenuePlaceEditor venue={venue} onChange={updateVenue} />
 
@@ -174,14 +190,19 @@ export default function EditorInfosScreen() {
               onChangeText={setDressCode}
               placeholder="À 21h · Nom du lieu"
             />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setPhotoSheet(true)}
-              style={({ pressed }) => [styles.styleRow, { marginTop: 12 }, pressed && styles.pressed]}
+            <StudioField
+              enabled={studio.backgroundPhoto}
+              note="Cette affiche n’utilise pas de photo de fond."
             >
-              <Ionicons name="image-outline" size={17} color={c.accent} />
-              <Text style={[styles.styleRowLabel, { color: c.accent }]}>Photo de fond</Text>
-            </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setPhotoSheet(true)}
+                style={({ pressed }) => [styles.styleRow, { marginTop: 12 }, pressed && styles.pressed]}
+              >
+                <Ionicons name="image-outline" size={17} color={c.accent} />
+                <Text style={[styles.styleRowLabel, { color: c.accent }]}>Photo de fond</Text>
+              </Pressable>
+            </StudioField>
           </>
         ) : null}
 

@@ -51,10 +51,15 @@ export default function EditorLayout() {
     };
   } else {
     const session = sessionRef.current;
+    const templateChanged = Boolean(templateKey && templateKey !== session.templateKey);
     if (templateKey) session.templateKey = templateKey;
-    if (themeFromUrl) session.themeKey = themeFromUrl;
-    else if (!session.themeKey && resolvedTheme) session.themeKey = resolvedTheme;
-    if (eventId) session.eventId = eventId;
+    // « Voir » pousse la palette résolue dans l’URL. Ne pas remonter le studio
+    // pour ça : la photo choisie (souvent un blob local) serait perdue.
+    if (templateChanged) {
+      session.themeKey = themeFromUrl ?? resolvedTheme ?? session.themeKey;
+    } else if (!session.themeKey && resolvedTheme) {
+      session.themeKey = resolvedTheme;
+    }
   }
 
   const session = sessionRef.current;
@@ -94,7 +99,6 @@ export default function EditorLayout() {
 
   const providerKey = [
     session.templateKey ?? 'default',
-    session.themeKey ?? 'theme',
     session.eventId ?? 'new',
     String(hydrateKey),
   ].join('-');

@@ -62,6 +62,7 @@ import { resolveCountdownTargetMs } from '@/features/editor/snapshot';
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import { type TemplateTheme, type TemplateThemeKey } from '@/features/templates/elegance/themes';
 import { getTemplate, type CoverLayout, type TemplateThemeDefinition } from '@/features/templates/registry';
+import { resolveTemplateTheme } from '@/features/templates/resolveTheme';
 import type { InvitationConfig } from './guestRegistry';
 import { BirthdayPoster } from '@/features/templates/birthday/BirthdayPoster';
 import { ConferenceInvitation } from '@/features/templates/conference/ConferenceInvitation';
@@ -122,7 +123,7 @@ export function GuestInvitation({ slug, config, guest }: {
   guest: Guest;
 }) {
   const template = getTemplate(config.templateKey);
-  const themeDef = template.themes.find((item) => item.key === config.themeKey) ?? template.themes[0];
+  const themeDef = resolveTemplateTheme(template, config.themeKey);
   const theme = asGuestTheme(themeDef);
   const layout = template.coverLayout;
   const insets = useSafeAreaInsets();

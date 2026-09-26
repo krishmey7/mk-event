@@ -75,7 +75,8 @@ export function AuroraCover({
   const muted = colors.textMuted;
   const cream = colors.text;
   const panelW = Math.max(120, box.w - photoW);
-  const scale = Math.min(1.15, Math.max(0.92, panelW / 170));
+  const scale = Math.min(1.08, Math.max(0.9, panelW / 190));
+  const script = Math.min(52, Math.max(34, (panelW - 20) / 2.2));
   const stacked = splitTitle(title);
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
@@ -115,12 +116,18 @@ export function AuroraCover({
           pointerEvents="none"
         >
           <Defs>
-            <LinearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
+            <LinearGradient
+              id={gradId}
+              x1="0"
+              y1="0"
+              x2={fadeW + 14}
+              y2="0"
+              gradientUnits="userSpaceOnUse"
+            >
               <Stop offset="0" stopColor={panel} stopOpacity="0" />
-              <Stop offset="0.28" stopColor={panel} stopOpacity="0.08" />
-              <Stop offset="0.5" stopColor={panel} stopOpacity="0.28" />
-              <Stop offset="0.72" stopColor={panel} stopOpacity="0.62" />
-              <Stop offset="0.88" stopColor={panel} stopOpacity="0.9" />
+              <Stop offset="0.4" stopColor={panel} stopOpacity="0.15" />
+              <Stop offset="0.62" stopColor={panel} stopOpacity="0.5" />
+              <Stop offset="0.78" stopColor={panel} stopOpacity="1" />
               <Stop offset="1" stopColor={panel} stopOpacity="1" />
             </LinearGradient>
           </Defs>
@@ -129,22 +136,22 @@ export function AuroraCover({
       ) : null}
 
       <View style={styles.panel}>
-        <View style={[styles.copy, { paddingHorizontal: 12 * scale, paddingBottom: hint ? 72 : 16 }]}>
+        <View style={[styles.copy, { paddingHorizontal: 8, paddingBottom: hint ? 108 : 16 }]}>
           <View style={styles.hero}>
             {stacked ? (
               <View style={styles.scriptBlock}>
-                <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 64 * scale, lineHeight: 96 * scale }]}>
+                <GoldText gold={gold} style={[styles.scriptBig, { fontSize: script, lineHeight: script * 1.12 }]}>
                   {stacked.save}
                 </GoldText>
                 <GoldText
                   gold={gold}
-                  style={[styles.scriptMid, { fontSize: 30 * scale, lineHeight: 52 * scale, marginTop: -10 * scale }]}
+                  style={[styles.scriptMid, { fontSize: script * 0.46, lineHeight: script * 0.62, marginTop: -script * 0.34 }]}
                 >
                   {stacked.mid}
                 </GoldText>
                 <GoldText
                   gold={gold}
-                  style={[styles.scriptBig, { fontSize: 64 * scale, lineHeight: 96 * scale, marginTop: -8 * scale }]}
+                  style={[styles.scriptBig, { fontSize: script, lineHeight: script * 1.12, marginTop: -script * 0.26 }]}
                 >
                   {stacked.date}
                 </GoldText>
@@ -211,7 +218,7 @@ export function AuroraCover({
 
 const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
-  photoCol: { flex: 1, overflow: 'hidden', position: 'relative' },
+  photoCol: { flex: 1, overflow: 'hidden', position: 'relative', marginRight: -18, zIndex: 0 },
   panel: { flex: 1 },
   copy: {
     flex: 1,
@@ -248,7 +255,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 4,
   },
-  bottom: { alignItems: 'center', gap: 8, width: '100%', marginTop: 16 },
+  bottom: { alignItems: 'center', gap: 8, width: '100%', marginTop: 16, marginBottom: 8 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 6 },
   mark: { alignItems: 'center', justifyContent: 'center' },
   date: {

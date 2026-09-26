@@ -2,11 +2,10 @@
  * Décor (anniversaire) / Lieu & pratiques (conférence).
  */
 
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { EditorInput } from '@/features/editor/components/EditorInput';
 import { EditorHint } from '@/features/editor/components/EditorHint';
-import { TemplateThemePicker } from '@/features/editor/components/TemplateThemePicker';
 import { useEditor } from '@/features/editor/EditorContext';
 import { studioStepHint } from '@/features/editor/studioSteps';
 import { VenuePlaceEditor } from '@/features/venue/VenuePlaceEditor';
@@ -18,6 +17,7 @@ export default function ThemeTabScreen() {
   const {
     dressCode,
     setDressCode,
+    theme,
     template,
     practical,
     updatePractical,
@@ -38,7 +38,9 @@ export default function ThemeTabScreen() {
         showsVerticalScrollIndicator={false}
       >
         {hint ? <EditorHint>{hint}</EditorHint> : null}
-        <TemplateThemePicker />
+        <Text style={[styles.heading, { color: c.textPrimary }]}>Palette</Text>
+        <Text style={[styles.lead, { color: c.textMuted }]}>{theme.label}</Text>
+        <View style={[styles.swatch, { backgroundColor: theme.swatch || c.accent }]} />
       </ScrollView>
     );
   }
@@ -52,7 +54,6 @@ export default function ThemeTabScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {hint ? <EditorHint>{hint}</EditorHint> : null}
-        <TemplateThemePicker />
         <VenuePlaceEditor venue={venue} onChange={updateVenue} />
         <Text style={[styles.heading, { color: c.textPrimary }]}>Accès</Text>
         <EditorInput
@@ -100,4 +101,5 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 36 },
   heading: { fontFamily: fontFamilies.sansSemiBold, fontSize: 16, marginTop: 8, marginBottom: 6 },
   lead: { fontFamily: fontFamilies.sans, fontSize: 13.5, lineHeight: 19, marginBottom: 10 },
+  swatch: { width: 48, height: 48, borderRadius: 24, marginTop: 8 },
 });

@@ -101,8 +101,6 @@ interface EditorContextValue {
   /** Thèmes du modèle, dans l'ordre d'affichage. */
   themes: TemplateThemeDefinition[];
   updateCover: (patch: Partial<CoverConfig>) => void;
-  /** Palette du modèle — résolue puis appliquée à toute l’invitation. */
-  setThemeKey: (key: string) => void;
   /** Enregistre + publie (slug + sync invités / access_token Django). */
   saveToLibrary: () => Promise<number>;
   saving: boolean;
@@ -247,7 +245,8 @@ export function EditorProvider({
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(snap ? Date.now() : null);
 
   const updateCover = useCallback((patch: Partial<CoverConfig>) => {
-    // Le thème passe par setThemeKey. {{Nom}} reste verrouillé dans le message invité.
+    // Thème verrouillé : il se choisit dans le profil et le wizard.
+    // {{Nom}} reste verrouillé dans le message invité.
     setCover((prev) => {
       const next = { ...prev, ...patch, themeKey: prev.themeKey };
       if (patch.guestLine !== undefined) {
@@ -256,11 +255,6 @@ export function EditorProvider({
       return next;
     });
   }, []);
-
-  const setThemeKey = useCallback((key: string) => {
-    const resolved = resolveTemplateThemeKey(template, key);
-    setCover((prev) => (prev.themeKey === resolved ? prev : { ...prev, themeKey: resolved }));
-  }, [template]);
 
   const [story, setStory] = useState<StoryMilestone[]>(() => snap?.story ?? template.story);
   const [program, setProgram] = useState<ProgramStep[]>(() => snap?.program ?? template.program);
@@ -732,7 +726,6 @@ export function EditorProvider({
       theme,
       themes: template.themes,
       updateCover,
-      setThemeKey,
       saveToLibrary,
       saving,
       published,
@@ -785,7 +778,6 @@ export function EditorProvider({
       cover,
       theme,
       updateCover,
-      setThemeKey,
       saveToLibrary,
       saving,
       published,

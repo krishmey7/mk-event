@@ -12,7 +12,6 @@ import { EditorHint } from '@/features/editor/components/EditorHint';
 import { EditorInput } from '@/features/editor/components/EditorInput';
 import { FieldWithCounter } from '@/features/editor/components/FieldWithCounter';
 import { StudioField } from '@/features/editor/components/StudioField';
-import { TemplateThemePicker } from '@/features/editor/components/TemplateThemePicker';
 import { useEditor } from '@/features/editor/EditorContext';
 import { templateStudio } from '@/features/templates/studioCapabilities';
 import { pickLibraryImage } from '@/features/editor/imagePicker';
@@ -59,7 +58,6 @@ export default function EditorInfosScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {hint ? <EditorHint>{hint}</EditorHint> : null}
-        <TemplateThemePicker />
 
         {wedding ? (
           <>

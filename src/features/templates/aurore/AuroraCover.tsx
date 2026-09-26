@@ -30,19 +30,14 @@ function mixHex(hex: string, toward: number, amount: number): string {
     .join('')}`;
 }
 
-function hexToRgb(hex: string): string {
-  const raw = hex.replace('#', '');
-  return [0, 1, 2].map((i) => parseInt(raw.slice(i * 2, i * 2 + 2), 16)).join(', ');
-}
-
-/** Légère variation du panneau, comme l’affiche — jamais un vert flashy. */
-function panelAtmosphere(hex: string): ViewStyle {
+/** Halo léger sur le fond (pas sur un panneau opaque qui masquerait le fondu). */
+function stageAtmosphere(hex: string): ViewStyle {
   if (Platform.OS !== 'web') return { backgroundColor: hex };
   const lift = mixHex(hex, 255, 0.07);
   const shade = mixHex(hex, 0, 0.1);
   return {
     backgroundColor: hex,
-    backgroundImage: `radial-gradient(ellipse 120% 95% at 22% 30%, ${lift} 0%, ${hex} 55%, ${shade} 100%)`,
+    backgroundImage: `radial-gradient(ellipse 120% 95% at 68% 30%, ${lift} 0%, ${hex} 55%, ${shade} 100%)`,
   } as ViewStyle;
 }
 
@@ -63,6 +58,16 @@ function GoldMark({
     </View>
   );
 }
+
+const FADE_STOPS = [
+  [0, 0],
+  [0.2, 0.05],
+  [0.4, 0.16],
+  [0.58, 0.38],
+  [0.74, 0.66],
+  [0.88, 0.9],
+  [1, 1],
+] as const;
 
 export function AuroraCover({
   colors,
@@ -105,34 +110,11 @@ export function AuroraCover({
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
   const dress = (dressCode ?? '').trim();
-  const fadeW = photoW > 0 ? Math.round(photoW * 0.78) : 0;
-  const fadeStops = [
-    [0, 0],
-    [0.18, 0.04],
-    [0.36, 0.12],
-    [0.52, 0.28],
-    [0.68, 0.52],
-    [0.82, 0.78],
-    [0.93, 0.94],
-    [1, 1],
-  ] as const;
-  const webFade =
-    Platform.OS === 'web' && fadeW > 0
-      ? ({
-          position: 'absolute',
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: fadeW,
-          backgroundImage: `linear-gradient(90deg, ${fadeStops
-            .map(([at, op]) => `rgba(${hexToRgb(panel)}, ${op}) ${Math.round(at * 100)}%)`)
-            .join(', ')})`,
-        } as ViewStyle)
-      : null;
+  const fadeW = photoW > 0 ? Math.round(photoW * 0.7) : 0;
 
   return (
     <View
-      style={[styles.fill, { backgroundColor: panel }]}
+      style={[styles.fill, stageAtmosphere(panel)]}
       onLayout={(event) => {
         const next = {
           w: Math.round(event.nativeEvent.layout.width),
@@ -153,31 +135,34 @@ export function AuroraCover({
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: panel }]} />
         )}
-
-        {webFade ? <View pointerEvents="none" style={webFade} /> : null}
-
-        {!webFade && fadeW > 0 && box.h > 0 ? (
-          <Svg width={fadeW} height={box.h} style={styles.fade} pointerEvents="none">
-            <Defs>
-              <LinearGradient
-                id={gradId}
-                x1="0"
-                y1="0"
-                x2={fadeW}
-                y2="0"
-                gradientUnits="userSpaceOnUse"
-              >
-                {fadeStops.map(([at, op]) => (
-                  <Stop key={at} offset={String(at)} stopColor={panel} stopOpacity={String(op)} />
-                ))}
-              </LinearGradient>
-            </Defs>
-            <Rect x="0" y="0" width={fadeW} height={box.h} fill={`url(#${gradId})`} />
-          </Svg>
-        ) : null}
       </View>
 
-      <View style={[styles.panel, panelAtmosphere(panel)]}>
+      {fadeW > 0 && box.h > 0 && photoW > 0 ? (
+        <Svg
+          width={fadeW}
+          height={box.h}
+          style={{ position: 'absolute', left: photoW - fadeW, top: 0, zIndex: 1 }}
+          pointerEvents="none"
+        >
+          <Defs>
+            <LinearGradient
+              id={gradId}
+              x1="0"
+              y1="0"
+              x2={fadeW}
+              y2="0"
+              gradientUnits="userSpaceOnUse"
+            >
+              {FADE_STOPS.map(([at, op]) => (
+                <Stop key={at} offset={String(at)} stopColor={panel} stopOpacity={String(op)} />
+              ))}
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width={fadeW} height={box.h} fill={`url(#${gradId})`} />
+        </Svg>
+      ) : null}
+
+      <View style={styles.panel}>
         <View style={[styles.copy, { paddingHorizontal: 8, paddingBottom: hint ? 108 : 16 }]}>
           <View style={styles.hero}>
             {stacked ? (
@@ -260,9 +245,9 @@ export function AuroraCover({
 
 const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
-  photoCol: { flex: 1, overflow: 'hidden', position: 'relative', marginRight: -22, zIndex: 0 },
-  fade: { position: 'absolute', right: 0, top: 0 },
-  panel: { flex: 1, zIndex: 2 },
+  photoCol: { flex: 1, overflow: 'hidden', position: 'relative', zIndex: 0 },
+  /** Transparent : le vert vient du fond, le fondu SVG reste visible au joint. */
+  panel: { flex: 1, zIndex: 2, backgroundColor: 'transparent' },
   copy: {
     flex: 1,
     alignItems: 'center',

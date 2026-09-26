@@ -37,6 +37,13 @@ import { shadows } from '@/constants/theme';
 import { CoverDiscoverHint } from './InvitationCover';
 import { TemplateCover } from './TemplateCover';
 import { SealCountdown } from '@/features/templates/aurore/SealCountdown';
+import {
+  AuroreBreak,
+  AurorePage,
+  AuroreProgramItem,
+  AuroreSectionHeader,
+  AuroreStoryItem,
+} from '@/features/templates/aurore/chrome';
 import { GuestQr } from '@/components/ui/GuestQr';
 import { buildGuestLink, guestAccessKey } from '@/features/invitation/qr';
 import { IconBubble, LabeledField, PillButton, SectionHeader, ThemedInput } from '@/features/templates/elegance/widgets';
@@ -174,6 +181,7 @@ export function GuestInvitation({ slug, config, guest }: {
   };
 
   const winter = layout === 'winterPoster';
+  const aurore = layout === 'splitPanel';
   const voix = {
     ...DEFAULT_VOIX,
     ...config.voix,
@@ -284,23 +292,25 @@ export function GuestInvitation({ slug, config, guest }: {
             <GuestStorySection
               theme={theme}
               winter={winter}
+              aurore={aurore}
               story={storyItems}
               couple={pageCover.couple}
               onSelect={setStory}
             />
           </View>
 
-          {winter ? <WinterBreak theme={theme} /> : null}
+          {aurore ? <AuroreBreak gold={theme.colors.accent} /> : winter ? <WinterBreak theme={theme} /> : null}
 
           <GuestProgramSection
             theme={theme}
             winter={winter}
+            aurore={aurore}
             venue={config.venue}
             program={programItems}
             dateLabel={pageCover.dateLabel}
           />
 
-          {winter ? <WinterBreak theme={theme} /> : null}
+          {aurore ? <AuroreBreak gold={theme.colors.accent} /> : winter ? <WinterBreak theme={theme} /> : null}
 
           <GuestCountdownSection
             liked={liked}
@@ -312,7 +322,7 @@ export function GuestInvitation({ slug, config, guest }: {
             dateLabel={pageCover.dateLabel}
           />
 
-          {winter ? <WinterBreak theme={theme} /> : null}
+          {aurore ? <AuroreBreak gold={theme.colors.accent} /> : winter ? <WinterBreak theme={theme} /> : null}
 
           <GuestRsvpSection
             slug={slug}
@@ -320,28 +330,33 @@ export function GuestInvitation({ slug, config, guest }: {
             drinks={config.drinks}
             theme={theme}
             winter={winter}
+            aurore={aurore}
           />
 
-          {winter ? <WinterBreak theme={theme} /> : null}
+          {aurore ? <AuroreBreak gold={theme.colors.accent} /> : winter ? <WinterBreak theme={theme} /> : null}
 
           <GuestGallerySection
             theme={theme}
             winter={winter}
+            aurore={aurore}
             styleKey={normalizeGalleryStyle(config.galleryStyle)}
             photos={galleryItems}
           />
 
-          {winter ? <WinterBreak theme={theme} /> : null}
+          {aurore ? <AuroreBreak gold={theme.colors.accent} /> : winter ? <WinterBreak theme={theme} /> : null}
 
           <GuestGuestbookSection
             slug={slug}
             guest={guest}
             theme={theme}
             winter={winter}
+            aurore={aurore}
           />
 
           <View style={styles.footer}>
-            {winter ? (
+            {aurore ? (
+              <View style={{ width: 8, height: 8, borderWidth: 1, borderColor: theme.colors.accent, transform: [{ rotate: '45deg' }] }} />
+            ) : winter ? (
               <SnowflakeSvg color={theme.colors.accent} size={18} />
             ) : (
               <Ionicons name="leaf-outline" size={16} color={theme.colors.accent} />
@@ -619,12 +634,20 @@ function FallingSnow() {
   );
 }
 
-function SectionShell({ winter, theme, children, style }: {
+function SectionShell({ winter, aurore, theme, children, style }: {
   winter: boolean;
+  aurore?: boolean;
   theme: TemplateTheme;
   children: ReactNode;
   style?: object;
 }) {
+  if (aurore) {
+    return (
+      <AurorePage gold={theme.colors.accent} panel={theme.colors.bg} style={style}>
+        {children}
+      </AurorePage>
+    );
+  }
   if (winter) {
     return (
       <WinterPage colors={theme.colors} style={style}>
@@ -645,17 +668,30 @@ function WinterBreak({ theme }: { theme: TemplateTheme }) {
 
 function SectionHead({
   winter,
+  aurore,
   theme,
   kicker,
   title,
   subtitle,
 }: {
   winter: boolean;
+  aurore?: boolean;
   theme: TemplateTheme;
   kicker?: string;
   title: string;
   subtitle?: string;
 }) {
+  if (aurore) {
+    return (
+      <AuroreSectionHeader
+        kicker={kicker}
+        title={title}
+        subtitle={subtitle}
+        gold={theme.colors.accent}
+        muted={theme.colors.textMuted}
+      />
+    );
+  }
   if (winter) {
     return (
       <WinterSectionHeader kicker={kicker} title={title} subtitle={subtitle} colors={theme.colors} />
@@ -740,9 +776,10 @@ function GuestCoverSection({
 
 /* ── 2. Notre histoire — cartes CLIQUABLES vers le détail ── */
 
-function GuestStorySection({ theme, winter, story, couple, onSelect }: {
+function GuestStorySection({ theme, winter, aurore, story, couple, onSelect }: {
   theme: TemplateTheme;
   winter: boolean;
+  aurore?: boolean;
   story: StoryMilestone[];
   couple: string;
   onSelect: (story: StoryMilestone) => void;
@@ -750,10 +787,11 @@ function GuestStorySection({ theme, winter, story, couple, onSelect }: {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
   return (
-    <SectionShell winter={winter} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
+          aurore={aurore}
           theme={theme}
           kicker="NOTRE HISTOIRE"
           title={couple}
@@ -766,7 +804,17 @@ function GuestStorySection({ theme, winter, story, couple, onSelect }: {
           const last = index === story.length - 1;
           return (
             <Reveal key={item.year} effect={revealEffect} delay={index * 90}>
-              {winter ? (
+              {aurore ? (
+                <AuroreStoryItem
+                  year={item.year}
+                  title={item.title}
+                  text={item.text}
+                  gold={c.accent}
+                  cream={c.text}
+                  muted={c.textMuted}
+                  onPress={() => onSelect(item)}
+                />
+              ) : winter ? (
                 <WinterStoryItem
                   colors={c}
                   imageUri={item.image}
@@ -813,9 +861,10 @@ function GuestStorySection({ theme, winter, story, couple, onSelect }: {
 
 /* ── 3. Le programme — timeline dorée + carte du lieu ── */
 
-function GuestProgramSection({ theme, winter, venue, program, dateLabel }: {
+function GuestProgramSection({ theme, winter, aurore, venue, program, dateLabel }: {
   theme: TemplateTheme;
   winter: boolean;
+  aurore?: boolean;
   venue: Venue;
   program: ProgramStep[];
   dateLabel: string;
@@ -823,10 +872,11 @@ function GuestProgramSection({ theme, winter, venue, program, dateLabel }: {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
   return (
-    <SectionShell winter={winter} theme={theme} style={winter ? undefined : { backgroundColor: c.bg }}>
+    <SectionShell winter={winter} aurore={aurore} theme={theme} style={winter || aurore ? undefined : { backgroundColor: c.bg }}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
+          aurore={aurore}
           theme={theme}
           kicker="LE PROGRAMME"
           title="Notre journée"
@@ -839,7 +889,17 @@ function GuestProgramSection({ theme, winter, venue, program, dateLabel }: {
           const last = index === program.length - 1;
           return (
             <Reveal key={step.time} effect={revealEffect} delay={index * 80}>
-              {winter ? (
+              {aurore ? (
+                <AuroreProgramItem
+                  time={step.time}
+                  title={step.title}
+                  place={step.place}
+                  icon={step.icon}
+                  gold={c.accent}
+                  ink={c.bg}
+                  cream={c.text}
+                />
+              ) : winter ? (
                 <WinterProgramItem
                   colors={c}
                   icon={step.icon}
@@ -887,7 +947,7 @@ function GuestProgramSection({ theme, winter, venue, program, dateLabel }: {
 
       {winter ? (
         <WinterFlora colors={c} />
-      ) : (
+      ) : aurore ? null : (
         <View style={styles.floraRow} pointerEvents="none">
           <Ionicons name="leaf-outline" size={24} color={c.accent} style={styles.leafLeft} />
           <Ionicons name="flower-outline" size={64} color={c.accent} />
@@ -1071,12 +1131,13 @@ function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, s
 
 /* ── 5. RSVP — pré-rempli, boissons de l'organisateur, QR pass ── */
 
-function GuestRsvpSection({ slug, guest, drinks, theme, winter }: {
+function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore }: {
   slug: string;
   guest: Guest;
   drinks: string[];
   theme: TemplateTheme;
   winter: boolean;
+  aurore?: boolean;
 }) {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
@@ -1124,8 +1185,8 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter }: {
 
   if (!canRsvp) {
     return (
-      <SectionShell winter={winter} theme={theme}>
-        <SectionHead winter={winter} theme={theme} kicker="RSVP" title="Votre réponse" />
+      <SectionShell winter={winter} aurore={aurore} theme={theme}>
+        <SectionHead winter={winter} aurore={aurore} theme={theme} kicker="RSVP" title="Votre réponse" />
         <Reveal effect={revealEffect} delay={0}>
           <View style={[styles.successCard, { backgroundColor: c.surface, borderColor: c.border }]}>
             <Text style={[styles.successText, { color: c.textMuted }]}>
@@ -1140,8 +1201,8 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter }: {
   /* Après validation : le QR pass individuel s'active. */
   if (answer !== null) {
     return (
-      <SectionShell winter={winter} theme={theme}>
-        <SectionHead winter={winter} theme={theme} kicker="RSVP" title="Votre réponse" />
+      <SectionShell winter={winter} aurore={aurore} theme={theme}>
+        <SectionHead winter={winter} aurore={aurore} theme={theme} kicker="RSVP" title="Votre réponse" />
 
         <Reveal effect={revealEffect} delay={0}>
           <View style={[styles.successCard, { backgroundColor: c.surface, borderColor: c.border }]}>
@@ -1194,10 +1255,11 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter }: {
   }
 
   return (
-    <SectionShell winter={winter} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
+          aurore={aurore}
           theme={theme}
           kicker="RSVP"
           title={`Confirme ta présence, ${guest.firstName}`}
@@ -1275,9 +1337,10 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter }: {
 
 /* ── 6. Galerie — grille / carrousel / maçonnerie ── */
 
-function GuestGallerySection({ theme, winter, styleKey, photos: incoming }: {
+function GuestGallerySection({ theme, winter, aurore, styleKey, photos: incoming }: {
   theme: TemplateTheme;
   winter: boolean;
+  aurore?: boolean;
   styleKey: GalleryStyleKey;
   photos: { uri: string; category: string }[];
 }) {
@@ -1293,10 +1356,11 @@ function GuestGallerySection({ theme, winter, styleKey, photos: incoming }: {
   const photoReveal: RevealEffectKey = winter ? 'none' : revealEffect;
 
   return (
-    <SectionShell winter={winter} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
+          aurore={aurore}
           theme={theme}
           title="Notre galerie"
           subtitle="Revivez les plus beaux moments de notre histoire…"
@@ -1357,11 +1421,13 @@ function GuestGuestbookSection({
   guest,
   theme,
   winter,
+  aurore,
 }: {
   slug: string;
   guest: Guest;
   theme: TemplateTheme;
   winter: boolean;
+  aurore?: boolean;
 }) {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
@@ -1432,10 +1498,11 @@ function GuestGuestbookSection({
   };
 
   return (
-    <SectionShell winter={winter} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
+          aurore={aurore}
           theme={theme}
           title="Laisse-nous un petit mot"
           subtitle="Un message, un vœu, une pensée, tout nous fera chaud au cœur !"

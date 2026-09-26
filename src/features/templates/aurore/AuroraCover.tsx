@@ -12,6 +12,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
+import { GoldText } from './chrome';
 
 function splitTitle(title: string): { save: string; mid: string; date: string } | null {
   const parts = title.trim().split(/\s+/);
@@ -71,7 +72,6 @@ export function AuroraCover({
   const [photoW, setPhotoW] = useState(0);
   const panel = colors.bg;
   const gold = colors.accent;
-  const cream = colors.text;
   const muted = colors.textMuted;
   const panelW = Math.max(120, box.w - photoW);
   const scale = Math.min(1.35, Math.max(1, panelW / 150));
@@ -130,47 +130,43 @@ export function AuroraCover({
           <View style={styles.hero}>
             {stacked ? (
               <View style={styles.scriptBlock}>
-                <Text style={[styles.scriptBig, { color: gold, fontSize: 72 * scale, lineHeight: 76 * scale }]}>
+                <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 72 * scale, lineHeight: 76 * scale }]}>
                   {stacked.save}
-                </Text>
-                <Text
-                  style={[
-                    styles.scriptMid,
-                    { color: gold, fontSize: 34 * scale, lineHeight: 36 * scale, marginTop: -18 * scale },
-                  ]}
+                </GoldText>
+                <GoldText
+                  gold={gold}
+                  style={[styles.scriptMid, { fontSize: 34 * scale, lineHeight: 36 * scale, marginTop: -18 * scale }]}
                 >
                   {stacked.mid}
-                </Text>
-                <Text
-                  style={[
-                    styles.scriptBig,
-                    { color: gold, fontSize: 72 * scale, lineHeight: 76 * scale, marginTop: -14 * scale },
-                  ]}
+                </GoldText>
+                <GoldText
+                  gold={gold}
+                  style={[styles.scriptBig, { fontSize: 72 * scale, lineHeight: 76 * scale, marginTop: -14 * scale }]}
                 >
                   {stacked.date}
-                </Text>
+                </GoldText>
               </View>
             ) : (
-              <Text style={[styles.scriptBig, { color: gold, fontSize: 52 * scale, lineHeight: 58 * scale }]}>
+              <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 52 * scale, lineHeight: 58 * scale }]}>
                 {title}
-              </Text>
+              </GoldText>
             )}
 
             {couple.trim() ? (
-              <Text
-                style={[styles.names, { color: cream, fontSize: 30 * scale, lineHeight: 34 * scale }]}
-                adjustsFontSizeToFit
+              <GoldText
+                gold={gold}
+                style={[styles.names, { fontSize: 30 * scale, lineHeight: 34 * scale }]}
                 numberOfLines={2}
               >
                 {couple.trim()}
-              </Text>
+              </GoldText>
             ) : null}
 
-            <Text style={[styles.welcome, { color: gold, fontSize: 20 * scale, lineHeight: 26 * scale }]}>
-              Bienvenue, {guest.firstName}
-            </Text>
+            <GoldText gold={gold} style={[styles.welcome, { fontSize: 22 * scale, lineHeight: 28 * scale }]}>
+              {`Bienvenue, ${guest.firstName}`}
+            </GoldText>
             {welcome ? (
-              <Text style={[styles.sentence, { color: cream, fontSize: 16 * scale, lineHeight: 22 * scale }]}>
+              <Text style={[styles.sentence, { color: gold, fontSize: 16 * scale, lineHeight: 22 * scale }]}>
                 {welcome}
               </Text>
             ) : null}
@@ -180,7 +176,7 @@ export function AuroraCover({
             {dateLabel.trim() ? (
               <View style={styles.infoRow}>
                 <GoldMark gold={gold} ink={panel} icon="calendar-outline" size={20 * scale} />
-                <Text style={[styles.date, { color: gold, fontSize: 16 * scale }]}>{dateLabel.trim()}</Text>
+                <GoldText gold={gold} style={[styles.date, { fontSize: 16 * scale }]}>{dateLabel.trim()}</GoldText>
               </View>
             ) : null}
 
@@ -188,7 +184,7 @@ export function AuroraCover({
               <View style={styles.venue}>
                 <View style={styles.infoRow}>
                   <GoldMark gold={gold} ink={panel} icon="business-outline" size={20 * scale} />
-                  <Text style={[styles.venueName, { color: cream, fontSize: 18 * scale }]}>{venueName.trim()}</Text>
+                  <GoldText gold={gold} style={[styles.venueName, { fontSize: 18 * scale }]}>{venueName.trim()}</GoldText>
                 </View>
                 {place.map((line) => (
                   <Text key={line} style={[styles.address, { color: muted, fontSize: 14 * scale }]}>

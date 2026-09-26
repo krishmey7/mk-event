@@ -73,13 +73,15 @@ export function AuroraCover({
   const panel = colors.bg;
   const gold = colors.accent;
   const muted = colors.textMuted;
+  const cream = colors.text;
   const panelW = Math.max(120, box.w - photoW);
-  const scale = Math.min(1.35, Math.max(1, panelW / 150));
+  const scale = Math.min(1.15, Math.max(0.92, panelW / 170));
   const stacked = splitTitle(title);
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
   const dress = (dressCode ?? '').trim();
-  const fadeW = photoW > 0 ? Math.round(photoW * 0.7) : 0;
+  const fadeW = box.w > 0 ? Math.round(box.w * 0.18) : 0;
+  const fadeLeft = Math.max(0, photoW - Math.round(fadeW / 2));
 
   return (
     <View
@@ -110,14 +112,13 @@ export function AuroraCover({
         <Svg
           width={fadeW + 2}
           height={box.h}
-          style={{ position: 'absolute', left: photoW - fadeW, top: 0 }}
+          style={{ position: 'absolute', left: fadeLeft, top: 0 }}
           pointerEvents="none"
         >
           <Defs>
             <LinearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
               <Stop offset="0" stopColor={panel} stopOpacity="0" />
-              <Stop offset="0.42" stopColor={panel} stopOpacity="0.18" />
-              <Stop offset="0.72" stopColor={panel} stopOpacity="0.62" />
+              <Stop offset="0.5" stopColor={panel} stopOpacity="0.55" />
               <Stop offset="1" stopColor={panel} stopOpacity="1" />
             </LinearGradient>
           </Defs>
@@ -130,18 +131,18 @@ export function AuroraCover({
           <View style={styles.hero}>
             {stacked ? (
               <View style={styles.scriptBlock}>
-                <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 72 * scale, lineHeight: 76 * scale }]}>
+                <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 58 * scale, lineHeight: 78 * scale }]}>
                   {stacked.save}
                 </GoldText>
                 <GoldText
                   gold={gold}
-                  style={[styles.scriptMid, { fontSize: 34 * scale, lineHeight: 36 * scale, marginTop: -18 * scale }]}
+                  style={[styles.scriptMid, { fontSize: 28 * scale, lineHeight: 40 * scale, marginTop: -6 * scale }]}
                 >
                   {stacked.mid}
                 </GoldText>
                 <GoldText
                   gold={gold}
-                  style={[styles.scriptBig, { fontSize: 72 * scale, lineHeight: 76 * scale, marginTop: -14 * scale }]}
+                  style={[styles.scriptBig, { fontSize: 58 * scale, lineHeight: 78 * scale, marginTop: -4 * scale }]}
                 >
                   {stacked.date}
                 </GoldText>
@@ -162,11 +163,11 @@ export function AuroraCover({
               </GoldText>
             ) : null}
 
-            <GoldText gold={gold} style={[styles.welcome, { fontSize: 22 * scale, lineHeight: 28 * scale }]}>
+            <Text style={[styles.welcome, { color: cream, fontSize: 20 * scale, lineHeight: 26 * scale }]}>
               {`Bienvenue, ${guest.firstName}`}
-            </GoldText>
+            </Text>
             {welcome ? (
-              <Text style={[styles.sentence, { color: gold, fontSize: 16 * scale, lineHeight: 22 * scale }]}>
+              <Text style={[styles.sentence, { color: cream, fontSize: 16 * scale, lineHeight: 22 * scale }]}>
                 {welcome}
               </Text>
             ) : null}
@@ -208,7 +209,7 @@ export function AuroraCover({
 
 const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
-  photoCol: { flex: 1.18, overflow: 'hidden' },
+  photoCol: { flex: 1, overflow: 'hidden' },
   panel: { flex: 1 },
   copy: {
     flex: 1,
@@ -217,7 +218,7 @@ const styles = StyleSheet.create({
     paddingTop: 18,
   },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%' },
-  scriptBlock: { alignItems: 'center' },
+  scriptBlock: { alignItems: 'center', paddingVertical: 8, paddingHorizontal: 4 },
   scriptBig: { fontFamily: 'GreatVibes_400Regular', textAlign: 'center' },
   scriptMid: { fontFamily: 'GreatVibes_400Regular', textAlign: 'center' },
   names: {

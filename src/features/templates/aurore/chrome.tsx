@@ -158,7 +158,13 @@ export function AuroreProgramItem({
 const styles = StyleSheet.create({
   page: { paddingHorizontal: 26, paddingTop: 28, paddingBottom: 36 },
   pageRule: { alignSelf: 'center', width: 42, height: 1, marginBottom: 22, opacity: 0.9 },
-  breakRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 12 },
+  breakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: 10,
+    marginVertical: 12,
+  },
   breakLine: { width: 36, height: 1, opacity: 0.85 },
   breakDiamond: { width: 7, height: 7, borderWidth: 1, transform: [{ rotate: '45deg' }] },
   header: { alignItems: 'center', marginBottom: 8 },

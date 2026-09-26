@@ -80,8 +80,7 @@ export function AuroraCover({
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
   const dress = (dressCode ?? '').trim();
-  const fadeW = box.w > 0 ? Math.round(box.w * 0.18) : 0;
-  const fadeLeft = Math.max(0, photoW - Math.round(fadeW / 2));
+  const fadeW = photoW > 0 ? Math.round(photoW * 0.62) : 0;
 
   return (
     <View
@@ -106,43 +105,43 @@ export function AuroraCover({
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: panel }]} />
         )}
+        {fadeW > 0 && box.h > 0 ? (
+          <Svg
+            width={fadeW}
+            height={box.h}
+            style={styles.fade}
+            pointerEvents="none"
+          >
+            <Defs>
+              <LinearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={panel} stopOpacity="0" />
+                <Stop offset="0.42" stopColor={panel} stopOpacity="0.22" />
+                <Stop offset="0.72" stopColor={panel} stopOpacity="0.7" />
+                <Stop offset="1" stopColor={panel} stopOpacity="1" />
+              </LinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width={fadeW} height={box.h} fill={`url(#${gradId})`} />
+          </Svg>
+        ) : null}
       </View>
-
-      {fadeW > 0 && box.h > 0 ? (
-        <Svg
-          width={fadeW + 2}
-          height={box.h}
-          style={{ position: 'absolute', left: fadeLeft, top: 0 }}
-          pointerEvents="none"
-        >
-          <Defs>
-            <LinearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor={panel} stopOpacity="0" />
-              <Stop offset="0.5" stopColor={panel} stopOpacity="0.55" />
-              <Stop offset="1" stopColor={panel} stopOpacity="1" />
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width={fadeW + 2} height={box.h} fill={`url(#${gradId})`} />
-        </Svg>
-      ) : null}
 
       <View style={styles.panel}>
         <View style={[styles.copy, { paddingHorizontal: 12 * scale, paddingBottom: hint ? 28 : 16 }]}>
           <View style={styles.hero}>
             {stacked ? (
               <View style={styles.scriptBlock}>
-                <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 58 * scale, lineHeight: 78 * scale }]}>
+                <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 68 * scale, lineHeight: 84 * scale }]}>
                   {stacked.save}
                 </GoldText>
                 <GoldText
                   gold={gold}
-                  style={[styles.scriptMid, { fontSize: 28 * scale, lineHeight: 40 * scale, marginTop: -6 * scale }]}
+                  style={[styles.scriptMid, { fontSize: 32 * scale, lineHeight: 40 * scale, marginTop: -26 * scale }]}
                 >
                   {stacked.mid}
                 </GoldText>
                 <GoldText
                   gold={gold}
-                  style={[styles.scriptBig, { fontSize: 58 * scale, lineHeight: 78 * scale, marginTop: -4 * scale }]}
+                  style={[styles.scriptBig, { fontSize: 68 * scale, lineHeight: 84 * scale, marginTop: -20 * scale }]}
                 >
                   {stacked.date}
                 </GoldText>
@@ -209,7 +208,8 @@ export function AuroraCover({
 
 const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
-  photoCol: { flex: 1, overflow: 'hidden' },
+  photoCol: { flex: 1, overflow: 'hidden', position: 'relative' },
+  fade: { position: 'absolute', right: 0, top: 0 },
   panel: { flex: 1 },
   copy: {
     flex: 1,
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     paddingTop: 18,
   },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%' },
-  scriptBlock: { alignItems: 'center', paddingVertical: 8, paddingHorizontal: 4 },
+  scriptBlock: { alignItems: 'center', paddingVertical: 10, overflow: 'visible' },
   scriptBig: { fontFamily: 'GreatVibes_400Regular', textAlign: 'center' },
   scriptMid: { fontFamily: 'GreatVibes_400Regular', textAlign: 'center' },
   names: {

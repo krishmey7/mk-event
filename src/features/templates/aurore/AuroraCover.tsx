@@ -5,14 +5,14 @@
  */
 
 import { createElement, type ReactNode, useState } from 'react';
-import { Image, Platform, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
-import { GoldText } from './chrome';
+import { GoldText, AuroreAtmosphere } from './chrome';
 
 function splitTitle(title: string): { save: string; mid: string; date: string } | null {
   const parts = title.trim().split(/\s+/);
@@ -22,68 +22,26 @@ function splitTitle(title: string): { save: string; mid: string; date: string } 
   return null;
 }
 
-function hexToRgb(hex: string): string {
-  const raw = hex.replace('#', '');
-  return [0, 1, 2].map((i) => parseInt(raw.slice(i * 2, i * 2 + 2), 16)).join(', ');
-}
-
-function mixHex(hex: string, toward: number, amount: number): string {
-  const raw = hex.replace('#', '');
-  const channels = [0, 1, 2].map((i) => parseInt(raw.slice(i * 2, i * 2 + 2), 16));
-  return `#${channels
-    .map((c) => Math.max(0, Math.min(255, Math.round(c + (toward - c) * amount))).toString(16).padStart(2, '0'))
-    .join('')}`;
-}
-
-function stageAtmosphere(hex: string): ViewStyle {
-  return { backgroundColor: hex };
-}
-
-/** Halo du panneau comme sur l’affiche — nœud DOM pour que le CSS passe sur le web. */
-function WebPanelGlow({ panel }: { panel: string }) {
-  const lift = mixHex(panel, 255, 0.14);
-  const mid = mixHex(panel, 255, 0.04);
-  const shade = mixHex(panel, 0, 0.22);
-  const deep = mixHex(panel, 0, 0.38);
+/**
+ * La photo se dissout dans le panneau (mask CSS), comme sur l’affiche.
+ */
+function WebPhotoBlend({ uri }: { uri: string }) {
+  const mask =
+    'linear-gradient(90deg, #000 0%, #000 20%, rgba(0,0,0,0.88) 42%, rgba(0,0,0,0.45) 64%, rgba(0,0,0,0.12) 82%, transparent 100%)';
   return createElement('div', {
     'aria-hidden': true,
     style: {
       position: 'absolute',
-      inset: 0,
-      zIndex: 0,
-      pointerEvents: 'none',
-      backgroundColor: panel,
-      backgroundImage: [
-        `radial-gradient(ellipse 95% 80% at 18% 28%, ${lift} 0%, ${mid} 28%, ${panel} 52%, ${shade} 78%, ${deep} 100%)`,
-        `linear-gradient(180deg, ${mixHex(panel, 0, 0.08)} 0%, transparent 22%, transparent 78%, ${mixHex(panel, 0, 0.16)} 100%)`,
-      ].join(', '),
-    },
-  });
-}
-
-/** Fondu photo → panneau : vrai nœud DOM, RN Web ne filtre pas le CSS. */
-function WebPhotoBlend({
-  uri,
-  panel,
-}: {
-  uri: string;
-  panel: string;
-}) {
-  const rgb = hexToRgb(panel);
-  return createElement('div', {
-    'aria-hidden': true,
-    style: {
-      position: 'absolute',
-      inset: 0,
-      // Déborde à droite pour passer sous le panneau et tuer la ligne de jointure.
-      right: -14,
-      backgroundImage: [
-        `linear-gradient(90deg, rgba(${rgb},0) 0%, rgba(${rgb},0.1) 30%, rgba(${rgb},0.4) 55%, rgba(${rgb},0.78) 78%, rgba(${rgb},1) 92%, rgba(${rgb},1) 100%)`,
-        `url("${uri}")`,
-      ].join(', '),
-      backgroundSize: 'cover, cover',
-      backgroundPosition: 'center, center',
-      backgroundRepeat: 'no-repeat, no-repeat',
+      top: 0,
+      left: 0,
+      bottom: 0,
+      right: -28,
+      backgroundImage: `url("${uri}")`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      WebkitMaskImage: mask,
+      maskImage: mask,
     },
   });
 }
@@ -151,7 +109,7 @@ export function AuroraCover({
 
   return (
     <View
-      style={[styles.fill, stageAtmosphere(panel)]}
+      style={[styles.fill, { backgroundColor: panel }]}
       onLayout={(event) => {
         const next = {
           w: Math.round(event.nativeEvent.layout.width),
@@ -168,7 +126,7 @@ export function AuroraCover({
         }}
       >
         {couplePhoto.uri && onWeb ? (
-          <WebPhotoBlend uri={couplePhoto.uri} panel={panel} />
+          <WebPhotoBlend uri={couplePhoto.uri} />
         ) : couplePhoto.uri ? (
           <>
             <Image source={{ uri: couplePhoto.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -192,7 +150,7 @@ export function AuroraCover({
       </View>
 
       <View style={[styles.panel, { backgroundColor: panel }]}>
-        {onWeb ? <WebPanelGlow panel={panel} /> : null}
+        <AuroreAtmosphere panel={panel} cover />
         <View style={[styles.copy, { paddingHorizontal: 8, paddingBottom: hint ? 108 : 16 }]}>
           <View style={styles.hero}>
             {stacked ? (
@@ -275,7 +233,7 @@ export function AuroraCover({
 
 const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
-  photoCol: { flex: 1, overflow: 'visible', position: 'relative', zIndex: 0, marginRight: -14 },
+  photoCol: { flex: 1, overflow: 'visible', position: 'relative', zIndex: 0, marginRight: -28 },
   fade: { position: 'absolute', right: 0, top: 0 },
   panel: { flex: 1, zIndex: 2, position: 'relative', overflow: 'hidden' },
   copy: {

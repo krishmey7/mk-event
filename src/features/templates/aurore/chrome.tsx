@@ -2,11 +2,53 @@
  * Or métallique et pages intérieures d’Aurore — même langage que le panneau de couverture.
  */
 
-import { type ReactNode } from 'react';
+import { createElement, type ReactNode } from 'react';
 import { Platform, Image, Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { IconName } from '@/features/templates/elegance/data';
+
+function mixHex(hex: string, toward: number, amount: number): string {
+  const raw = hex.replace('#', '');
+  const channels = [0, 1, 2].map((i) => parseInt(raw.slice(i * 2, i * 2 + 2), 16));
+  return `#${channels
+    .map((c) => Math.max(0, Math.min(255, Math.round(c + (toward - c) * amount))).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
+/**
+ * Fond émeraude non plat (affiche Save the Date) — nœud DOM pour que le CSS
+ * radial-gradient passe sur React Native Web.
+ */
+export function AuroreAtmosphere({
+  panel,
+  /** Couverture : halo collé au joint photo. Pages : halo centré. */
+  cover = false,
+}: {
+  panel: string;
+  cover?: boolean;
+}) {
+  if (Platform.OS !== 'web') return null;
+  const lift = mixHex(panel, 255, 0.2);
+  const mid = mixHex(panel, 255, 0.08);
+  const shade = mixHex(panel, 0, 0.2);
+  const deep = mixHex(panel, 0, 0.42);
+  const at = cover ? '8% 32%' : '42% 28%';
+  return createElement('div', {
+    'aria-hidden': true,
+    style: {
+      position: 'absolute',
+      inset: 0,
+      zIndex: 0,
+      pointerEvents: 'none',
+      backgroundColor: panel,
+      backgroundImage: [
+        `radial-gradient(ellipse 130% 95% at ${at}, ${lift} 0%, ${mid} 22%, ${panel} 48%, ${shade} 76%, ${deep} 100%)`,
+        `linear-gradient(180deg, ${mixHex(panel, 0, 0.12)} 0%, transparent 18%, transparent 72%, ${mixHex(panel, 0, 0.22)} 100%)`,
+      ].join(', '),
+    },
+  });
+}
 
 /** Titre en feuille d’or : dégradé clair / ombre, pas un aplat. */
 export function GoldText({
@@ -52,8 +94,11 @@ export function AurorePage({
 }) {
   return (
     <View style={[styles.page, { backgroundColor: panel }, style]}>
-      <View style={[styles.pageRule, { backgroundColor: gold }]} />
-      {children}
+      <AuroreAtmosphere panel={panel} />
+      <View style={styles.pageInner}>
+        <View style={[styles.pageRule, { backgroundColor: gold }]} />
+        {children}
+      </View>
     </View>
   );
 }
@@ -156,7 +201,8 @@ export function AuroreProgramItem({
 }
 
 const styles = StyleSheet.create({
-  page: { paddingHorizontal: 26, paddingTop: 28, paddingBottom: 36 },
+  page: { paddingHorizontal: 26, paddingTop: 28, paddingBottom: 36, position: 'relative', overflow: 'hidden' },
+  pageInner: { zIndex: 1 },
   pageRule: { alignSelf: 'center', width: 42, height: 1, marginBottom: 22, opacity: 0.9 },
   breakRow: {
     flexDirection: 'row',

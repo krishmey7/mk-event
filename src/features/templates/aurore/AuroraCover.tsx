@@ -27,8 +27,38 @@ function hexToRgb(hex: string): string {
   return [0, 1, 2].map((i) => parseInt(raw.slice(i * 2, i * 2 + 2), 16)).join(', ');
 }
 
+function mixHex(hex: string, toward: number, amount: number): string {
+  const raw = hex.replace('#', '');
+  const channels = [0, 1, 2].map((i) => parseInt(raw.slice(i * 2, i * 2 + 2), 16));
+  return `#${channels
+    .map((c) => Math.max(0, Math.min(255, Math.round(c + (toward - c) * amount))).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
 function stageAtmosphere(hex: string): ViewStyle {
   return { backgroundColor: hex };
+}
+
+/** Halo du panneau comme sur l’affiche — nœud DOM pour que le CSS passe sur le web. */
+function WebPanelGlow({ panel }: { panel: string }) {
+  const lift = mixHex(panel, 255, 0.14);
+  const mid = mixHex(panel, 255, 0.04);
+  const shade = mixHex(panel, 0, 0.22);
+  const deep = mixHex(panel, 0, 0.38);
+  return createElement('div', {
+    'aria-hidden': true,
+    style: {
+      position: 'absolute',
+      inset: 0,
+      zIndex: 0,
+      pointerEvents: 'none',
+      backgroundColor: panel,
+      backgroundImage: [
+        `radial-gradient(ellipse 95% 80% at 18% 28%, ${lift} 0%, ${mid} 28%, ${panel} 52%, ${shade} 78%, ${deep} 100%)`,
+        `linear-gradient(180deg, ${mixHex(panel, 0, 0.08)} 0%, transparent 22%, transparent 78%, ${mixHex(panel, 0, 0.16)} 100%)`,
+      ].join(', '),
+    },
+  });
 }
 
 /** Fondu photo → panneau : vrai nœud DOM, RN Web ne filtre pas le CSS. */
@@ -162,6 +192,7 @@ export function AuroraCover({
       </View>
 
       <View style={[styles.panel, { backgroundColor: panel }]}>
+        {onWeb ? <WebPanelGlow panel={panel} /> : null}
         <View style={[styles.copy, { paddingHorizontal: 8, paddingBottom: hint ? 108 : 16 }]}>
           <View style={styles.hero}>
             {stacked ? (
@@ -246,12 +277,13 @@ const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
   photoCol: { flex: 1, overflow: 'visible', position: 'relative', zIndex: 0, marginRight: -14 },
   fade: { position: 'absolute', right: 0, top: 0 },
-  panel: { flex: 1, zIndex: 2 },
+  panel: { flex: 1, zIndex: 2, position: 'relative', overflow: 'hidden' },
   copy: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 8,
+    zIndex: 1,
   },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%' },
   scriptBlock: { alignItems: 'center', paddingVertical: 10, overflow: 'visible' },

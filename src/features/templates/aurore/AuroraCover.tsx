@@ -7,12 +7,32 @@
 import { type ReactNode, useRef, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
 import { GoldText } from './chrome';
+
+function hexChannels(hex: string): [number, number, number] {
+  const raw = hex.replace('#', '');
+  return [0, 1, 2].map((i) => parseInt(raw.slice(i * 2, i * 2 + 2), 16)) as [number, number, number];
+}
+
+function toHex(channels: number[]): string {
+  return `#${channels.map((c) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** Halo plus clair au centre du panneau, plus sombre vers les bords — comme l’affiche. */
+function panelGlow(hex: string): { glow: string; shade: string; deep: string } {
+  const [r, g, b] = hexChannels(hex);
+  const lift = [0.1, 0.34, 0.12];
+  return {
+    glow: toHex([r, g, b].map((c, i) => c + (255 - c) * lift[i])),
+    shade: toHex([r, g, b].map((c) => c * 0.72)),
+    deep: toHex([r, g, b].map((c) => c * 0.42)),
+  };
+}
 
 function splitTitle(title: string): { save: string; mid: string; date: string } | null {
   const parts = title.trim().split(/\s+/);
@@ -81,7 +101,10 @@ export function AuroraCover({
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
   const dress = (dressCode ?? '').trim();
-  const fadeW = photoW > 0 ? Math.round(photoW * 0.62) : 0;
+  const tones = panelGlow(panel);
+  const panelWidth = Math.max(0, box.w - photoW);
+  const glowCx = photoW + panelWidth * 0.32;
+  const glowCy = box.h * 0.34;
 
   return (
     <View
@@ -108,30 +131,43 @@ export function AuroraCover({
         )}
       </View>
 
-      {fadeW > 0 && box.h > 0 && photoW > 0 ? (
+      {box.h > 0 && photoW > 0 && panelWidth > 0 ? (
         <Svg
-          width={fadeW + 14}
+          width={box.w}
           height={box.h}
-          style={{ position: 'absolute', left: photoW - fadeW, top: 0, zIndex: 1 }}
+          style={{ position: 'absolute', left: 0, top: 0, zIndex: 1 }}
           pointerEvents="none"
         >
           <Defs>
+            <RadialGradient
+              id={`${gradId}-glow`}
+              cx={glowCx}
+              cy={glowCy}
+              r={panelWidth * 0.95}
+              gradientUnits="userSpaceOnUse"
+              gradientTransform={`translate(${glowCx} ${glowCy}) scale(1 ${(box.h * 0.62) / (panelWidth * 0.95)}) translate(${-glowCx} ${-glowCy})`}
+            >
+              <Stop offset="0" stopColor={tones.glow} />
+              <Stop offset="0.4" stopColor={panel} />
+              <Stop offset="0.72" stopColor={tones.shade} />
+              <Stop offset="1" stopColor={tones.deep} />
+            </RadialGradient>
             <LinearGradient
-              id={gradId}
-              x1="0"
+              id={`${gradId}-fade`}
+              x1={photoW * 0.32}
               y1="0"
-              x2={fadeW + 14}
+              x2={photoW + 18}
               y2="0"
               gradientUnits="userSpaceOnUse"
             >
-              <Stop offset="0" stopColor={panel} stopOpacity="0" />
-              <Stop offset="0.4" stopColor={panel} stopOpacity="0.15" />
-              <Stop offset="0.62" stopColor={panel} stopOpacity="0.5" />
-              <Stop offset="0.78" stopColor={panel} stopOpacity="1" />
-              <Stop offset="1" stopColor={panel} stopOpacity="1" />
+              <Stop offset="0" stopColor={tones.glow} stopOpacity="0" />
+              <Stop offset="0.42" stopColor={tones.glow} stopOpacity="0.18" />
+              <Stop offset="0.72" stopColor={tones.glow} stopOpacity="0.62" />
+              <Stop offset="1" stopColor={tones.glow} stopOpacity="1" />
             </LinearGradient>
           </Defs>
-          <Rect x="0" y="0" width={fadeW + 14} height={box.h} fill={`url(#${gradId})`} />
+          <Rect x={photoW - 20} y="0" width={panelWidth + 20} height={box.h} fill={`url(#${gradId}-glow)`} />
+          <Rect x={photoW * 0.32} y="0" width={photoW * 0.68 + 18} height={box.h} fill={`url(#${gradId}-fade)`} />
         </Svg>
       ) : null}
 
@@ -218,7 +254,7 @@ export function AuroraCover({
 
 const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
-  photoCol: { flex: 1, overflow: 'hidden', position: 'relative', marginRight: -18, zIndex: 0 },
+  photoCol: { flex: 1, overflow: 'hidden', position: 'relative', zIndex: 0 },
   panel: { flex: 1 },
   copy: {
     flex: 1,

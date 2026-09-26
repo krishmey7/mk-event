@@ -74,7 +74,7 @@ export function AuroraCover({
   const cream = colors.text;
   const muted = colors.textMuted;
   const panelW = Math.max(120, box.w - photoW);
-  const scale = Math.min(1.15, Math.max(0.82, panelW / 188));
+  const scale = Math.min(1.35, Math.max(1, panelW / 150));
   const stacked = splitTitle(title);
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
@@ -130,13 +130,13 @@ export function AuroraCover({
           <View style={styles.hero}>
             {stacked ? (
               <View style={styles.scriptBlock}>
-                <Text style={[styles.scriptBig, { color: gold, fontSize: 50 * scale, lineHeight: 54 * scale }]}>
+                <Text style={[styles.scriptBig, { color: gold, fontSize: 72 * scale, lineHeight: 76 * scale }]}>
                   {stacked.save}
                 </Text>
                 <Text
                   style={[
                     styles.scriptMid,
-                    { color: gold, fontSize: 24 * scale, lineHeight: 26 * scale, marginTop: -14 * scale },
+                    { color: gold, fontSize: 34 * scale, lineHeight: 36 * scale, marginTop: -18 * scale },
                   ]}
                 >
                   {stacked.mid}
@@ -144,21 +144,21 @@ export function AuroraCover({
                 <Text
                   style={[
                     styles.scriptBig,
-                    { color: gold, fontSize: 50 * scale, lineHeight: 54 * scale, marginTop: -10 * scale },
+                    { color: gold, fontSize: 72 * scale, lineHeight: 76 * scale, marginTop: -14 * scale },
                   ]}
                 >
                   {stacked.date}
                 </Text>
               </View>
             ) : (
-              <Text style={[styles.scriptBig, { color: gold, fontSize: 38 * scale, lineHeight: 42 * scale }]}>
+              <Text style={[styles.scriptBig, { color: gold, fontSize: 52 * scale, lineHeight: 58 * scale }]}>
                 {title}
               </Text>
             )}
 
             {couple.trim() ? (
               <Text
-                style={[styles.names, { color: cream, fontSize: 22 * scale, lineHeight: 26 * scale }]}
+                style={[styles.names, { color: cream, fontSize: 30 * scale, lineHeight: 34 * scale }]}
                 adjustsFontSizeToFit
                 numberOfLines={2}
               >
@@ -166,11 +166,11 @@ export function AuroraCover({
               </Text>
             ) : null}
 
-            <Text style={[styles.welcome, { color: gold, fontSize: 15 * scale }]}>
+            <Text style={[styles.welcome, { color: gold, fontSize: 20 * scale, lineHeight: 26 * scale }]}>
               Bienvenue, {guest.firstName}
             </Text>
             {welcome ? (
-              <Text style={[styles.sentence, { color: cream, fontSize: 13 * scale, lineHeight: 18 * scale }]}>
+              <Text style={[styles.sentence, { color: cream, fontSize: 16 * scale, lineHeight: 22 * scale }]}>
                 {welcome}
               </Text>
             ) : null}
@@ -179,19 +179,19 @@ export function AuroraCover({
           <View style={styles.bottom}>
             {dateLabel.trim() ? (
               <View style={styles.infoRow}>
-                <GoldMark gold={gold} ink={panel} icon="calendar-outline" size={16 * scale} />
-                <Text style={[styles.date, { color: gold, fontSize: 12 * scale }]}>{dateLabel.trim()}</Text>
+                <GoldMark gold={gold} ink={panel} icon="calendar-outline" size={20 * scale} />
+                <Text style={[styles.date, { color: gold, fontSize: 16 * scale }]}>{dateLabel.trim()}</Text>
               </View>
             ) : null}
 
             {venueName?.trim() ? (
               <View style={styles.venue}>
                 <View style={styles.infoRow}>
-                  <GoldMark gold={gold} ink={panel} icon="business-outline" size={16 * scale} />
-                  <Text style={[styles.venueName, { color: cream, fontSize: 14 * scale }]}>{venueName.trim()}</Text>
+                  <GoldMark gold={gold} ink={panel} icon="business-outline" size={20 * scale} />
+                  <Text style={[styles.venueName, { color: cream, fontSize: 18 * scale }]}>{venueName.trim()}</Text>
                 </View>
                 {place.map((line) => (
-                  <Text key={line} style={[styles.address, { color: muted, fontSize: 11 * scale }]}>
+                  <Text key={line} style={[styles.address, { color: muted, fontSize: 14 * scale }]}>
                     {line}
                   </Text>
                 ))}
@@ -199,7 +199,7 @@ export function AuroraCover({
             ) : null}
 
             {dress ? (
-              <Text style={[styles.dress, { color: muted, fontSize: 11 * scale }]}>{dress}</Text>
+              <Text style={[styles.dress, { color: muted, fontSize: 14 * scale }]}>{dress}</Text>
             ) : null}
           </View>
         </View>
@@ -218,9 +218,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 28,
+    paddingTop: 18,
   },
-  hero: { alignItems: 'center', gap: 8, width: '100%' },
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%' },
   scriptBlock: { alignItems: 'center' },
   scriptBig: { fontFamily: 'GreatVibes_400Regular', textAlign: 'center' },
   scriptMid: { fontFamily: 'GreatVibes_400Regular', textAlign: 'center' },

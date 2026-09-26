@@ -284,5 +284,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 4,
     alignItems: 'center',
+    zIndex: 3,
   },
 });

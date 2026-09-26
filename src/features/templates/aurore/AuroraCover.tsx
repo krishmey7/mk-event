@@ -1,10 +1,10 @@
 /**
  * Couverture Aurore — portrait à gauche, panneau calligraphié à droite.
- * Le fondu couvre toute la hauteur du joint. Sous le titre : accueil nominatif.
+ * Sur le web, la photo est masquée en CSS (fondu fiable). Sous le titre : accueil nominatif.
  * Date et lieu restent en bas du panneau.
  */
 
-import { type ReactNode, useRef, useState } from 'react';
+import { createElement, type ReactNode, useState } from 'react';
 import { Image, Platform, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
@@ -30,7 +30,11 @@ function mixHex(hex: string, toward: number, amount: number): string {
     .join('')}`;
 }
 
-/** Halo léger sur le fond (pas sur un panneau opaque qui masquerait le fondu). */
+function hexToRgb(hex: string): string {
+  const raw = hex.replace('#', '');
+  return [0, 1, 2].map((i) => parseInt(raw.slice(i * 2, i * 2 + 2), 16)).join(', ');
+}
+
 function stageAtmosphere(hex: string): ViewStyle {
   if (Platform.OS !== 'web') return { backgroundColor: hex };
   const lift = mixHex(hex, 255, 0.07);
@@ -39,6 +43,31 @@ function stageAtmosphere(hex: string): ViewStyle {
     backgroundColor: hex,
     backgroundImage: `radial-gradient(ellipse 120% 95% at 68% 30%, ${lift} 0%, ${hex} 55%, ${shade} 100%)`,
   } as ViewStyle;
+}
+
+/** Fondu photo → panneau : vrai nœud DOM, RN Web ne filtre pas le CSS. */
+function WebPhotoBlend({
+  uri,
+  panel,
+}: {
+  uri: string;
+  panel: string;
+}) {
+  const rgb = hexToRgb(panel);
+  return createElement('div', {
+    'aria-hidden': true,
+    style: {
+      position: 'absolute',
+      inset: 0,
+      backgroundImage: [
+        `linear-gradient(90deg, rgba(${rgb},0) 0%, rgba(${rgb},0.08) 28%, rgba(${rgb},0.35) 52%, rgba(${rgb},0.72) 74%, rgba(${rgb},0.94) 90%, rgba(${rgb},1) 100%)`,
+        `url("${uri}")`,
+      ].join(', '),
+      backgroundSize: 'cover, cover',
+      backgroundPosition: 'center, center',
+      backgroundRepeat: 'no-repeat, no-repeat',
+    },
+  });
 }
 
 function GoldMark({
@@ -58,16 +87,6 @@ function GoldMark({
     </View>
   );
 }
-
-const FADE_STOPS = [
-  [0, 0],
-  [0.2, 0.05],
-  [0.4, 0.16],
-  [0.58, 0.38],
-  [0.74, 0.66],
-  [0.88, 0.9],
-  [1, 1],
-] as const;
 
 export function AuroraCover({
   colors,
@@ -96,7 +115,6 @@ export function AuroraCover({
   dressCode?: string;
   hint?: ReactNode;
 }) {
-  const gradId = useRef(`auroreFade-${Math.random().toString(36).slice(2, 8)}`).current;
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [photoW, setPhotoW] = useState(0);
   const panel = colors.bg;
@@ -110,7 +128,8 @@ export function AuroraCover({
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
   const dress = (dressCode ?? '').trim();
-  const fadeW = photoW > 0 ? Math.round(photoW * 0.7) : 0;
+  const fadeW = photoW > 0 ? Math.round(photoW * 0.72) : 0;
+  const onWeb = Platform.OS === 'web';
 
   return (
     <View
@@ -130,37 +149,29 @@ export function AuroraCover({
           if (next > 0 && next !== photoW) setPhotoW(next);
         }}
       >
-        {couplePhoto.uri ? (
-          <Image source={{ uri: couplePhoto.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        {couplePhoto.uri && onWeb ? (
+          <WebPhotoBlend uri={couplePhoto.uri} panel={panel} />
+        ) : couplePhoto.uri ? (
+          <>
+            <Image source={{ uri: couplePhoto.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            {fadeW > 0 && box.h > 0 ? (
+              <Svg width={fadeW} height={box.h} style={styles.fade} pointerEvents="none">
+                <Defs>
+                  <LinearGradient id="auroreNativeFade" x1="0" y1="0" x2={fadeW} y2="0" gradientUnits="userSpaceOnUse">
+                    <Stop offset="0" stopColor={panel} stopOpacity="0" />
+                    <Stop offset="0.35" stopColor={panel} stopOpacity="0.2" />
+                    <Stop offset="0.65" stopColor={panel} stopOpacity="0.65" />
+                    <Stop offset="1" stopColor={panel} stopOpacity="1" />
+                  </LinearGradient>
+                </Defs>
+                <Rect x="0" y="0" width={fadeW} height={box.h} fill="url(#auroreNativeFade)" />
+              </Svg>
+            ) : null}
+          </>
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: panel }]} />
         )}
       </View>
-
-      {fadeW > 0 && box.h > 0 && photoW > 0 ? (
-        <Svg
-          width={fadeW}
-          height={box.h}
-          style={{ position: 'absolute', left: photoW - fadeW, top: 0, zIndex: 1 }}
-          pointerEvents="none"
-        >
-          <Defs>
-            <LinearGradient
-              id={gradId}
-              x1="0"
-              y1="0"
-              x2={fadeW}
-              y2="0"
-              gradientUnits="userSpaceOnUse"
-            >
-              {FADE_STOPS.map(([at, op]) => (
-                <Stop key={at} offset={String(at)} stopColor={panel} stopOpacity={String(op)} />
-              ))}
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width={fadeW} height={box.h} fill={`url(#${gradId})`} />
-        </Svg>
-      ) : null}
 
       <View style={styles.panel}>
         <View style={[styles.copy, { paddingHorizontal: 8, paddingBottom: hint ? 108 : 16 }]}>
@@ -246,7 +257,7 @@ export function AuroraCover({
 const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
   photoCol: { flex: 1, overflow: 'hidden', position: 'relative', zIndex: 0 },
-  /** Transparent : le vert vient du fond, le fondu SVG reste visible au joint. */
+  fade: { position: 'absolute', right: 0, top: 0 },
   panel: { flex: 1, zIndex: 2, backgroundColor: 'transparent' },
   copy: {
     flex: 1,

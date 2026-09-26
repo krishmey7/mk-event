@@ -3,7 +3,7 @@
  */
 
 import { createElement, type ReactNode } from 'react';
-import { Platform, Image, Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { IconName } from '@/features/templates/elegance/data';
@@ -145,6 +145,7 @@ export function AuroreStoryItem({
   imageUri,
   gold,
   cream,
+  ink,
   onPress,
 }: {
   year: string;
@@ -153,12 +154,22 @@ export function AuroreStoryItem({
   imageUri?: string;
   gold: string;
   cream: string;
+  ink: string;
   onPress: () => void;
 }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`Lire l'étape ${title}`} onPress={onPress} style={styles.story}>
       {imageUri ? (
-        <Image source={{ uri: imageUri }} style={[styles.storyPhoto, { borderColor: gold }]} resizeMode="cover" />
+        <View style={[styles.storySeal, { borderColor: gold }]}>
+          <View style={[styles.storySealFrame, { borderColor: `${gold}99` }]}>
+            <View style={[styles.storySealDiamond, { borderColor: gold, backgroundColor: gold }]}>
+              <View style={styles.storySealIcon}>
+                <Ionicons name="image-outline" size={14} color={ink} />
+              </View>
+            </View>
+            <GoldText gold={gold} style={styles.storySealHint}>Voir le souvenir</GoldText>
+          </View>
+        </View>
       ) : null}
       <GoldText gold={gold} style={styles.year}>{year}</GoldText>
       <GoldText gold={gold} style={styles.storyTitle}>{title}</GoldText>
@@ -278,12 +289,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   story: { alignItems: 'center', paddingVertical: 16, gap: 4 },
-  storyPhoto: {
-    width: 168,
-    height: 112,
-    borderRadius: 2,
+  storySeal: {
+    width: 132,
+    height: 132,
     borderWidth: 1,
-    marginBottom: 8,
+    borderRadius: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    padding: 8,
+  },
+  storySealFrame: {
+    flex: 1,
+    width: '100%',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  storySealDiamond: {
+    width: 36,
+    height: 36,
+    borderWidth: 1,
+    transform: [{ rotate: '45deg' }],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  storySealIcon: { transform: [{ rotate: '-45deg' }] },
+  storySealHint: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 9,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    textAlign: 'center',
   },
   year: {
     fontFamily: 'CormorantGaramond_600SemiBold',

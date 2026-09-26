@@ -1,7 +1,6 @@
 /**
- * MK EVENTS — QR déterministe (zéro dépendance).
- * Motif de démonstration stable à partir d'une graine (guestId,
- * slug…) : le QR final scannable sera généré par le serveur.
+ * Liens invité et motif décoratif historique.
+ * Le QR scannable est rendu par `GuestQr` (encode `buildGuestLink`).
  */
 
 /** Hash FNV-1a 32 bits — graine stable pour le générateur. */

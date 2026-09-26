@@ -591,17 +591,42 @@ function parseRsvp(value: unknown): ManageRsvp {
   return 'pending';
 }
 
-export function checkInGuest(eventId: number, guestId: string): ManagedGuest | null {
+function patchGuestLocal(eventId: number, guestId: string, patch: Partial<ManagedGuest>): void {
   const state = store.get(eventId);
-  if (!state) return null;
+  if (!state) return;
+  store.set(eventId, {
+    ...state,
+    guests: state.guests.map((guest) =>
+      guest.id === guestId ? { ...guest, ...patch } : guest,
+    ),
+  });
+  emit();
+}
+
+/** Check-in local + API. En cas d’échec réseau, l’état local est annulé. */
+export async function checkInGuest(
+  eventId: number,
+  guestId: string,
+): Promise<{ guest: ManagedGuest | null; error?: string }> {
+  const state = store.get(eventId);
+  if (!state) return { guest: null, error: 'Événement introuvable.' };
   const guest = state.guests.find((item) => item.id === guestId);
-  if (!guest) return null;
+  if (!guest) return { guest: null, error: 'Invité introuvable.' };
+  const previous = { checkedIn: guest.checkedIn, checkedInAt: guest.checkedInAt };
   const checkedInAt = new Date().toISOString();
-  updateManagedGuest(eventId, guestId, { checkedIn: true, checkedInAt });
+  patchGuestLocal(eventId, guestId, { checkedIn: true, checkedInAt });
   if (isApi(state) && guest.apiId != null) {
-    void guestsService.checkInGuest(eventId, guest.apiId).catch(() => undefined);
+    try {
+      await guestsService.checkInGuest(eventId, guest.apiId);
+    } catch {
+      patchGuestLocal(eventId, guestId, previous);
+      return {
+        guest: null,
+        error: 'Impossible d’enregistrer l’entrée. Vérifiez la connexion et réessayez.',
+      };
+    }
   }
-  return { ...guest, checkedIn: true, checkedInAt };
+  return { guest: { ...guest, checkedIn: true, checkedInAt } };
 }
 
 export function findGuestByCode(eventId: number, code: string): ManagedGuest | null {

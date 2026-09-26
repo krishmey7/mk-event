@@ -36,7 +36,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { shadows } from '@/constants/theme';
 import { CoverDiscoverHint } from './InvitationCover';
 import { TemplateCover } from './TemplateCover';
-import { QrPattern } from '@/components/ui/QrPattern';
+import { GuestQr } from '@/components/ui/GuestQr';
+import { buildGuestLink, guestAccessKey } from '@/features/invitation/qr';
 import { IconBubble, LabeledField, PillButton, SectionHeader, ThemedInput } from '@/features/templates/elegance/widgets';
 import { SelectField } from '@/features/templates/elegance/SelectField';
 import {
@@ -1127,7 +1128,11 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter }: {
                     <Ionicons name="qr-code" size={13} color={c.onPrimary} />
                     <Text style={[styles.passBadgeText, { color: c.onPrimary }]}>PASS D'ENTRÉE ACTIF</Text>
                   </View>
-                  <QrPattern seed={`${slug}:${guest.id}`} size={25} cell={5} style={styles.passQr} />
+                  <GuestQr
+                    value={buildGuestLink(slug, guestAccessKey(guest))}
+                    size={168}
+                    style={styles.passQr}
+                  />
                   <Text style={[styles.passId, { color: c.text }]}>{guest.id}</Text>
                   <Text style={[styles.passName, { color: c.textMuted }]}>
                     {guest.firstName} {guest.lastName}

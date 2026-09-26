@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { EditorInput } from '@/features/editor/components/EditorInput';
-import { QrPattern } from '@/components/ui/QrPattern';
+import { GuestQr } from '@/components/ui/GuestQr';
 import { EditorHeader } from '@/features/editor/components/EditorHeader';
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { useEditor } from '@/features/editor/EditorContext';
@@ -127,7 +127,6 @@ export default function InvitesScreen() {
 
         {guests.map((guest) => {
           const open = openId === guest.id;
-          const accessKey = guestAccessKey(guest);
           const link = linkFor(guest);
           const published = Boolean(guest.accessToken);
           return (
@@ -164,7 +163,13 @@ export default function InvitesScreen() {
 
               {open ? (
                 <View style={[styles.guestShare, { borderTopColor: colors.border }]}>
-                  <QrPattern seed={accessKey} size={17} cell={5} style={styles.guestQr} />
+                  {published ? (
+                    <GuestQr value={link} size={148} style={styles.guestQr} />
+                  ) : (
+                    <Text style={[styles.shareHint, { color: colors.textMuted }]}>
+                      Le QR scannable apparaît après publication.
+                    </Text>
+                  )}
                   {published ? (
                     <Text
                       style={[styles.linkText, { color: colors.textMuted }]}

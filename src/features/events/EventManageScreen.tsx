@@ -22,7 +22,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { QrPattern } from '@/components/ui/QrPattern';
 import { openEventEditor } from '@/features/editor/navigation';
 import { GuestbookManagePanel } from '@/features/events/components/GuestbookManagePanel';
 import { fontFamilies, radii, semanticColors, shadows, spacing, type AppTheme } from '@/constants/theme';
@@ -1249,7 +1248,7 @@ function EntranceTab({
   const [scannerOpen, setScannerOpen] = useState(false);
 
   const processCode = useCallback(
-    (raw: string) => {
+    async (raw: string) => {
       const normalized = parseGuestQrPayload(raw) || raw.trim();
       const found = findGuestByCode(eventId, normalized);
       if (!found) {
@@ -1267,8 +1266,13 @@ function EntranceTab({
         setLast(found);
         return;
       }
-      const updated = checkInGuest(eventId, found.id);
-      setLast(updated);
+      const result = await checkInGuest(eventId, found.id);
+      if (result.error || !result.guest) {
+        setMessage(result.error ?? 'Impossible d’enregistrer l’entrée.');
+        setLast(found);
+        return;
+      }
+      setLast(result.guest);
       const tableHint = found.table ? ` — ${found.table}` : '';
       setMessage(`Bienvenue ${found.firstName} ${found.lastName} !${tableHint}`);
     },
@@ -1350,7 +1354,7 @@ function EntranceTab({
             ]}
           >
             <View style={styles.doorHead}>
-              <QrPattern seed={last.id} size={14} cell={5} />
+              <Ionicons name="checkmark-circle" size={28} color={c.accent} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.guestName, { color: c.textPrimary }]}>
                   {last.firstName} {last.lastName}

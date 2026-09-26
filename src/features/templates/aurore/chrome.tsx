@@ -142,10 +142,8 @@ export function AuroreStoryItem({
   year,
   title,
   text,
-  imageUri,
   gold,
   cream,
-  ink,
   onPress,
 }: {
   year: string;
@@ -154,27 +152,21 @@ export function AuroreStoryItem({
   imageUri?: string;
   gold: string;
   cream: string;
-  ink: string;
+  ink?: string;
   onPress: () => void;
 }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`Lire l'étape ${title}`} onPress={onPress} style={styles.story}>
-      {imageUri ? (
-        <View style={[styles.storySeal, { borderColor: gold }]}>
-          <View style={[styles.storySealFrame, { borderColor: `${gold}99` }]}>
-            <View style={[styles.storySealDiamond, { borderColor: gold, backgroundColor: gold }]}>
-              <View style={styles.storySealIcon}>
-                <Ionicons name="image-outline" size={14} color={ink} />
-              </View>
-            </View>
-            <GoldText gold={gold} style={styles.storySealHint}>Voir le souvenir</GoldText>
-          </View>
-        </View>
-      ) : null}
+      <View style={[styles.storyDiamond, { borderColor: gold }]}>
+        <View style={[styles.storyDiamondFill, { backgroundColor: gold }]} />
+      </View>
       <GoldText gold={gold} style={styles.year}>{year}</GoldText>
       <GoldText gold={gold} style={styles.storyTitle}>{title}</GoldText>
       <Text numberOfLines={3} style={[styles.body, { color: cream }]}>{text}</Text>
-      <GoldText gold={gold} style={styles.read}>Lire le récit</GoldText>
+      <View style={styles.readRow}>
+        <GoldText gold={gold} style={styles.read}>Lire le récit</GoldText>
+        <Ionicons name="chevron-forward" size={12} color={gold} />
+      </View>
       <View style={[styles.itemRule, { backgroundColor: gold }]} />
     </Pressable>
   );
@@ -289,41 +281,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   story: { alignItems: 'center', paddingVertical: 16, gap: 4 },
-  storySeal: {
-    width: 132,
-    height: 132,
-    borderWidth: 1,
-    borderRadius: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-    padding: 8,
-  },
-  storySealFrame: {
-    flex: 1,
-    width: '100%',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  storySealDiamond: {
-    width: 36,
-    height: 36,
+  storyDiamond: {
+    width: 14,
+    height: 14,
     borderWidth: 1,
     transform: [{ rotate: '45deg' }],
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 8,
   },
-  storySealIcon: { transform: [{ rotate: '-45deg' }] },
-  storySealHint: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 9,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-  },
+  storyDiamondFill: { width: 5, height: 5 },
   year: {
     fontFamily: 'CormorantGaramond_600SemiBold',
     fontSize: 13,
@@ -347,8 +314,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.8,
     textTransform: 'uppercase',
-    marginTop: 8,
   },
+  readRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
   itemRule: { width: 28, height: 1, marginTop: 14 },
   program: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12 },
   medallion: {

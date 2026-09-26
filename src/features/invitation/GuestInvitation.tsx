@@ -810,10 +810,8 @@ function GuestStorySection({ theme, winter, aurore, story, couple, onSelect }: {
                   year={item.year}
                   title={item.title}
                   text={item.text}
-                  imageUri={item.image}
                   gold={c.accent}
                   cream={c.text}
-                  ink={c.bg}
                   onPress={() => onSelect(item)}
                 />
               ) : winter ? (

@@ -1,17 +1,17 @@
 /**
- * Couverture Aurore — portrait plein cadre à gauche, panneau calligraphié à droite.
- * Calquée sur l’affiche émeraude & or (Save / The / Date).
+ * Couverture Aurore — portrait à gauche, panneau calligraphié à droite.
+ * Le fondu couvre toute la hauteur du joint. Sous le titre : accueil nominatif.
+ * Date et lieu restent en bas du panneau.
  */
 
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import type { CouplePhoto } from '@/features/invitation/types';
+import { fillGuestNameToken } from '@/features/editor/guestNameToken';
+import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
-
-import { AURORE_WEDDING } from './data';
 
 function splitTitle(title: string): { save: string; mid: string; date: string } | null {
   const parts = title.trim().split(/\s+/);
@@ -42,10 +42,11 @@ function GoldMark({
 export function AuroraCover({
   colors,
   couplePhoto,
+  guest,
   title,
   dateLabel,
   couple,
-  kicker,
+  guestSentence,
   venueName,
   venueStreet,
   venueCity,
@@ -54,139 +55,153 @@ export function AuroraCover({
 }: {
   colors: TemplateColors;
   couplePhoto: CouplePhoto;
+  guest: Guest;
   title: string;
   dateLabel: string;
   couple: string;
-  kicker?: string;
+  guestSentence: string;
   venueName?: string;
   venueStreet?: string;
   venueCity?: string;
   dressCode?: string;
   hint?: ReactNode;
 }) {
-  const [width, setWidth] = useState(390);
+  const gradId = useRef(`auroreFade-${Math.random().toString(36).slice(2, 8)}`).current;
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  const [photoW, setPhotoW] = useState(0);
   const panel = colors.bg;
   const gold = colors.accent;
   const cream = colors.text;
   const muted = colors.textMuted;
-  const ink = panel;
-  const panelW = Math.max(120, width * 0.44);
-  const scale = Math.min(1.2, Math.max(0.82, panelW / 188));
+  const panelW = Math.max(120, box.w - photoW);
+  const scale = Math.min(1.15, Math.max(0.82, panelW / 188));
   const stacked = splitTitle(title);
-  const tagline = (kicker ?? '').trim();
-  const closing = (dressCode ?? '').trim() || AURORE_WEDDING.closing;
+  const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
+  const dress = (dressCode ?? '').trim();
+  const fadeW = photoW > 0 ? Math.round(photoW * 0.7) : 0;
 
   return (
     <View
       style={[styles.fill, { backgroundColor: panel }]}
       onLayout={(event) => {
-        const next = Math.round(event.nativeEvent.layout.width);
-        if (next > 0 && next !== width) setWidth(next);
+        const next = {
+          w: Math.round(event.nativeEvent.layout.width),
+          h: Math.round(event.nativeEvent.layout.height),
+        };
+        if (next.w !== box.w || next.h !== box.h) setBox(next);
       }}
     >
-      <View style={styles.photoCol}>
+      <View
+        style={styles.photoCol}
+        onLayout={(event) => {
+          const next = Math.round(event.nativeEvent.layout.width);
+          if (next > 0 && next !== photoW) setPhotoW(next);
+        }}
+      >
         {couplePhoto.uri ? (
           <Image source={{ uri: couplePhoto.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
         ) : (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: ink }]} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: panel }]} />
         )}
-        <Svg style={styles.fade} pointerEvents="none">
+      </View>
+
+      {fadeW > 0 && box.h > 0 ? (
+        <Svg
+          width={fadeW + 2}
+          height={box.h}
+          style={{ position: 'absolute', left: photoW - fadeW, top: 0 }}
+          pointerEvents="none"
+        >
           <Defs>
-            <LinearGradient id="auroreFade" x1="0" y1="0" x2="1" y2="0">
+            <LinearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
               <Stop offset="0" stopColor={panel} stopOpacity="0" />
-              <Stop offset="0.55" stopColor={panel} stopOpacity="0.35" />
+              <Stop offset="0.42" stopColor={panel} stopOpacity="0.18" />
+              <Stop offset="0.72" stopColor={panel} stopOpacity="0.62" />
               <Stop offset="1" stopColor={panel} stopOpacity="1" />
             </LinearGradient>
           </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#auroreFade)" />
+          <Rect x="0" y="0" width={fadeW + 2} height={box.h} fill={`url(#${gradId})`} />
         </Svg>
-      </View>
+      ) : null}
 
       <View style={styles.panel}>
-        <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Defs>
-            <RadialGradient id="auroreGlow" cx="48%" cy="38%" rx="70%" ry="42%">
-              <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.07" />
-              <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
-            </RadialGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#auroreGlow)" />
-        </Svg>
-
-        <View style={[styles.copy, { paddingHorizontal: 10 * scale, gap: 8 * scale }]}>
-          {stacked ? (
-            <View style={styles.scriptBlock}>
-              <Text style={[styles.scriptBig, { color: gold, fontSize: 54 * scale, lineHeight: 58 * scale }]}>
-                {stacked.save}
-              </Text>
-              <Text
-                style={[
-                  styles.scriptMid,
-                  { color: gold, fontSize: 26 * scale, lineHeight: 28 * scale, marginTop: -16 * scale },
-                ]}
-              >
-                {stacked.mid}
-              </Text>
-              <Text
-                style={[
-                  styles.scriptBig,
-                  { color: gold, fontSize: 54 * scale, lineHeight: 58 * scale, marginTop: -12 * scale },
-                ]}
-              >
-                {stacked.date}
-              </Text>
-            </View>
-          ) : (
-            <Text style={[styles.scriptBig, { color: gold, fontSize: 40 * scale, lineHeight: 46 * scale }]}>
-              {title}
-            </Text>
-          )}
-
-          <Text
-            style={[styles.names, { color: cream, fontSize: 26 * scale, lineHeight: 30 * scale }]}
-            adjustsFontSizeToFit
-            numberOfLines={2}
-          >
-            {couple}
-          </Text>
-
-          {tagline ? (
-            <Text style={[styles.tagline, { color: muted, fontSize: 12 * scale }]}>{tagline}</Text>
-          ) : null}
-
-          <View style={[styles.spark, { backgroundColor: gold }]} />
-
-          {dateLabel.trim() ? (
-            <View style={styles.infoRow}>
-              <GoldMark gold={gold} ink={ink} icon="calendar-outline" size={18 * scale} />
-              <Text style={[styles.date, { color: gold, fontSize: 11 * scale }]}>
-                {dateLabel.trim().toUpperCase()}
-              </Text>
-            </View>
-          ) : null}
-
-          {venueName?.trim() ? (
-            <View style={styles.venue}>
-              <View style={styles.infoRow}>
-                <GoldMark gold={gold} ink={ink} icon="business-outline" size={18 * scale} />
-                <Text style={[styles.venueName, { color: cream, fontSize: 15 * scale }]}>{venueName.trim()}</Text>
-              </View>
-              {place.map((line) => (
-                <Text key={line} style={[styles.address, { color: muted, fontSize: 11 * scale }]}>
-                  {line}
+        <View style={[styles.copy, { paddingHorizontal: 12 * scale, paddingBottom: hint ? 28 : 16 }]}>
+          <View style={styles.hero}>
+            {stacked ? (
+              <View style={styles.scriptBlock}>
+                <Text style={[styles.scriptBig, { color: gold, fontSize: 50 * scale, lineHeight: 54 * scale }]}>
+                  {stacked.save}
                 </Text>
-              ))}
-            </View>
-          ) : null}
+                <Text
+                  style={[
+                    styles.scriptMid,
+                    { color: gold, fontSize: 24 * scale, lineHeight: 26 * scale, marginTop: -14 * scale },
+                  ]}
+                >
+                  {stacked.mid}
+                </Text>
+                <Text
+                  style={[
+                    styles.scriptBig,
+                    { color: gold, fontSize: 50 * scale, lineHeight: 54 * scale, marginTop: -10 * scale },
+                  ]}
+                >
+                  {stacked.date}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.scriptBig, { color: gold, fontSize: 38 * scale, lineHeight: 42 * scale }]}>
+                {title}
+              </Text>
+            )}
 
-          <View style={{ height: 6 * scale }} />
+            {couple.trim() ? (
+              <Text
+                style={[styles.names, { color: cream, fontSize: 22 * scale, lineHeight: 26 * scale }]}
+                adjustsFontSizeToFit
+                numberOfLines={2}
+              >
+                {couple.trim()}
+              </Text>
+            ) : null}
 
-          <Text style={[styles.rsvp, { color: gold, fontSize: 11 * scale }]}>RSVP</Text>
-          <Text style={[styles.contact, { color: muted, fontSize: 11 * scale }]}>{AURORE_WEDDING.rsvpEmail}</Text>
-          <Text style={[styles.contact, { color: muted, fontSize: 11 * scale }]}>{AURORE_WEDDING.rsvpSite}</Text>
+            <Text style={[styles.welcome, { color: gold, fontSize: 15 * scale }]}>
+              Bienvenue, {guest.firstName}
+            </Text>
+            {welcome ? (
+              <Text style={[styles.sentence, { color: cream, fontSize: 13 * scale, lineHeight: 18 * scale }]}>
+                {welcome}
+              </Text>
+            ) : null}
+          </View>
 
-          <Text style={[styles.closing, { color: muted, fontSize: 11 * scale }]}>{closing}</Text>
+          <View style={styles.bottom}>
+            {dateLabel.trim() ? (
+              <View style={styles.infoRow}>
+                <GoldMark gold={gold} ink={panel} icon="calendar-outline" size={16 * scale} />
+                <Text style={[styles.date, { color: gold, fontSize: 12 * scale }]}>{dateLabel.trim()}</Text>
+              </View>
+            ) : null}
+
+            {venueName?.trim() ? (
+              <View style={styles.venue}>
+                <View style={styles.infoRow}>
+                  <GoldMark gold={gold} ink={panel} icon="business-outline" size={16 * scale} />
+                  <Text style={[styles.venueName, { color: cream, fontSize: 14 * scale }]}>{venueName.trim()}</Text>
+                </View>
+                {place.map((line) => (
+                  <Text key={line} style={[styles.address, { color: muted, fontSize: 11 * scale }]}>
+                    {line}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+
+            {dress ? (
+              <Text style={[styles.dress, { color: muted, fontSize: 11 * scale }]}>{dress}</Text>
+            ) : null}
+          </View>
         </View>
       </View>
 
@@ -198,30 +213,41 @@ export function AuroraCover({
 const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
   photoCol: { flex: 1.18, overflow: 'hidden' },
-  fade: { position: 'absolute', top: 0, right: 0, bottom: 0, width: '28%' },
-  panel: { flex: 1, justifyContent: 'center' },
-  copy: { alignItems: 'center', justifyContent: 'center' },
+  panel: { flex: 1 },
+  copy: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 28,
+  },
+  hero: { alignItems: 'center', gap: 8, width: '100%' },
   scriptBlock: { alignItems: 'center' },
   scriptBig: { fontFamily: 'GreatVibes_400Regular', textAlign: 'center' },
   scriptMid: { fontFamily: 'GreatVibes_400Regular', textAlign: 'center' },
   names: {
     fontFamily: 'CormorantGaramond_500Medium',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 6,
   },
-  tagline: {
+  welcome: {
     fontFamily: 'CormorantGaramond_400Regular_Italic',
     textAlign: 'center',
+    marginTop: 4,
   },
-  spark: { width: 18, height: 1.5, marginVertical: 4, opacity: 0.9 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 8 },
+  sentence: {
+    fontFamily: 'CormorantGaramond_400Regular',
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+  bottom: { alignItems: 'center', gap: 8, width: '100%', marginTop: 16 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 6 },
   mark: { alignItems: 'center', justifyContent: 'center' },
   date: {
     fontFamily: 'CormorantGaramond_600SemiBold',
-    letterSpacing: 0.6,
+    textAlign: 'center',
     flexShrink: 1,
   },
-  venue: { alignItems: 'center', gap: 2, marginTop: 8 },
+  venue: { alignItems: 'center', gap: 2 },
   venueName: {
     fontFamily: 'CormorantGaramond_600SemiBold',
     textAlign: 'center',
@@ -231,25 +257,16 @@ const styles = StyleSheet.create({
     fontFamily: 'CormorantGaramond_400Regular',
     textAlign: 'center',
   },
-  rsvp: {
-    fontFamily: 'CormorantGaramond_600SemiBold',
-    letterSpacing: 3,
-    marginTop: 8,
-  },
-  contact: {
-    fontFamily: 'CormorantGaramond_400Regular',
-    textAlign: 'center',
-  },
-  closing: {
+  dress: {
     fontFamily: 'CormorantGaramond_400Regular_Italic',
     textAlign: 'center',
-    marginTop: 10,
+    marginTop: 4,
   },
   hint: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 6,
+    bottom: 4,
     alignItems: 'center',
   },
 });

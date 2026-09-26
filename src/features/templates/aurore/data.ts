@@ -9,11 +9,9 @@ const u = (id: string, w = 900): string =>
 
 export const AURORE_WEDDING = {
   couple: 'Daniel & Sophia',
-  dateLabel: 'SATURDAY, SEPT 12, 2026',
-  kicker: 'Are getting married',
-  closing: 'Formal invitation to follow',
-  rsvpEmail: 'info@auroraevents.com',
-  rsvpSite: 'www.auroraevents.com',
+  dateLabel: '12 septembre 2026',
+  kicker: '',
+  guestLine: '{{Nom}}, nous serions heureux de vous accueillir à notre mariage.',
 } as const;
 
 export const AURORE_IMAGES = {

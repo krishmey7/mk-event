@@ -99,10 +99,11 @@ export function TemplateCover({
         <AuroraCover
           colors={colors}
           couplePhoto={couplePhoto}
+          guest={guest}
           title={title}
           dateLabel={dateLabel}
           couple={couple}
-          kicker={kicker || phrase}
+          guestSentence={guestSentence}
           venueName={venueName}
           venueStreet={venueStreet}
           venueCity={venueCity}

@@ -217,7 +217,7 @@ export const TEMPLATES: TemplateDefinition[] = [
       title: 'Save the Date',
       dateLabel: AURORE_WEDDING.dateLabel,
       couple: AURORE_WEDDING.couple,
-      guestLine: 'Pour notre invité(e) {{Nom}}',
+      guestLine: AURORE_WEDDING.guestLine,
     },
     defaultThemeKey: 'emeraude',
     coverLayout: 'splitPanel',

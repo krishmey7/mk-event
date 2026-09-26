@@ -22,27 +22,13 @@ function splitTitle(title: string): { save: string; mid: string; date: string } 
   return null;
 }
 
-function mixHex(hex: string, toward: number, amount: number): string {
-  const raw = hex.replace('#', '');
-  const channels = [0, 1, 2].map((i) => parseInt(raw.slice(i * 2, i * 2 + 2), 16));
-  return `#${channels
-    .map((c) => Math.max(0, Math.min(255, Math.round(c + (toward - c) * amount))).toString(16).padStart(2, '0'))
-    .join('')}`;
-}
-
 function hexToRgb(hex: string): string {
   const raw = hex.replace('#', '');
   return [0, 1, 2].map((i) => parseInt(raw.slice(i * 2, i * 2 + 2), 16)).join(', ');
 }
 
 function stageAtmosphere(hex: string): ViewStyle {
-  if (Platform.OS !== 'web') return { backgroundColor: hex };
-  const lift = mixHex(hex, 255, 0.07);
-  const shade = mixHex(hex, 0, 0.1);
-  return {
-    backgroundColor: hex,
-    backgroundImage: `radial-gradient(ellipse 120% 95% at 68% 30%, ${lift} 0%, ${hex} 55%, ${shade} 100%)`,
-  } as ViewStyle;
+  return { backgroundColor: hex };
 }
 
 /** Fondu photo → panneau : vrai nœud DOM, RN Web ne filtre pas le CSS. */
@@ -59,8 +45,10 @@ function WebPhotoBlend({
     style: {
       position: 'absolute',
       inset: 0,
+      // Déborde à droite pour passer sous le panneau et tuer la ligne de jointure.
+      right: -14,
       backgroundImage: [
-        `linear-gradient(90deg, rgba(${rgb},0) 0%, rgba(${rgb},0.08) 28%, rgba(${rgb},0.35) 52%, rgba(${rgb},0.72) 74%, rgba(${rgb},0.94) 90%, rgba(${rgb},1) 100%)`,
+        `linear-gradient(90deg, rgba(${rgb},0) 0%, rgba(${rgb},0.1) 30%, rgba(${rgb},0.4) 55%, rgba(${rgb},0.78) 78%, rgba(${rgb},1) 92%, rgba(${rgb},1) 100%)`,
         `url("${uri}")`,
       ].join(', '),
       backgroundSize: 'cover, cover',
@@ -173,7 +161,7 @@ export function AuroraCover({
         )}
       </View>
 
-      <View style={styles.panel}>
+      <View style={[styles.panel, { backgroundColor: panel }]}>
         <View style={[styles.copy, { paddingHorizontal: 8, paddingBottom: hint ? 108 : 16 }]}>
           <View style={styles.hero}>
             {stacked ? (
@@ -256,9 +244,9 @@ export function AuroraCover({
 
 const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
-  photoCol: { flex: 1, overflow: 'hidden', position: 'relative', zIndex: 0 },
+  photoCol: { flex: 1, overflow: 'visible', position: 'relative', zIndex: 0, marginRight: -14 },
   fade: { position: 'absolute', right: 0, top: 0 },
-  panel: { flex: 1, zIndex: 2, backgroundColor: 'transparent' },
+  panel: { flex: 1, zIndex: 2 },
   copy: {
     flex: 1,
     alignItems: 'center',

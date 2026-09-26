@@ -1,15 +1,15 @@
 /**
- * Couverture Herbier — papier, bouquet dessiné, portrait en couronne.
+ * Couverture Herbier — papier teinté, fleurs en dégradé, portrait serré dans la couronne.
  */
 
-import { useEffect, useRef, type ReactNode } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { type ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { fontFamilies } from '@/constants/theme';
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
-import { BotanicalPortrait, BotanicalSprig, CornerBouquet } from './BotanicalArt';
+import { BotanicalPortrait, BotanicalSprig, FloralCanopy } from './BotanicalArt';
 
 function splitCouple(couple: string): [string, string] {
   const parts = couple.split(/\s*[&+]\s*/).map((part) => part.trim()).filter(Boolean);
@@ -53,37 +53,11 @@ export function BotanicalCover({
   hint?: ReactNode;
   onHintPress?: () => void;
 }) {
-  const sway = useRef(new Animated.Value(0)).current;
   const [first, second] = splitCouple(couple);
   const guestLine = fillGuestNameToken(phrase, guest.firstName);
   const ink = colors.text;
   const petal = colors.accent;
   const leaf = colors.primary;
-  const bouquet = compact ? 92 : 150;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(sway, {
-          toValue: 1,
-          duration: compact ? 1 : 5200,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(sway, {
-          toValue: 0,
-          duration: compact ? 1 : 5200,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [compact, sway]);
-
-  const tilt = sway.interpolate({ inputRange: [0, 1], outputRange: ['-2.2deg', '2.2deg'] });
-  const tiltBack = sway.interpolate({ inputRange: [0, 1], outputRange: ['2deg', '-2deg'] });
 
   return (
     <View
@@ -91,51 +65,45 @@ export function BotanicalCover({
         styles.root,
         {
           backgroundColor: colors.bg,
-          paddingTop,
-          paddingBottom,
           flex: compact ? undefined : 1,
         },
       ]}
     >
-      <View pointerEvents="none" style={[styles.frame, { borderColor: colors.border }]} />
+      <View pointerEvents="none" style={[styles.wash, { backgroundColor: petal }]} />
+      <View pointerEvents="none" style={[styles.washBottom, { backgroundColor: leaf }]} />
 
-      <Animated.View style={[styles.bouquetLeft, { transform: [{ rotate: tilt }] }]} pointerEvents="none">
-        <CornerBouquet width={bouquet} petal={petal} ink={ink} leaf={leaf} />
-      </Animated.View>
-      <Animated.View style={[styles.bouquetRight, { transform: [{ rotate: tiltBack }, { scaleX: -1 }] }]} pointerEvents="none">
-        <CornerBouquet width={Math.round(bouquet * 0.72)} petal={petal} ink={ink} leaf={leaf} />
-      </Animated.View>
+      <View pointerEvents="none" style={styles.canopy}>
+        <FloralCanopy petal={petal} leaf={leaf} height={compact ? 150 : 196} />
+      </View>
+      <View pointerEvents="none" style={styles.canopyBottom}>
+        <FloralCanopy petal={petal} leaf={leaf} height={compact ? 140 : 180} />
+      </View>
 
-      <View style={styles.copy}>
+      <View style={[styles.copy, { paddingTop, paddingBottom }]}>
         <Text style={[styles.kicker, { color: colors.textMuted }]} numberOfLines={1}>
           {(title || 'Nous nous marions').toUpperCase()}
         </Text>
 
-        <Text style={[styles.name, { color: ink, fontSize: compact ? 34 : 48 }]} numberOfLines={1}>
+        <Text style={[styles.name, { color: ink, fontSize: compact ? 34 : 46 }]} numberOfLines={1}>
           {first}
         </Text>
         {second ? (
           <>
             <Text style={[styles.amp, { color: petal }]}>&</Text>
-            <Text style={[styles.name, { color: ink, fontSize: compact ? 34 : 48 }]} numberOfLines={1}>
+            <Text style={[styles.name, { color: ink, fontSize: compact ? 34 : 46 }]} numberOfLines={1}>
               {second}
             </Text>
           </>
         ) : null}
 
-        <BotanicalSprig width={compact ? 64 : 92} petal={petal} ink={ink} leaf={leaf} />
-
-        <View style={[styles.datePill, { borderColor: ink }]}>
-          <Text style={[styles.date, { color: ink }]}>{dateLabel}</Text>
-        </View>
+        <Text style={[styles.date, { color: ink }]}>{dateLabel}</Text>
 
         <BotanicalPortrait
           uri={couplePhoto.uri}
           frame={couplePhoto.frame || 'circleFloral'}
           petal={petal}
-          ink={ink}
           leaf={leaf}
-          width={compact ? 250 : 320}
+          width={compact ? 280 : 330}
         />
 
         <Text style={[styles.guest, { color: colors.textMuted }]} numberOfLines={2}>
@@ -244,15 +212,40 @@ export function BotanicalProgramRow({
 }
 
 const styles = StyleSheet.create({
-  root: { overflow: 'hidden', minHeight: 640 },
-  frame: {
-    ...StyleSheet.absoluteFillObject,
-    margin: 14,
-    borderWidth: StyleSheet.hairlineWidth,
+  root: { overflow: 'hidden', minHeight: 720 },
+  wash: {
+    position: 'absolute',
+    top: -30,
+    left: -20,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    opacity: 0.18,
   },
-  bouquetLeft: { position: 'absolute', top: -8, left: -28 },
-  bouquetRight: { position: 'absolute', bottom: 12, right: -36 },
-  copy: { alignItems: 'center', paddingHorizontal: 36, zIndex: 1, gap: 2 },
+  washBottom: {
+    position: 'absolute',
+    right: -30,
+    bottom: -40,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    opacity: 0.14,
+  },
+  canopy: { position: 'absolute', top: 0, left: 0, right: 0 },
+  canopyBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    transform: [{ scaleY: -1 }],
+  },
+  copy: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 28,
+    zIndex: 1,
+  },
   kicker: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 11,
@@ -270,18 +263,12 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     marginVertical: -2,
   },
-  datePill: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 5,
-    marginTop: 6,
-    marginBottom: 8,
-  },
   date: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 12,
-    letterSpacing: 1.2,
+    letterSpacing: 1.6,
+    marginTop: 6,
+    marginBottom: 4,
   },
   guest: {
     fontFamily: fontFamilies.serifItalic,

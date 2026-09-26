@@ -250,7 +250,7 @@ export const TEMPLATES: TemplateDefinition[] = [
     id: 6,
     name: 'Herbier',
     category: 'wedding',
-    description: 'Invitation dessinée — fleurs à l’encre, couronne, papier d’herbier.',
+    description: 'Invitation florale — roses en dégradé, couronne et papier teinté.',
     coverImage: BOTANICAL_IMAGES.cover,
     galleryImages: BOTANICAL_IMAGES.gallery,
     countdownImage: BOTANICAL_IMAGES.countdown,

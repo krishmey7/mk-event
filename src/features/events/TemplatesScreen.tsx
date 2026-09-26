@@ -168,6 +168,7 @@ function TemplateThumb({
                 guestSentence={template.defaultCover.guestLine}
                 kicker={template.defaultKicker}
                 venueName={template.defaultVenue?.name}
+                venueStreet={template.defaultVenue?.street}
                 venueCity={template.defaultVenue?.city}
                 hint={<CoverDiscoverHint />}
               />

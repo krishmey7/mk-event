@@ -52,6 +52,10 @@ const MONTHS: Record<string, number> = {
   janvier: 0, fevrier: 1, février: 1, mars: 2, avril: 3, mai: 4, juin: 5,
   juillet: 6, aout: 7, août: 7, septembre: 8, octobre: 9, novembre: 10,
   decembre: 11, décembre: 11,
+  jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
+  apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6,
+  aug: 7, august: 7, sep: 8, sept: 8, september: 8,
+  oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11,
 };
 
 /**
@@ -88,6 +92,16 @@ export function parseEventDate(
       const month = MONTHS[monthKey];
       if (month != null) {
         return new Date(Date.UTC(Number(french[3]), month, Number(french[1]), 15, 0, 0));
+      }
+    }
+
+    /* SEPT 12, 2026 · September 12 2026 */
+    const english = normalized.match(/([a-z]+)\s+(\d{1,2}),?\s+(\d{4})/);
+    if (english) {
+      const month = MONTHS[english[1]];
+      const day = Number(english[2]);
+      if (month != null && day >= 1 && day <= 31) {
+        return new Date(Date.UTC(Number(english[3]), month, day, 15, 0, 0));
       }
     }
 

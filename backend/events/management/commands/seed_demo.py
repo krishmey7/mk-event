@@ -30,8 +30,7 @@ class Command(BaseCommand):
         templates = [
             ("elegance", "Élégance", "wedding"),
             ("hiver", "Hiver", "wedding"),
-            ("editorial", "Revue", "wedding"),
-            ("herbier", "Herbier", "wedding"),
+            ("aurore", "Aurore", "wedding"),
             ("celebration", "Célébration", "birthday"),
             ("summit", "Summit", "corporate"),
             ("moderne", "Moderne", "birthday"),

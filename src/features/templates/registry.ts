@@ -24,25 +24,18 @@ import {
   CONFERENCE_THEME_ORDER,
   CONFERENCE_THEMES,
 } from './conference/data';
+import {
+  AURORE_GALLERY,
+  AURORE_IMAGES,
+  AURORE_PROGRAM,
+  AURORE_STORY,
+  AURORE_VENUE,
+  AURORE_WEDDING,
+} from './aurore/data';
+import { AURORE_THEME_ORDER, AURORE_THEMES } from './aurore/themes';
 import type { PhotoFrameOption } from '@/features/invitation/types';
 import { normalizePhotoFrame } from '@/features/invitation/types';
-import { ELEGANCE_PHOTO_FRAMES, BOTANICAL_PHOTO_FRAMES, EDITORIAL_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
-import {
-  EDITORIAL_IMAGES,
-  EDITORIAL_PROGRAM,
-  EDITORIAL_STORY,
-  EDITORIAL_VENUE,
-  EDITORIAL_WEDDING,
-} from './editorial/data';
-import { EDITORIAL_THEME_ORDER, EDITORIAL_THEMES } from './editorial/themes';
-import {
-  BOTANICAL_IMAGES,
-  BOTANICAL_PROGRAM,
-  BOTANICAL_STORY,
-  BOTANICAL_VENUE,
-  BOTANICAL_WEDDING,
-} from './botanical/data';
-import { BOTANICAL_THEME_ORDER, BOTANICAL_THEMES } from './botanical/themes';
+import { ELEGANCE_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
 import type { OrnamentKey } from './ornaments';
 
 export type { TemplateColors };
@@ -64,7 +57,7 @@ export interface TemplateDefaultCover {
   guestLine: string;
 }
 
-export type CoverLayout = 'classic' | 'winterPoster' | 'birthdayPoster' | 'conference' | 'editorial' | 'botanical';
+export type CoverLayout = 'classic' | 'winterPoster' | 'birthdayPoster' | 'conference' | 'splitPanel';
 
 export interface TemplateDefinition {
   key: string;
@@ -135,24 +128,14 @@ const birthdayThemes: TemplateThemeDefinition[] = BIRTHDAY_THEME_ORDER.map((key)
   colors: BIRTHDAY_THEMES[key].colors,
 }));
 
-const editorialThemes: TemplateThemeDefinition[] = EDITORIAL_THEME_ORDER.map((key) => ({
+const auroreThemes: TemplateThemeDefinition[] = AURORE_THEME_ORDER.map((key) => ({
   key,
-  label: EDITORIAL_THEMES[key].label,
-  swatch: EDITORIAL_THEMES[key].swatch,
-  isDark: EDITORIAL_THEMES[key].isDark,
-  dressLabel: EDITORIAL_THEMES[key].dressLabel,
-  dressHint: EDITORIAL_THEMES[key].dressHint,
-  colors: EDITORIAL_THEMES[key].colors,
-}));
-
-const botanicalThemes: TemplateThemeDefinition[] = BOTANICAL_THEME_ORDER.map((key) => ({
-  key,
-  label: BOTANICAL_THEMES[key].label,
-  swatch: BOTANICAL_THEMES[key].swatch,
-  isDark: BOTANICAL_THEMES[key].isDark,
-  dressLabel: BOTANICAL_THEMES[key].dressLabel,
-  dressHint: BOTANICAL_THEMES[key].dressHint,
-  colors: BOTANICAL_THEMES[key].colors,
+  label: AURORE_THEMES[key].label,
+  swatch: AURORE_THEMES[key].swatch,
+  isDark: AURORE_THEMES[key].isDark,
+  dressLabel: AURORE_THEMES[key].dressLabel,
+  dressHint: AURORE_THEMES[key].dressHint,
+  colors: AURORE_THEMES[key].colors,
 }));
 
 const conferenceThemes: TemplateThemeDefinition[] = CONFERENCE_THEME_ORDER.map((key) => ({
@@ -219,58 +202,31 @@ export const TEMPLATES: TemplateDefinition[] = [
     photoFrames: HIVER_PHOTO_FRAMES,
   },
   {
-    key: 'editorial',
-    id: 5,
-    name: 'Revue',
+    key: 'aurore',
+    id: 7,
+    name: 'Aurore',
     category: 'wedding',
-    description: 'Planche magazine 2026 — typographie, filets, photo décalée.',
-    coverImage: EDITORIAL_IMAGES.cover,
-    galleryImages: EDITORIAL_IMAGES.gallery,
-    countdownImage: EDITORIAL_IMAGES.countdown,
-    couplePhoto: { uri: EDITORIAL_IMAGES.couple, frame: normalizePhotoFrame('soft', 'editorial') },
-    story: EDITORIAL_STORY,
-    program: EDITORIAL_PROGRAM,
+    description: 'Save the date émeraude et or — portrait plein cadre, calligraphie dorée.',
+    coverImage: AURORE_IMAGES.cover,
+    galleryImages: AURORE_GALLERY,
+    countdownImage: AURORE_IMAGES.countdown,
+    couplePhoto: { uri: AURORE_IMAGES.couple, frame: normalizePhotoFrame('soft') },
+    story: AURORE_STORY,
+    program: AURORE_PROGRAM,
     defaultCover: {
       title: 'Save the Date',
-      dateLabel: '12 septembre 2026',
-      couple: EDITORIAL_WEDDING.couple,
-      guestLine: EDITORIAL_WEDDING.guestSentence,
+      dateLabel: AURORE_WEDDING.dateLabel,
+      couple: AURORE_WEDDING.couple,
+      guestLine: 'Pour notre invité(e) {{Nom}}',
     },
-    defaultThemeKey: 'avoine',
-    coverLayout: 'editorial',
-    ornaments: 'editorial',
+    defaultThemeKey: 'emeraude',
+    coverLayout: 'splitPanel',
+    ornaments: 'elegance',
     motions: { coverEnter: true, sectionReveal: true },
-    defaultKicker: EDITORIAL_WEDDING.kicker,
-    defaultVenue: EDITORIAL_VENUE,
-    themes: editorialThemes,
-    photoFrames: EDITORIAL_PHOTO_FRAMES,
-  },
-  {
-    key: 'herbier',
-    id: 6,
-    name: 'Herbier',
-    category: 'wedding',
-    description: 'Invitation florale — roses en dégradé, couronne et papier teinté.',
-    coverImage: BOTANICAL_IMAGES.cover,
-    galleryImages: BOTANICAL_IMAGES.gallery,
-    countdownImage: BOTANICAL_IMAGES.countdown,
-    couplePhoto: { uri: BOTANICAL_IMAGES.couple, frame: normalizePhotoFrame('circleFloral', 'herbier') },
-    story: BOTANICAL_STORY,
-    program: BOTANICAL_PROGRAM,
-    defaultCover: {
-      title: 'Nous nous marions',
-      dateLabel: '20 juin 2026',
-      couple: BOTANICAL_WEDDING.couple,
-      guestLine: BOTANICAL_WEDDING.guestSentence,
-    },
-    defaultThemeKey: 'ivoire',
-    coverLayout: 'botanical',
-    ornaments: 'botanical',
-    motions: { coverEnter: true, sectionReveal: true },
-    defaultKicker: BOTANICAL_WEDDING.kicker,
-    defaultVenue: BOTANICAL_VENUE,
-    themes: botanicalThemes,
-    photoFrames: BOTANICAL_PHOTO_FRAMES,
+    defaultKicker: AURORE_WEDDING.kicker,
+    defaultVenue: AURORE_VENUE,
+    themes: auroreThemes,
+    photoFrames: [],
   },
   {
     key: 'celebration',

@@ -34,6 +34,7 @@ export function EditorCoverPreview({ embedded = false }: { embedded?: boolean })
         guestSentence={cover.guestLine}
         kicker={cover.kicker}
         venueName={venue.name}
+        venueStreet={venue.street}
         venueCity={venue.city}
         dressCode={dressCode}
         compact={embedded}

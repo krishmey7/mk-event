@@ -66,7 +66,7 @@ export interface CoverConfig {
 /* ── Styles de mise en page (appliqués en temps réel) ── */
 
 export type ProgramStyleKey = 'classique' | 'minimaliste' | 'icones' | 'personnalise';
-export type CountdownStyleKey = 'classique' | 'cercle' | 'minimaliste';
+export type CountdownStyleKey = 'classique' | 'cercle' | 'minimaliste' | 'sceau';
 export type GalleryCategory = 'ceremonie' | 'cocktail' | 'soiree';
 
 export interface GalleryItem {
@@ -293,9 +293,13 @@ export function EditorProvider({
   const [programStyle, setProgramStyle] = useState<ProgramStyleKey>(
     () => (snap?.programStyle as ProgramStyleKey) ?? 'personnalise',
   );
-  const [countdownStyle, setCountdownStyle] = useState<CountdownStyleKey>(
-    () => (snap?.countdownStyle as CountdownStyleKey) ?? 'cercle',
-  );
+  const [countdownStyle, setCountdownStyle] = useState<CountdownStyleKey>(() => {
+    const saved = snap?.countdownStyle as CountdownStyleKey | undefined;
+    if (saved === 'classique' || saved === 'cercle' || saved === 'minimaliste' || saved === 'sceau') {
+      return saved;
+    }
+    return template.key === 'aurore' ? 'sceau' : 'cercle';
+  });
 
   const [gallery, setGallery] = useState<GalleryItem[]>(() => {
     const saved = snap?.gallery?.filter((item) => item.uri?.trim()) ?? [];

@@ -19,9 +19,9 @@ export function templateStudio(layout: CoverLayout): TemplateStudioCapabilities 
     case 'classic':
       return { backgroundPhoto: true, couplePhoto: true, coupleFrames: true };
     case 'winterPoster':
-    case 'editorial':
-    case 'botanical':
       return { backgroundPhoto: false, couplePhoto: true, coupleFrames: true };
+    case 'splitPanel':
+      return { backgroundPhoto: false, couplePhoto: true, coupleFrames: false };
     case 'birthdayPoster':
     case 'conference':
       return { backgroundPhoto: false, couplePhoto: false, coupleFrames: false };

@@ -36,14 +36,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { shadows } from '@/constants/theme';
 import { CoverDiscoverHint } from './InvitationCover';
 import { TemplateCover } from './TemplateCover';
+import { SealCountdown } from '@/features/templates/aurore/SealCountdown';
 import { GuestQr } from '@/components/ui/GuestQr';
-import { EditorialProgramRow, EditorialSectionHeader, EditorialStoryRow } from '@/features/templates/editorial/EditorialCover';
-import {
-  BotanicalProgramRow,
-  BotanicalSectionHeader,
-  BotanicalStoryRow,
-} from '@/features/templates/botanical/BotanicalCover';
-import { BotanicalSprig } from '@/features/templates/botanical/BotanicalArt';
 import { buildGuestLink, guestAccessKey } from '@/features/invitation/qr';
 import { IconBubble, LabeledField, PillButton, SectionHeader, ThemedInput } from '@/features/templates/elegance/widgets';
 import { SelectField } from '@/features/templates/elegance/SelectField';
@@ -180,7 +174,6 @@ export function GuestInvitation({ slug, config, guest }: {
   };
 
   const winter = layout === 'winterPoster';
-  const botanical = layout === 'botanical';
   const voix = {
     ...DEFAULT_VOIX,
     ...config.voix,
@@ -256,8 +249,6 @@ export function GuestInvitation({ slug, config, guest }: {
 
   return (
     <RevealBusContext.Provider value={bus}>
-      <EditorialMode.Provider value={layout === 'editorial'}>
-      <BotanicalMode.Provider value={layout === 'botanical'}>
       <View style={[styles.fill, { backgroundColor: theme.colors.bg }]}>
         <StatusBar style={theme.isDark ? 'light' : 'dark'} />
 
@@ -317,6 +308,7 @@ export function GuestInvitation({ slug, config, guest }: {
             imageUri={countdownImage}
             theme={theme}
             winter={winter}
+            seal={layout === 'splitPanel'}
             dateLabel={pageCover.dateLabel}
           />
 
@@ -349,11 +341,7 @@ export function GuestInvitation({ slug, config, guest }: {
           />
 
           <View style={styles.footer}>
-            {layout === 'editorial' ? (
-              <View style={{ width: 28, height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.accent }} />
-            ) : botanical ? (
-              <BotanicalSprig width={64} petal={theme.colors.accent} ink={theme.colors.text} leaf={theme.colors.primary} />
-            ) : winter ? (
+            {winter ? (
               <SnowflakeSvg color={theme.colors.accent} size={18} />
             ) : (
               <Ionicons name="leaf-outline" size={16} color={theme.colors.accent} />
@@ -368,8 +356,6 @@ export function GuestInvitation({ slug, config, guest }: {
 
         <StoryDetailModal story={story} theme={theme} onClose={() => setStory(null)} />
       </View>
-      </BotanicalMode.Provider>
-      </EditorialMode.Provider>
     </RevealBusContext.Provider>
   );
 }
@@ -657,9 +643,6 @@ function WinterBreak({ theme }: { theme: TemplateTheme }) {
   );
 }
 
-const EditorialMode = createContext(false);
-const BotanicalMode = createContext(false);
-
 function SectionHead({
   winter,
   theme,
@@ -673,18 +656,6 @@ function SectionHead({
   title: string;
   subtitle?: string;
 }) {
-  const editorial = useContext(EditorialMode);
-  const botanical = useContext(BotanicalMode);
-  if (botanical) {
-    return (
-      <BotanicalSectionHeader title={title} subtitle={subtitle} colors={theme.colors} />
-    );
-  }
-  if (editorial) {
-    return (
-      <EditorialSectionHeader kicker={kicker} title={title} subtitle={subtitle} colors={theme.colors} />
-    );
-  }
   if (winter) {
     return (
       <WinterSectionHeader kicker={kicker} title={title} subtitle={subtitle} colors={theme.colors} />
@@ -747,6 +718,7 @@ function GuestCoverSection({
         guestSentence={cover.guestLine || 'Vous êtes invité(e) à célébrer avec nous.'}
         kicker={cover.kicker}
         venueName={venue.name}
+        venueStreet={venue.street}
         venueCity={venue.city}
         dressCode={dressCode}
         paddingTop={insets.top + 10}
@@ -776,8 +748,6 @@ function GuestStorySection({ theme, winter, story, couple, onSelect }: {
   onSelect: (story: StoryMilestone) => void;
 }) {
   const c = theme.colors;
-  const editorial = useContext(EditorialMode);
-  const botanical = useContext(BotanicalMode);
   const { effect: revealEffect } = useRevealBus();
   return (
     <SectionShell winter={winter} theme={theme}>
@@ -796,24 +766,7 @@ function GuestStorySection({ theme, winter, story, couple, onSelect }: {
           const last = index === story.length - 1;
           return (
             <Reveal key={item.year} effect={revealEffect} delay={index * 90}>
-              {botanical ? (
-                <BotanicalStoryRow
-                  colors={c}
-                  year={item.year}
-                  title={item.title}
-                  text={item.text}
-                  onPress={() => onSelect(item)}
-                />
-              ) : editorial ? (
-                <EditorialStoryRow
-                  colors={c}
-                  imageUri={item.image}
-                  year={item.year}
-                  title={item.title}
-                  text={item.text}
-                  onPress={() => onSelect(item)}
-                />
-              ) : winter ? (
+              {winter ? (
                 <WinterStoryItem
                   colors={c}
                   imageUri={item.image}
@@ -868,8 +821,6 @@ function GuestProgramSection({ theme, winter, venue, program, dateLabel }: {
   dateLabel: string;
 }) {
   const c = theme.colors;
-  const editorial = useContext(EditorialMode);
-  const botanical = useContext(BotanicalMode);
   const { effect: revealEffect } = useRevealBus();
   return (
     <SectionShell winter={winter} theme={theme} style={winter ? undefined : { backgroundColor: c.bg }}>
@@ -888,21 +839,7 @@ function GuestProgramSection({ theme, winter, venue, program, dateLabel }: {
           const last = index === program.length - 1;
           return (
             <Reveal key={step.time} effect={revealEffect} delay={index * 80}>
-              {botanical ? (
-                <BotanicalProgramRow
-                  colors={c}
-                  time={step.time}
-                  title={step.title}
-                  place={step.place}
-                />
-              ) : editorial ? (
-                <EditorialProgramRow
-                  colors={c}
-                  time={step.time}
-                  title={step.title}
-                  place={step.place}
-                />
-              ) : winter ? (
+              {winter ? (
                 <WinterProgramItem
                   colors={c}
                   icon={step.icon}
@@ -1011,12 +948,13 @@ function VenueCard({ venue, theme }: { venue: Venue; theme: TemplateTheme }) {
 
 /* ── 4. Compte à rebours — bloc sombre immersif ── */
 
-function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, dateLabel }: {
+function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, seal, dateLabel }: {
   liked: boolean;
   onToggleLike: () => void;
   imageUri: string;
   theme: TemplateTheme;
   winter: boolean;
+  seal: boolean;
   dateLabel: string;
 }) {
   const c = theme.colors;
@@ -1040,6 +978,33 @@ function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, d
     { value: p2(Math.floor((ms % 3600000) / 60000)), label: 'Minutes' },
     { value: p2(Math.floor((ms % 60000) / 1000)), label: 'Secondes' },
   ];
+
+  if (seal) {
+    return (
+      <View style={[styles.countdown, { backgroundColor: c.bg, overflow: 'hidden' }]}>
+        <SealCountdown
+          days={days}
+          hours={blocks[0].value}
+          minutes={blocks[1].value}
+          seconds={blocks[2].value}
+          gold={c.accent}
+          panel={c.bg}
+          footer={(
+            <View style={styles.viteRow}>
+              <Text style={[styles.viteText, { color: c.accent, fontFamily: 'GreatVibes_400Regular', fontSize: 26 }]}>
+                À très vite
+              </Text>
+            </View>
+          )}
+        />
+        <View style={[styles.countdownLike, { position: 'absolute', top: 0, right: 0 }]}>
+          <Pressable accessibilityRole="button" onPress={onToggleLike} hitSlop={8} style={styles.circleBtn}>
+            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={19} color={liked ? '#E25555' : c.accent} />
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   const inner = (
     <>

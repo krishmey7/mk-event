@@ -34,24 +34,6 @@ const BIRTHDAY_FROM_SETUP: Record<string, string> = {
   noir: 'noir',
 };
 
-const EDITORIAL_FROM_SETUP: Record<string, string> = {
-  sauge: 'sauge',
-  champagne: 'avoine',
-  rose: 'caramel',
-  marine: 'encre',
-  bordeaux: 'caramel',
-  noir: 'encre',
-};
-
-const BOTANICAL_FROM_SETUP: Record<string, string> = {
-  sauge: 'sauge',
-  champagne: 'ivoire',
-  rose: 'pivoine',
-  marine: 'nuit',
-  bordeaux: 'pivoine',
-  noir: 'nuit',
-};
-
 const CONFERENCE_FROM_SETUP: Record<string, string> = {
   sauge: 'teal',
   champagne: 'slate',
@@ -59,6 +41,15 @@ const CONFERENCE_FROM_SETUP: Record<string, string> = {
   marine: 'navy',
   bordeaux: 'navy',
   noir: 'graphite',
+};
+
+const AURORE_FROM_SETUP: Record<string, string> = {
+  sauge: 'sauge',
+  champagne: 'emeraude',
+  rose: 'rose',
+  marine: 'marine',
+  bordeaux: 'bordeaux',
+  noir: 'noir',
 };
 
 export function resolveTemplateThemeKey(
@@ -73,15 +64,13 @@ export function resolveTemplateThemeKey(
   const mapped =
     template.key === 'hiver'
       ? HIVER_FROM_SETUP[raw]
-      : template.key === 'editorial'
-        ? EDITORIAL_FROM_SETUP[raw]
-        : template.key === 'herbier'
-          ? BOTANICAL_FROM_SETUP[raw]
-          : template.key === 'celebration'
+      : template.key === 'celebration'
         ? BIRTHDAY_FROM_SETUP[raw]
         : template.key === 'summit'
           ? CONFERENCE_FROM_SETUP[raw]
-          : ELEGANCE_FROM_SETUP[raw];
+          : template.key === 'aurore'
+            ? AURORE_FROM_SETUP[raw]
+            : ELEGANCE_FROM_SETUP[raw];
 
   if (mapped && template.themes.some((item) => item.key === mapped)) return mapped;
   return template.defaultThemeKey;

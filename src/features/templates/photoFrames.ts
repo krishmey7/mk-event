@@ -12,19 +12,6 @@ export const ELEGANCE_PHOTO_FRAMES: PhotoFrameOption[] = [
   { key: 'soft', label: 'Sans cadre', hint: 'Bordures adoucies', icon: 'square-outline' },
 ];
 
-export const EDITORIAL_PHOTO_FRAMES: PhotoFrameOption[] = [
-  { key: 'soft', label: 'Planche', hint: 'Cadre architectural', icon: 'square-outline' },
-  { key: 'hex', label: 'Volume', hint: 'Découpe nette', icon: 'diamond-outline' },
-  { key: 'circle', label: 'Médaillon', hint: 'Portrait discret', icon: 'ellipse-outline' },
-];
-
-export const BOTANICAL_PHOTO_FRAMES: PhotoFrameOption[] = [
-  { key: 'circleFloral', label: 'Couronne', hint: 'Fleurs dessinées autour', icon: 'flower-outline' },
-  { key: 'circle', label: 'Ovale', hint: 'Médaillon à l’encre', icon: 'ellipse-outline' },
-  { key: 'heartFloral', label: 'Cœur fleuri', hint: 'Cœur et pivoine', icon: 'heart-outline' },
-  { key: 'soft', label: 'Arche', hint: 'Fenêtre de chapelle', icon: 'square-outline' },
-];
-
 export const HIVER_PHOTO_FRAMES: PhotoFrameOption[] = [
   { key: 'hex', label: 'Hexagone or', hint: 'Signature de l’affiche', icon: 'diamond-outline' },
   { key: 'hexFloral', label: 'Hexagone rinceaux', hint: 'Vignes dorées', icon: 'leaf-outline' },

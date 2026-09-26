@@ -2,14 +2,12 @@
  * Sélecteur de forme du cadre couple — aperçu live + miniatures lisibles.
  */
 
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { fontFamilies } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { CouplePhotoFrame } from '@/features/invitation/CouplePhotoFrame';
 import type { PhotoFrameKey, PhotoFrameOption } from '@/features/invitation/types';
-import { BotanicalPortrait } from '@/features/templates/botanical/BotanicalArt';
-import { EditorialPhotoShape } from '@/features/templates/editorial/EditorialPhotoShape';
 import { WinterCouplePhotoFrame } from '@/features/templates/hiver/WinterCouplePhotoFrame';
 
 function optionLabel(option: PhotoFrameOption): string {
@@ -29,44 +27,13 @@ function FramePreview({
   frame,
   accent,
   size,
-  editorial = false,
-  botanical = false,
-  ink = '#2C261F',
-  leaf = '#3E5340',
 }: {
   uri: string;
   frame: PhotoFrameKey;
   accent: string;
   size: number;
-  editorial?: boolean;
-  botanical?: boolean;
-  ink?: string;
-  leaf?: string;
 }) {
   const couplePhoto = { uri, frame };
-
-  if (botanical) {
-    return (
-      <BotanicalPortrait
-        uri={uri}
-        frame={frame}
-        petal={accent}
-        ink={ink}
-        leaf={leaf}
-        width={size + 24}
-      />
-    );
-  }
-
-  if (editorial) {
-    const portrait = frame === 'soft';
-    return (
-      <View style={{ width: size, height: portrait ? Math.round(size * 1.15) : size }}>
-        <EditorialPhotoShape uri={uri} frame={frame} color={accent} fallbackColor="#E7DFD2" />
-      </View>
-    );
-  }
-
   const isHex = frame === 'hex' || frame === 'hexFloral';
 
   if (isHex) {
@@ -88,25 +55,17 @@ export function CoupleFramePicker({
   frame,
   options,
   accent,
+  framesEnabled = true,
   onChangeFrame,
   onChangePhoto,
-  editorial = false,
-  botanical = false,
-  ink,
-  leaf,
 }: {
   uri: string;
   frame: PhotoFrameKey;
   options: PhotoFrameOption[];
   accent: string;
+  framesEnabled?: boolean;
   onChangeFrame: (key: PhotoFrameKey) => void;
   onChangePhoto: () => void;
-  /** Formes et libellés propres au modèle Revue. */
-  editorial?: boolean;
-  /** Formes dessinées du modèle Herbier. */
-  botanical?: boolean;
-  ink?: string;
-  leaf?: string;
 }) {
   const { theme } = useAppTheme();
   const muted = theme.colors.textMuted;
@@ -116,8 +75,10 @@ export function CoupleFramePicker({
   return (
     <View style={styles.root}>
       <View style={[styles.stage, { backgroundColor: surface, borderColor: border }]}>
-        {uri ? (
-          <FramePreview uri={uri} frame={frame} accent={accent} size={128} editorial={editorial} botanical={botanical} ink={ink} leaf={leaf} />
+        {uri && framesEnabled ? (
+          <FramePreview uri={uri} frame={frame} accent={accent} size={128} />
+        ) : uri ? (
+          <Image source={{ uri }} style={styles.portrait} resizeMode="cover" />
         ) : (
           <View style={[styles.emptyStage, { borderColor: accent }]}>
             <Text style={[styles.emptyText, { color: muted }]}>Aperçu du cadre</Text>
@@ -133,6 +94,8 @@ export function CoupleFramePicker({
         </Pressable>
       </View>
 
+      {framesEnabled ? (
+        <>
       <Text style={[styles.hint, { color: muted }]}>Forme sur la couverture</Text>
       <ScrollView
         horizontal
@@ -158,7 +121,7 @@ export function CoupleFramePicker({
                 ]}
               >
                 {uri ? (
-                  <FramePreview uri={uri} frame={option.key} accent={accent} size={72} editorial={editorial} botanical={botanical} ink={ink} leaf={leaf} />
+                  <FramePreview uri={uri} frame={option.key} accent={accent} size={72} />
                 ) : (
                   <Text style={[styles.thumbFallback, { color: accent }]}>
                     {optionLabel(option).slice(0, 1)}
@@ -173,12 +136,18 @@ export function CoupleFramePicker({
                 ]}
                 numberOfLines={1}
               >
-                {editorial || botanical ? option.label : optionLabel(option)}
+                {optionLabel(option)}
               </Text>
             </Pressable>
           );
         })}
       </ScrollView>
+        </>
+      ) : (
+        <Text style={[styles.hint, { color: muted }]}>
+          Plein cadre, à gauche de la couverture.
+        </Text>
+      )}
     </View>
   );
 }
@@ -204,6 +173,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: { fontFamily: fontFamilies.sansMedium, fontSize: 12 },
+  portrait: { width: 108, height: 156, borderRadius: 2 },
   changeBtn: {
     backgroundColor: 'rgba(255, 255, 255, 0.92)',
     borderRadius: 999,

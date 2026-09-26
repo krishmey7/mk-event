@@ -9,11 +9,12 @@ import { EditorHint } from '@/features/editor/components/EditorHint';
 import { useEditor } from '@/features/editor/EditorContext';
 import { resolveCountdownTargetMs } from '@/features/editor/snapshot';
 import { useStudioChrome } from '@/features/editor/useStudioChrome';
+import { SealCountdown } from '@/features/templates/aurore/SealCountdown';
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');
 
 export default function CompteurTabScreen({ embedded = false }: { embedded?: boolean }) {
-  const { template, countdownStyle, cover } = useEditor();
+  const { template, countdownStyle, cover, theme: invitationTheme } = useEditor();
   const colors = useStudioChrome();
   const [now, setNow] = useState(() => Date.now());
   const targetMs = useMemo(
@@ -38,7 +39,33 @@ export default function CompteurTabScreen({ embedded = false }: { embedded?: boo
     { value: pad2(seconds), label: 'Secondes' },
   ];
 
-  const body = (
+  const body = template.coverLayout === 'splitPanel' ? (
+    <>
+      {embedded ? null : (
+        <EditorHint>
+          {`Aperçu calé sur la date de couverture (${cover.dateLabel || 'non définie'}).`}
+        </EditorHint>
+      )}
+      {embedded ? (
+        <Text style={[styles.dateHint, { color: colors.textMuted }]}>
+          Basé sur la date Infos · {cover.dateLabel || 'non définie'}
+        </Text>
+      ) : null}
+      <View style={[styles.previewCard, styles.sealCard]}>
+        <SealCountdown
+          days={days}
+          hours={pad2(hours)}
+          minutes={pad2(minutes)}
+          seconds={pad2(seconds)}
+          gold={invitationTheme.colors.accent}
+          panel={invitationTheme.colors.bg}
+          footer={(
+            <Text style={[styles.sealVite, { color: invitationTheme.colors.accent }]}>À très vite</Text>
+          )}
+        />
+      </View>
+    </>
+  ) : (
     <>
       {embedded ? null : (
         <EditorHint>
@@ -118,6 +145,12 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 32 },
   dateHint: { fontFamily: 'Inter_400Regular', fontSize: 12, marginBottom: 10 },
   previewCard: { borderRadius: 16, overflow: 'hidden', marginBottom: 18 },
+  sealCard: { height: 460 },
+  sealVite: {
+    fontFamily: 'GreatVibes_400Regular',
+    fontSize: 28,
+    marginTop: 8,
+  },
   preview: { height: 232, justifyContent: 'center' },
   previewBody: { alignItems: 'center', gap: 3 },
   previewKicker: { fontFamily: 'Inter_500Medium', fontSize: 13, color: '#FFFFFF' },

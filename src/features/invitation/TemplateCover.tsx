@@ -9,9 +9,8 @@ import { InvitationCover } from '@/features/invitation/InvitationCover';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
 import { WinterCover } from '@/features/templates/hiver/WinterCover';
-import { EditorialCover } from '@/features/templates/editorial/EditorialCover';
-import { BotanicalCover } from '@/features/templates/botanical/BotanicalCover';
 import { BirthdayPoster } from '@/features/templates/birthday/BirthdayPoster';
+import { AuroraCover } from '@/features/templates/aurore/AuroraCover';
 import { TemplateOrnaments, type OrnamentKey } from '@/features/templates/ornaments';
 import type { CoverLayout } from '@/features/templates/registry';
 
@@ -30,6 +29,7 @@ export function TemplateCover({
   guestSentence,
   kicker,
   venueName,
+  venueStreet,
   venueCity,
   dressCode,
   compact,
@@ -57,6 +57,7 @@ export function TemplateCover({
   guestSentence: string;
   kicker?: string;
   venueName?: string;
+  venueStreet?: string;
   venueCity?: string;
   dressCode?: string;
   compact?: boolean;
@@ -92,55 +93,21 @@ export function TemplateCover({
     );
   }
 
-  if (layout === 'botanical') {
+  if (layout === 'splitPanel') {
     return (
       <View style={styles.fill}>
-        <BotanicalCover
+        <AuroraCover
           colors={colors}
-          isDark={isDark}
           couplePhoto={couplePhoto}
-          coverUri={coverUri}
-          guest={guest}
           title={title}
           dateLabel={dateLabel}
           couple={couple}
-          phrase={guestSentence || phrase || ''}
-          kicker={kicker}
-          venueName={venueName ?? ''}
-          venueCity={venueCity ?? ''}
+          kicker={kicker || phrase}
+          venueName={venueName}
+          venueStreet={venueStreet}
+          venueCity={venueCity}
           dressCode={dressCode}
-          compact={compact}
-          paddingTop={paddingTop}
-          paddingBottom={paddingBottom}
           hint={hint}
-          onHintPress={onHintPress}
-        />
-      </View>
-    );
-  }
-
-  if (layout === 'editorial') {
-    return (
-      <View style={styles.fill}>
-        <EditorialCover
-          colors={colors}
-          isDark={isDark}
-          couplePhoto={couplePhoto}
-          coverUri={coverUri}
-          guest={guest}
-          title={title}
-          dateLabel={dateLabel}
-          couple={couple}
-          phrase={guestSentence || phrase || ''}
-          kicker={kicker}
-          venueName={venueName ?? ''}
-          venueCity={venueCity ?? ''}
-          dressCode={dressCode}
-          compact={compact}
-          paddingTop={paddingTop}
-          paddingBottom={paddingBottom}
-          hint={hint}
-          onHintPress={onHintPress}
         />
       </View>
     );

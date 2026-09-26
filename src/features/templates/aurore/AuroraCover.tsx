@@ -105,43 +105,46 @@ export function AuroraCover({
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: panel }]} />
         )}
-        {fadeW > 0 && box.h > 0 ? (
-          <Svg
-            width={fadeW}
-            height={box.h}
-            style={styles.fade}
-            pointerEvents="none"
-          >
-            <Defs>
-              <LinearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor={panel} stopOpacity="0" />
-                <Stop offset="0.42" stopColor={panel} stopOpacity="0.22" />
-                <Stop offset="0.72" stopColor={panel} stopOpacity="0.7" />
-                <Stop offset="1" stopColor={panel} stopOpacity="1" />
-              </LinearGradient>
-            </Defs>
-            <Rect x="0" y="0" width={fadeW} height={box.h} fill={`url(#${gradId})`} />
-          </Svg>
-        ) : null}
       </View>
 
+      {fadeW > 0 && box.h > 0 && photoW > 0 ? (
+        <Svg
+          width={fadeW + 14}
+          height={box.h}
+          style={{ position: 'absolute', left: photoW - fadeW, top: 0, zIndex: 1 }}
+          pointerEvents="none"
+        >
+          <Defs>
+            <LinearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={panel} stopOpacity="0" />
+              <Stop offset="0.28" stopColor={panel} stopOpacity="0.08" />
+              <Stop offset="0.5" stopColor={panel} stopOpacity="0.28" />
+              <Stop offset="0.72" stopColor={panel} stopOpacity="0.62" />
+              <Stop offset="0.88" stopColor={panel} stopOpacity="0.9" />
+              <Stop offset="1" stopColor={panel} stopOpacity="1" />
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width={fadeW + 14} height={box.h} fill={`url(#${gradId})`} />
+        </Svg>
+      ) : null}
+
       <View style={styles.panel}>
-        <View style={[styles.copy, { paddingHorizontal: 12 * scale, paddingBottom: hint ? 28 : 16 }]}>
+        <View style={[styles.copy, { paddingHorizontal: 12 * scale, paddingBottom: hint ? 72 : 16 }]}>
           <View style={styles.hero}>
             {stacked ? (
               <View style={styles.scriptBlock}>
-                <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 68 * scale, lineHeight: 84 * scale }]}>
+                <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 64 * scale, lineHeight: 96 * scale }]}>
                   {stacked.save}
                 </GoldText>
                 <GoldText
                   gold={gold}
-                  style={[styles.scriptMid, { fontSize: 32 * scale, lineHeight: 40 * scale, marginTop: -26 * scale }]}
+                  style={[styles.scriptMid, { fontSize: 30 * scale, lineHeight: 52 * scale, marginTop: -10 * scale }]}
                 >
                   {stacked.mid}
                 </GoldText>
                 <GoldText
                   gold={gold}
-                  style={[styles.scriptBig, { fontSize: 68 * scale, lineHeight: 84 * scale, marginTop: -20 * scale }]}
+                  style={[styles.scriptBig, { fontSize: 64 * scale, lineHeight: 96 * scale, marginTop: -8 * scale }]}
                 >
                   {stacked.date}
                 </GoldText>
@@ -209,18 +212,27 @@ export function AuroraCover({
 const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
   photoCol: { flex: 1, overflow: 'hidden', position: 'relative' },
-  fade: { position: 'absolute', right: 0, top: 0 },
   panel: { flex: 1 },
   copy: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 18,
+    paddingTop: 8,
+    zIndex: 2,
   },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%' },
   scriptBlock: { alignItems: 'center', paddingVertical: 10, overflow: 'visible' },
-  scriptBig: { fontFamily: 'GreatVibes_400Regular', textAlign: 'center' },
-  scriptMid: { fontFamily: 'GreatVibes_400Regular', textAlign: 'center' },
+  scriptBig: {
+    fontFamily: 'GreatVibes_400Regular',
+    textAlign: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  scriptMid: {
+    fontFamily: 'GreatVibes_400Regular',
+    textAlign: 'center',
+    paddingHorizontal: 8,
+  },
   names: {
     fontFamily: 'CormorantGaramond_500Medium',
     textAlign: 'center',

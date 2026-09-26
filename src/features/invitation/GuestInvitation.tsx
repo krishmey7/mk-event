@@ -809,9 +809,9 @@ function GuestStorySection({ theme, winter, aurore, story, couple, onSelect }: {
                   year={item.year}
                   title={item.title}
                   text={item.text}
+                  imageUri={item.image}
                   gold={c.accent}
                   cream={c.text}
-                  muted={c.textMuted}
                   onPress={() => onSelect(item)}
                 />
               ) : winter ? (
@@ -941,7 +941,7 @@ function GuestProgramSection({ theme, winter, aurore, venue, program, dateLabel 
             void Linking.openURL(venueDirectionsUrl(venue, platform));
           }}
         />
-      ) : (
+      ) : aurore ? null : (
         <VenueCard venue={venue} theme={theme} />
       )}
 
@@ -1382,7 +1382,7 @@ function GuestGallerySection({ theme, winter, aurore, styleKey, photos: incoming
               <Image
                 source={{ uri: photo.uri }}
                 resizeMode="cover"
-                style={[styles.sliderPhoto, { backgroundColor: c.surfaceAlt }]}
+                style={[styles.sliderPhoto, { backgroundColor: c.surfaceAlt }, aurore && { borderWidth: 1, borderColor: c.accent }]}
               />
             </Reveal>
           ))}
@@ -1402,6 +1402,7 @@ function GuestGallerySection({ theme, winter, aurore, styleKey, photos: incoming
                         ? styles.galleryPhotoSquare
                         : { height: photo.height },
                       { backgroundColor: c.surfaceAlt },
+                      aurore && { borderWidth: 1, borderColor: c.accent },
                     ]}
                   />
                 </Reveal>

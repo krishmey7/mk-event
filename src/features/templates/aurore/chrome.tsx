@@ -3,20 +3,10 @@
  */
 
 import { type ReactNode } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-native';
+import { Platform, Image, Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import type { IconName } from '@/features/templates/elegance/data';
-
-function deepen(hex: string): string {
-  const raw = hex.replace('#', '');
-  const full = raw.length === 3 ? raw.split('').map((char) => char + char).join('') : raw;
-  const num = Number.parseInt(full, 16);
-  if (Number.isNaN(num)) return '#8C6420';
-  const channel = (shift: number) => Math.max(0, Math.round(((num >> shift) & 255) * 0.62));
-  const hex2 = (value: number) => value.toString(16).padStart(2, '0');
-  return `#${hex2(channel(16))}${hex2(channel(8))}${hex2(channel(0))}`;
-}
 
 /** Titre en feuille d’or : dégradé clair / ombre, pas un aplat. */
 export function GoldText({
@@ -34,7 +24,7 @@ export function GoldText({
     Platform.OS === 'web'
       ? {
           color: 'transparent',
-          backgroundImage: `linear-gradient(168deg, #FFF8DC 0%, ${gold} 34%, ${deepen(gold)} 50%, #FFF3C4 66%, ${gold} 100%)`,
+          backgroundImage: `linear-gradient(115deg, #7A5A16 0%, #F8E7A8 18%, ${gold} 40%, #FFF6D0 50%, #A67C2A 74%, ${gold} 100%)`,
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
@@ -107,26 +97,29 @@ export function AuroreStoryItem({
   year,
   title,
   text,
+  imageUri,
   gold,
   cream,
-  muted,
   onPress,
 }: {
   year: string;
   title: string;
   text: string;
+  imageUri?: string;
   gold: string;
   cream: string;
-  muted: string;
   onPress: () => void;
 }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`Lire l'étape ${title}`} onPress={onPress} style={styles.story}>
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={[styles.storyPhoto, { borderColor: gold }]} resizeMode="cover" />
+      ) : null}
       <GoldText gold={gold} style={styles.year}>{year}</GoldText>
       <GoldText gold={gold} style={styles.storyTitle}>{title}</GoldText>
       <Text numberOfLines={3} style={[styles.body, { color: cream }]}>{text}</Text>
-      <Text style={[styles.read, { color: muted }]}>Lire le récit</Text>
-      <View style={[styles.itemRule, { backgroundColor: `${gold}55` }]} />
+      <GoldText gold={gold} style={styles.read}>Lire le récit</GoldText>
+      <View style={[styles.itemRule, { backgroundColor: gold }]} />
     </Pressable>
   );
 }
@@ -150,7 +143,7 @@ export function AuroreProgramItem({
 }) {
   return (
     <View style={styles.program}>
-      <View style={[styles.medallion, { backgroundColor: gold }]}>
+      <View style={[styles.medallion, { backgroundColor: '#D4AF37' }]}>
         <Ionicons name={icon} size={16} color={ink} />
       </View>
       <View style={styles.programCopy}>
@@ -190,6 +183,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   story: { alignItems: 'center', paddingVertical: 16, gap: 4 },
+  storyPhoto: {
+    width: 168,
+    height: 112,
+    borderRadius: 2,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
   year: {
     fontFamily: 'CormorantGaramond_600SemiBold',
     fontSize: 13,
@@ -210,10 +210,10 @@ const styles = StyleSheet.create({
   },
   read: {
     fontFamily: 'Inter_600SemiBold',
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 1.8,
     textTransform: 'uppercase',
-    marginTop: 6,
+    marginTop: 8,
   },
   itemRule: { width: 28, height: 1, marginTop: 14 },
   program: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12 },

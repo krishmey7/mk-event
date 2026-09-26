@@ -49,7 +49,7 @@ function palette(
       border: muted,
       text: cream,
       textMuted: muted,
-      primary: gold,
+      primary: '#C9A227',
       onPrimary: panel,
       accent: gold,
       chip: panelLift,

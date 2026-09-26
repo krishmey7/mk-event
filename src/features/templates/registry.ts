@@ -26,7 +26,15 @@ import {
 } from './conference/data';
 import type { PhotoFrameOption } from '@/features/invitation/types';
 import { normalizePhotoFrame } from '@/features/invitation/types';
-import { ELEGANCE_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
+import { ELEGANCE_PHOTO_FRAMES, EDITORIAL_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
+import {
+  EDITORIAL_IMAGES,
+  EDITORIAL_PROGRAM,
+  EDITORIAL_STORY,
+  EDITORIAL_VENUE,
+  EDITORIAL_WEDDING,
+} from './editorial/data';
+import { EDITORIAL_THEME_ORDER, EDITORIAL_THEMES } from './editorial/themes';
 import type { OrnamentKey } from './ornaments';
 
 export type { TemplateColors };
@@ -48,7 +56,7 @@ export interface TemplateDefaultCover {
   guestLine: string;
 }
 
-export type CoverLayout = 'classic' | 'winterPoster' | 'birthdayPoster' | 'conference';
+export type CoverLayout = 'classic' | 'winterPoster' | 'birthdayPoster' | 'conference' | 'editorial';
 
 export interface TemplateDefinition {
   key: string;
@@ -119,6 +127,16 @@ const birthdayThemes: TemplateThemeDefinition[] = BIRTHDAY_THEME_ORDER.map((key)
   colors: BIRTHDAY_THEMES[key].colors,
 }));
 
+const editorialThemes: TemplateThemeDefinition[] = EDITORIAL_THEME_ORDER.map((key) => ({
+  key,
+  label: EDITORIAL_THEMES[key].label,
+  swatch: EDITORIAL_THEMES[key].swatch,
+  isDark: EDITORIAL_THEMES[key].isDark,
+  dressLabel: EDITORIAL_THEMES[key].dressLabel,
+  dressHint: EDITORIAL_THEMES[key].dressHint,
+  colors: EDITORIAL_THEMES[key].colors,
+}));
+
 const conferenceThemes: TemplateThemeDefinition[] = CONFERENCE_THEME_ORDER.map((key) => ({
   key,
   label: CONFERENCE_THEMES[key].label,
@@ -181,6 +199,33 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultVenue: HIVER_VENUE,
     themes: hiverThemes,
     photoFrames: HIVER_PHOTO_FRAMES,
+  },
+  {
+    key: 'editorial',
+    id: 5,
+    name: 'Revue',
+    category: 'wedding',
+    description: 'Planche magazine 2026 — typographie, filets, photo décalée.',
+    coverImage: EDITORIAL_IMAGES.cover,
+    galleryImages: EDITORIAL_IMAGES.gallery,
+    countdownImage: EDITORIAL_IMAGES.countdown,
+    couplePhoto: { uri: EDITORIAL_IMAGES.couple, frame: normalizePhotoFrame('soft', 'editorial') },
+    story: EDITORIAL_STORY,
+    program: EDITORIAL_PROGRAM,
+    defaultCover: {
+      title: 'Save the Date',
+      dateLabel: '12 septembre 2026',
+      couple: EDITORIAL_WEDDING.couple,
+      guestLine: EDITORIAL_WEDDING.guestSentence,
+    },
+    defaultThemeKey: 'avoine',
+    coverLayout: 'editorial',
+    ornaments: 'editorial',
+    motions: { coverEnter: true, sectionReveal: true },
+    defaultKicker: EDITORIAL_WEDDING.kicker,
+    defaultVenue: EDITORIAL_VENUE,
+    themes: editorialThemes,
+    photoFrames: EDITORIAL_PHOTO_FRAMES,
   },
   {
     key: 'celebration',

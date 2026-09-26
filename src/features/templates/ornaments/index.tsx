@@ -10,7 +10,7 @@ import { BirthdayOrnaments } from '@/features/templates/birthday/BirthdayOrnamen
 import { IconifyIcon } from '@/components/ui/IconifyIcon';
 import { View, StyleSheet } from 'react-native';
 
-export type OrnamentKey = 'elegance' | 'hiver' | 'birthday' | 'conference';
+export type OrnamentKey = 'elegance' | 'hiver' | 'birthday' | 'conference' | 'editorial';
 
 function ConferenceOrnaments({ accent, compact }: { accent: string; compact?: boolean }) {
   const size = compact ? 16 : 22;
@@ -41,6 +41,9 @@ export function TemplateOrnaments({
   }
   if (ornamentKey === 'conference') {
     return <ConferenceOrnaments accent={colors.accent} compact={compact} />;
+  }
+  if (ornamentKey === 'editorial') {
+    return null;
   }
   return <EleganceOrnaments accent={colors.accent} compact={compact} />;
 }

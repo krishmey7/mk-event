@@ -94,6 +94,7 @@ export function normalizePhotoFrame(value?: string | null, templateKey?: string 
     return value as PhotoFrameKey;
   }
   if (templateKey === 'hiver') return 'hexFloral';
+  if (templateKey === 'editorial') return 'soft';
   return 'circle';
 }
 

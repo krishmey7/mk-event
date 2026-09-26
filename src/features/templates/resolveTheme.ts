@@ -34,6 +34,15 @@ const BIRTHDAY_FROM_SETUP: Record<string, string> = {
   noir: 'noir',
 };
 
+const EDITORIAL_FROM_SETUP: Record<string, string> = {
+  sauge: 'sauge',
+  champagne: 'avoine',
+  rose: 'caramel',
+  marine: 'encre',
+  bordeaux: 'caramel',
+  noir: 'encre',
+};
+
 const CONFERENCE_FROM_SETUP: Record<string, string> = {
   sauge: 'teal',
   champagne: 'slate',
@@ -55,7 +64,9 @@ export function resolveTemplateThemeKey(
   const mapped =
     template.key === 'hiver'
       ? HIVER_FROM_SETUP[raw]
-      : template.key === 'celebration'
+      : template.key === 'editorial'
+        ? EDITORIAL_FROM_SETUP[raw]
+        : template.key === 'celebration'
         ? BIRTHDAY_FROM_SETUP[raw]
         : template.key === 'summit'
           ? CONFERENCE_FROM_SETUP[raw]

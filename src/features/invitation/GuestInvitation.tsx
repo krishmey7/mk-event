@@ -37,6 +37,7 @@ import { shadows } from '@/constants/theme';
 import { CoverDiscoverHint } from './InvitationCover';
 import { TemplateCover } from './TemplateCover';
 import { GuestQr } from '@/components/ui/GuestQr';
+import { EditorialProgramRow, EditorialSectionHeader, EditorialStoryRow } from '@/features/templates/editorial/EditorialCover';
 import { buildGuestLink, guestAccessKey } from '@/features/invitation/qr';
 import { IconBubble, LabeledField, PillButton, SectionHeader, ThemedInput } from '@/features/templates/elegance/widgets';
 import { SelectField } from '@/features/templates/elegance/SelectField';
@@ -60,7 +61,7 @@ import {
 import { resolveCountdownTargetMs } from '@/features/editor/snapshot';
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import { type TemplateTheme, type TemplateThemeKey } from '@/features/templates/elegance/themes';
-import { getTemplate, type TemplateThemeDefinition } from '@/features/templates/registry';
+import { getTemplate, type CoverLayout, type TemplateThemeDefinition } from '@/features/templates/registry';
 import type { InvitationConfig } from './guestRegistry';
 import { BirthdayPoster } from '@/features/templates/birthday/BirthdayPoster';
 import { ConferenceInvitation } from '@/features/templates/conference/ConferenceInvitation';
@@ -247,6 +248,7 @@ export function GuestInvitation({ slug, config, guest }: {
 
   return (
     <RevealBusContext.Provider value={bus}>
+      <EditorialMode.Provider value={layout === 'editorial'}>
       <View style={[styles.fill, { backgroundColor: theme.colors.bg }]}>
         <StatusBar style={theme.isDark ? 'light' : 'dark'} />
 
@@ -338,7 +340,9 @@ export function GuestInvitation({ slug, config, guest }: {
           />
 
           <View style={styles.footer}>
-            {winter ? (
+            {layout === 'editorial' ? (
+              <View style={{ width: 28, height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.accent }} />
+            ) : winter ? (
               <SnowflakeSvg color={theme.colors.accent} size={18} />
             ) : (
               <Ionicons name="leaf-outline" size={16} color={theme.colors.accent} />
@@ -353,6 +357,7 @@ export function GuestInvitation({ slug, config, guest }: {
 
         <StoryDetailModal story={story} theme={theme} onClose={() => setStory(null)} />
       </View>
+      </EditorialMode.Provider>
     </RevealBusContext.Provider>
   );
 }
@@ -640,6 +645,8 @@ function WinterBreak({ theme }: { theme: TemplateTheme }) {
   );
 }
 
+const EditorialMode = createContext(false);
+
 function SectionHead({
   winter,
   theme,
@@ -653,6 +660,12 @@ function SectionHead({
   title: string;
   subtitle?: string;
 }) {
+  const editorial = useContext(EditorialMode);
+  if (editorial) {
+    return (
+      <EditorialSectionHeader kicker={kicker} title={title} subtitle={subtitle} colors={theme.colors} />
+    );
+  }
   if (winter) {
     return (
       <WinterSectionHeader kicker={kicker} title={title} subtitle={subtitle} colors={theme.colors} />
@@ -673,7 +686,7 @@ function GuestCoverSection({
   onScrollDown,
 }: {
   theme: TemplateTheme;
-  layout: 'classic' | 'winterPoster';
+  layout: CoverLayout;
   ornaments: OrnamentKey;
   guest: Guest;
   couplePhoto: CouplePhoto;
@@ -744,6 +757,7 @@ function GuestStorySection({ theme, winter, story, couple, onSelect }: {
   onSelect: (story: StoryMilestone) => void;
 }) {
   const c = theme.colors;
+  const editorial = useContext(EditorialMode);
   const { effect: revealEffect } = useRevealBus();
   return (
     <SectionShell winter={winter} theme={theme}>
@@ -762,7 +776,16 @@ function GuestStorySection({ theme, winter, story, couple, onSelect }: {
           const last = index === story.length - 1;
           return (
             <Reveal key={item.year} effect={revealEffect} delay={index * 90}>
-              {winter ? (
+              {editorial ? (
+                <EditorialStoryRow
+                  colors={c}
+                  imageUri={item.image}
+                  year={item.year}
+                  title={item.title}
+                  text={item.text}
+                  onPress={() => onSelect(item)}
+                />
+              ) : winter ? (
                 <WinterStoryItem
                   colors={c}
                   imageUri={item.image}
@@ -817,6 +840,7 @@ function GuestProgramSection({ theme, winter, venue, program, dateLabel }: {
   dateLabel: string;
 }) {
   const c = theme.colors;
+  const editorial = useContext(EditorialMode);
   const { effect: revealEffect } = useRevealBus();
   return (
     <SectionShell winter={winter} theme={theme} style={winter ? undefined : { backgroundColor: c.bg }}>
@@ -835,7 +859,14 @@ function GuestProgramSection({ theme, winter, venue, program, dateLabel }: {
           const last = index === program.length - 1;
           return (
             <Reveal key={step.time} effect={revealEffect} delay={index * 80}>
-              {winter ? (
+              {editorial ? (
+                <EditorialProgramRow
+                  colors={c}
+                  time={step.time}
+                  title={step.title}
+                  place={step.place}
+                />
+              ) : winter ? (
                 <WinterProgramItem
                   colors={c}
                   icon={step.icon}

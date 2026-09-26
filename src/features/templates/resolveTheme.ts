@@ -43,6 +43,15 @@ const EDITORIAL_FROM_SETUP: Record<string, string> = {
   noir: 'encre',
 };
 
+const BOTANICAL_FROM_SETUP: Record<string, string> = {
+  sauge: 'sauge',
+  champagne: 'ivoire',
+  rose: 'pivoine',
+  marine: 'nuit',
+  bordeaux: 'pivoine',
+  noir: 'nuit',
+};
+
 const CONFERENCE_FROM_SETUP: Record<string, string> = {
   sauge: 'teal',
   champagne: 'slate',
@@ -66,7 +75,9 @@ export function resolveTemplateThemeKey(
       ? HIVER_FROM_SETUP[raw]
       : template.key === 'editorial'
         ? EDITORIAL_FROM_SETUP[raw]
-        : template.key === 'celebration'
+        : template.key === 'herbier'
+          ? BOTANICAL_FROM_SETUP[raw]
+          : template.key === 'celebration'
         ? BIRTHDAY_FROM_SETUP[raw]
         : template.key === 'summit'
           ? CONFERENCE_FROM_SETUP[raw]

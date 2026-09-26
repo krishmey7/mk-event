@@ -26,7 +26,7 @@ import {
 } from './conference/data';
 import type { PhotoFrameOption } from '@/features/invitation/types';
 import { normalizePhotoFrame } from '@/features/invitation/types';
-import { ELEGANCE_PHOTO_FRAMES, EDITORIAL_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
+import { ELEGANCE_PHOTO_FRAMES, BOTANICAL_PHOTO_FRAMES, EDITORIAL_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
 import {
   EDITORIAL_IMAGES,
   EDITORIAL_PROGRAM,
@@ -35,6 +35,14 @@ import {
   EDITORIAL_WEDDING,
 } from './editorial/data';
 import { EDITORIAL_THEME_ORDER, EDITORIAL_THEMES } from './editorial/themes';
+import {
+  BOTANICAL_IMAGES,
+  BOTANICAL_PROGRAM,
+  BOTANICAL_STORY,
+  BOTANICAL_VENUE,
+  BOTANICAL_WEDDING,
+} from './botanical/data';
+import { BOTANICAL_THEME_ORDER, BOTANICAL_THEMES } from './botanical/themes';
 import type { OrnamentKey } from './ornaments';
 
 export type { TemplateColors };
@@ -56,7 +64,7 @@ export interface TemplateDefaultCover {
   guestLine: string;
 }
 
-export type CoverLayout = 'classic' | 'winterPoster' | 'birthdayPoster' | 'conference' | 'editorial';
+export type CoverLayout = 'classic' | 'winterPoster' | 'birthdayPoster' | 'conference' | 'editorial' | 'botanical';
 
 export interface TemplateDefinition {
   key: string;
@@ -135,6 +143,16 @@ const editorialThemes: TemplateThemeDefinition[] = EDITORIAL_THEME_ORDER.map((ke
   dressLabel: EDITORIAL_THEMES[key].dressLabel,
   dressHint: EDITORIAL_THEMES[key].dressHint,
   colors: EDITORIAL_THEMES[key].colors,
+}));
+
+const botanicalThemes: TemplateThemeDefinition[] = BOTANICAL_THEME_ORDER.map((key) => ({
+  key,
+  label: BOTANICAL_THEMES[key].label,
+  swatch: BOTANICAL_THEMES[key].swatch,
+  isDark: BOTANICAL_THEMES[key].isDark,
+  dressLabel: BOTANICAL_THEMES[key].dressLabel,
+  dressHint: BOTANICAL_THEMES[key].dressHint,
+  colors: BOTANICAL_THEMES[key].colors,
 }));
 
 const conferenceThemes: TemplateThemeDefinition[] = CONFERENCE_THEME_ORDER.map((key) => ({
@@ -226,6 +244,33 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultVenue: EDITORIAL_VENUE,
     themes: editorialThemes,
     photoFrames: EDITORIAL_PHOTO_FRAMES,
+  },
+  {
+    key: 'herbier',
+    id: 6,
+    name: 'Herbier',
+    category: 'wedding',
+    description: 'Invitation dessinée — fleurs à l’encre, couronne, papier d’herbier.',
+    coverImage: BOTANICAL_IMAGES.cover,
+    galleryImages: BOTANICAL_IMAGES.gallery,
+    countdownImage: BOTANICAL_IMAGES.countdown,
+    couplePhoto: { uri: BOTANICAL_IMAGES.couple, frame: normalizePhotoFrame('circleFloral', 'herbier') },
+    story: BOTANICAL_STORY,
+    program: BOTANICAL_PROGRAM,
+    defaultCover: {
+      title: 'Nous nous marions',
+      dateLabel: '20 juin 2026',
+      couple: BOTANICAL_WEDDING.couple,
+      guestLine: BOTANICAL_WEDDING.guestSentence,
+    },
+    defaultThemeKey: 'ivoire',
+    coverLayout: 'botanical',
+    ornaments: 'botanical',
+    motions: { coverEnter: true, sectionReveal: true },
+    defaultKicker: BOTANICAL_WEDDING.kicker,
+    defaultVenue: BOTANICAL_VENUE,
+    themes: botanicalThemes,
+    photoFrames: BOTANICAL_PHOTO_FRAMES,
   },
   {
     key: 'celebration',

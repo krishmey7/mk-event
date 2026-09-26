@@ -20,6 +20,7 @@ export function templateStudio(layout: CoverLayout): TemplateStudioCapabilities 
       return { backgroundPhoto: true, couplePhoto: true, coupleFrames: true };
     case 'winterPoster':
     case 'editorial':
+    case 'botanical':
       return { backgroundPhoto: false, couplePhoto: true, coupleFrames: true };
     case 'birthdayPoster':
     case 'conference':

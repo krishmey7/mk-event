@@ -38,6 +38,12 @@ import { CoverDiscoverHint } from './InvitationCover';
 import { TemplateCover } from './TemplateCover';
 import { GuestQr } from '@/components/ui/GuestQr';
 import { EditorialProgramRow, EditorialSectionHeader, EditorialStoryRow } from '@/features/templates/editorial/EditorialCover';
+import {
+  BotanicalProgramRow,
+  BotanicalSectionHeader,
+  BotanicalStoryRow,
+} from '@/features/templates/botanical/BotanicalCover';
+import { BotanicalSprig } from '@/features/templates/botanical/BotanicalArt';
 import { buildGuestLink, guestAccessKey } from '@/features/invitation/qr';
 import { IconBubble, LabeledField, PillButton, SectionHeader, ThemedInput } from '@/features/templates/elegance/widgets';
 import { SelectField } from '@/features/templates/elegance/SelectField';
@@ -174,6 +180,7 @@ export function GuestInvitation({ slug, config, guest }: {
   };
 
   const winter = layout === 'winterPoster';
+  const botanical = layout === 'botanical';
   const voix = {
     ...DEFAULT_VOIX,
     ...config.voix,
@@ -250,6 +257,7 @@ export function GuestInvitation({ slug, config, guest }: {
   return (
     <RevealBusContext.Provider value={bus}>
       <EditorialMode.Provider value={layout === 'editorial'}>
+      <BotanicalMode.Provider value={layout === 'botanical'}>
       <View style={[styles.fill, { backgroundColor: theme.colors.bg }]}>
         <StatusBar style={theme.isDark ? 'light' : 'dark'} />
 
@@ -343,6 +351,8 @@ export function GuestInvitation({ slug, config, guest }: {
           <View style={styles.footer}>
             {layout === 'editorial' ? (
               <View style={{ width: 28, height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.accent }} />
+            ) : botanical ? (
+              <BotanicalSprig width={64} petal={theme.colors.accent} ink={theme.colors.text} leaf={theme.colors.primary} />
             ) : winter ? (
               <SnowflakeSvg color={theme.colors.accent} size={18} />
             ) : (
@@ -358,6 +368,7 @@ export function GuestInvitation({ slug, config, guest }: {
 
         <StoryDetailModal story={story} theme={theme} onClose={() => setStory(null)} />
       </View>
+      </BotanicalMode.Provider>
       </EditorialMode.Provider>
     </RevealBusContext.Provider>
   );
@@ -647,6 +658,7 @@ function WinterBreak({ theme }: { theme: TemplateTheme }) {
 }
 
 const EditorialMode = createContext(false);
+const BotanicalMode = createContext(false);
 
 function SectionHead({
   winter,
@@ -662,6 +674,12 @@ function SectionHead({
   subtitle?: string;
 }) {
   const editorial = useContext(EditorialMode);
+  const botanical = useContext(BotanicalMode);
+  if (botanical) {
+    return (
+      <BotanicalSectionHeader title={title} subtitle={subtitle} colors={theme.colors} />
+    );
+  }
   if (editorial) {
     return (
       <EditorialSectionHeader kicker={kicker} title={title} subtitle={subtitle} colors={theme.colors} />
@@ -759,6 +777,7 @@ function GuestStorySection({ theme, winter, story, couple, onSelect }: {
 }) {
   const c = theme.colors;
   const editorial = useContext(EditorialMode);
+  const botanical = useContext(BotanicalMode);
   const { effect: revealEffect } = useRevealBus();
   return (
     <SectionShell winter={winter} theme={theme}>
@@ -777,7 +796,15 @@ function GuestStorySection({ theme, winter, story, couple, onSelect }: {
           const last = index === story.length - 1;
           return (
             <Reveal key={item.year} effect={revealEffect} delay={index * 90}>
-              {editorial ? (
+              {botanical ? (
+                <BotanicalStoryRow
+                  colors={c}
+                  year={item.year}
+                  title={item.title}
+                  text={item.text}
+                  onPress={() => onSelect(item)}
+                />
+              ) : editorial ? (
                 <EditorialStoryRow
                   colors={c}
                   imageUri={item.image}
@@ -842,6 +869,7 @@ function GuestProgramSection({ theme, winter, venue, program, dateLabel }: {
 }) {
   const c = theme.colors;
   const editorial = useContext(EditorialMode);
+  const botanical = useContext(BotanicalMode);
   const { effect: revealEffect } = useRevealBus();
   return (
     <SectionShell winter={winter} theme={theme} style={winter ? undefined : { backgroundColor: c.bg }}>
@@ -860,7 +888,14 @@ function GuestProgramSection({ theme, winter, venue, program, dateLabel }: {
           const last = index === program.length - 1;
           return (
             <Reveal key={step.time} effect={revealEffect} delay={index * 80}>
-              {editorial ? (
+              {botanical ? (
+                <BotanicalProgramRow
+                  colors={c}
+                  time={step.time}
+                  title={step.title}
+                  place={step.place}
+                />
+              ) : editorial ? (
                 <EditorialProgramRow
                   colors={c}
                   time={step.time}

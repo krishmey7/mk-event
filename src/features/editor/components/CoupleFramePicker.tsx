@@ -8,6 +8,7 @@ import { fontFamilies } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { CouplePhotoFrame } from '@/features/invitation/CouplePhotoFrame';
 import type { PhotoFrameKey, PhotoFrameOption } from '@/features/invitation/types';
+import { BotanicalPortrait } from '@/features/templates/botanical/BotanicalArt';
 import { EditorialPhotoShape } from '@/features/templates/editorial/EditorialPhotoShape';
 import { WinterCouplePhotoFrame } from '@/features/templates/hiver/WinterCouplePhotoFrame';
 
@@ -29,14 +30,33 @@ function FramePreview({
   accent,
   size,
   editorial = false,
+  botanical = false,
+  ink = '#2C261F',
+  leaf = '#3E5340',
 }: {
   uri: string;
   frame: PhotoFrameKey;
   accent: string;
   size: number;
   editorial?: boolean;
+  botanical?: boolean;
+  ink?: string;
+  leaf?: string;
 }) {
   const couplePhoto = { uri, frame };
+
+  if (botanical) {
+    return (
+      <BotanicalPortrait
+        uri={uri}
+        frame={frame}
+        petal={accent}
+        ink={ink}
+        leaf={leaf}
+        width={size + 24}
+      />
+    );
+  }
 
   if (editorial) {
     const portrait = frame === 'soft';
@@ -71,6 +91,9 @@ export function CoupleFramePicker({
   onChangeFrame,
   onChangePhoto,
   editorial = false,
+  botanical = false,
+  ink,
+  leaf,
 }: {
   uri: string;
   frame: PhotoFrameKey;
@@ -80,6 +103,10 @@ export function CoupleFramePicker({
   onChangePhoto: () => void;
   /** Formes et libellés propres au modèle Revue. */
   editorial?: boolean;
+  /** Formes dessinées du modèle Herbier. */
+  botanical?: boolean;
+  ink?: string;
+  leaf?: string;
 }) {
   const { theme } = useAppTheme();
   const muted = theme.colors.textMuted;
@@ -90,7 +117,7 @@ export function CoupleFramePicker({
     <View style={styles.root}>
       <View style={[styles.stage, { backgroundColor: surface, borderColor: border }]}>
         {uri ? (
-          <FramePreview uri={uri} frame={frame} accent={accent} size={128} editorial={editorial} />
+          <FramePreview uri={uri} frame={frame} accent={accent} size={128} editorial={editorial} botanical={botanical} ink={ink} leaf={leaf} />
         ) : (
           <View style={[styles.emptyStage, { borderColor: accent }]}>
             <Text style={[styles.emptyText, { color: muted }]}>Aperçu du cadre</Text>
@@ -131,7 +158,7 @@ export function CoupleFramePicker({
                 ]}
               >
                 {uri ? (
-                  <FramePreview uri={uri} frame={option.key} accent={accent} size={72} editorial={editorial} />
+                  <FramePreview uri={uri} frame={option.key} accent={accent} size={72} editorial={editorial} botanical={botanical} ink={ink} leaf={leaf} />
                 ) : (
                   <Text style={[styles.thumbFallback, { color: accent }]}>
                     {optionLabel(option).slice(0, 1)}
@@ -146,7 +173,7 @@ export function CoupleFramePicker({
                 ]}
                 numberOfLines={1}
               >
-                {editorial ? option.label : optionLabel(option)}
+                {editorial || botanical ? option.label : optionLabel(option)}
               </Text>
             </Pressable>
           );

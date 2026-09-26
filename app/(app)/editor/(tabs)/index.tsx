@@ -135,6 +135,9 @@ export default function EditorInfosScreen() {
                 options={template.photoFrames}
                 accent={theme.colors.accent}
                 editorial={template.coverLayout === 'editorial'}
+                botanical={template.coverLayout === 'botanical'}
+                ink={theme.colors.text}
+                leaf={theme.colors.primary}
                 onChangeFrame={(key) => updateCover({ coupleFrame: key })}
                 onChangePhoto={() => void importCouplePhoto()}
               />

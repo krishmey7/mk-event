@@ -129,13 +129,13 @@ export function AuroraCover({
   hint?: ReactNode;
 }) {
   const [photoBox, setPhotoBox] = useState({ w: 0, h: 0 });
+  const [panelW, setPanelW] = useState(0);
   const panel = colors.bg;
   const gold = colors.accent;
   const muted = colors.textMuted;
   const cream = colors.text;
-  const panelScale = 1;
-  const script = 44;
-  const scale = panelScale;
+  const scale = Math.min(1.12, Math.max(0.92, (panelW || 200) / 200));
+  const script = Math.min(62, Math.max(50, ((panelW || 200) - 16) / 3.1));
   const stacked = splitTitle(title);
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
@@ -172,7 +172,13 @@ export function AuroraCover({
         )}
       </View>
 
-      <View style={[styles.panel, { backgroundColor: panel }]}>
+      <View
+        style={[styles.panel, { backgroundColor: panel }]}
+        onLayout={(event) => {
+          const next = Math.round(event.nativeEvent.layout.width);
+          if (next > 0 && next !== panelW) setPanelW(next);
+        }}
+      >
         <AuroreAtmosphere panel={panel} cover />
         <View style={[styles.copy, { paddingHorizontal: 10, paddingBottom: hint ? 108 : 16 }]}>
           <View style={styles.hero}>

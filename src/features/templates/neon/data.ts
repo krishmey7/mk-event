@@ -22,8 +22,9 @@ export const NEON_WEDDING = {
 } as const;
 
 export const NEON_IMAGES = {
-  cover: u('photo-1519741497674-611481863552', 1400),
-  couple: u('photo-1511285560929-80b456fea0bc', 1400),
+  /** Couple B&W Unsplash (Zachary Delorenzo) — libre, lisible en cover. */
+  cover: u('photo-1695266392136-1805eef542ac', 1400),
+  couple: u('photo-1695266392136-1805eef542ac', 1400),
   venue: u('photo-1519225421980-715cb0215aed', 1200),
   countdown: u('photo-1515934751635-c81c6bc9a2d8', 900),
   rings: u('photo-1515934751635-c81c6bc9a2d8', 600),

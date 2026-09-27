@@ -111,10 +111,8 @@ function CoverScrim() {
         inset: 0,
         pointerEvents: 'none',
         backgroundImage: [
-          'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.18) 28%, rgba(0,0,0,0.35) 58%, rgba(0,0,0,0.78) 100%)',
-          'radial-gradient(ellipse 80% 50% at 50% 18%, rgba(255,255,255,0.12) 0%, transparent 70%)',
+          'linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.08) 22%, rgba(0,0,0,0.22) 52%, rgba(0,0,0,0.72) 100%)',
         ].join(', '),
-        filter: 'grayscale(0.15)',
       },
     });
   }
@@ -164,7 +162,22 @@ export function NeonCover({
 
   return (
     <View style={styles.fill}>
-      <Image source={{ uri: coverUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      {Platform.OS === 'web' ? (
+        createElement('div', {
+          'aria-hidden': true,
+          style: {
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `url("${coverUri}")`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center top',
+            backgroundRepeat: 'no-repeat',
+            filter: 'grayscale(1) contrast(1.05)',
+          },
+        })
+      ) : (
+        <Image source={{ uri: coverUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      )}
       <CoverScrim />
 
       <View style={[styles.content, { paddingBottom: hint ? 78 : 28 }]}>
@@ -217,7 +230,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '38%',
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.28)',
   },
   nativeScrimBottom: {
     position: 'absolute',
@@ -225,7 +238,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '48%',
-    backgroundColor: 'rgba(0,0,0,0.72)',
+    backgroundColor: 'rgba(0,0,0,0.68)',
   },
   content: {
     flex: 1,

@@ -270,8 +270,24 @@ function TemplateThumb({
                 venueStreet={template.defaultVenue?.street}
                 venueCity={template.defaultVenue?.city}
                 stripPhotos={template.galleryImages}
-                timePlace={template.key === 'pellicule' ? '20H00' : undefined}
-                hint={<CoverDiscoverHint color={template.coverLayout === 'filmStrip' ? themed.colors.text : undefined} />}
+                timePlace={
+                  template.key === 'pellicule'
+                    ? '20H00'
+                    : template.key === 'neon'
+                      ? '15H30'
+                      : undefined
+                }
+                hint={
+                  <CoverDiscoverHint
+                    color={
+                      template.coverLayout === 'filmStrip'
+                        ? themed.colors.text
+                        : template.coverLayout === 'neonScript'
+                          ? '#FFFFFF'
+                          : undefined
+                    }
+                  />
+                }
               />
             </ScaledInvitationStage>
           )}

@@ -12,9 +12,11 @@ import { WinterCover } from '@/features/templates/hiver/WinterCover';
 import { BirthdayPoster } from '@/features/templates/birthday/BirthdayPoster';
 import { AuroraCover } from '@/features/templates/aurore/AuroraCover';
 import { PelliculeCover } from '@/features/templates/pellicule/PelliculeCover';
+import { NeonCover } from '@/features/templates/neon/NeonCover';
 import { TemplateOrnaments, type OrnamentKey } from '@/features/templates/ornaments';
 import type { CoverLayout } from '@/features/templates/registry';
 import { PELLICULE_WEDDING } from '@/features/templates/pellicule/data';
+import { NEON_WEDDING } from '@/features/templates/neon/data';
 
 export function TemplateCover({
   layout = 'classic',
@@ -110,6 +112,27 @@ export function TemplateCover({
           guestSentence={guestSentence}
           venueName={venueName}
           stripPhotos={stripPhotos}
+          hint={hint}
+        />
+      </View>
+    );
+  }
+
+  if (layout === 'neonScript') {
+    return (
+      <View style={styles.fill}>
+        <NeonCover
+          colors={colors}
+          guest={guest}
+          coverUri={coverUri}
+          title={title || NEON_WEDDING.heroScript}
+          dateLabel={dateLabel}
+          timeLabel={timePlace || NEON_WEDDING.timeLabel}
+          couple={couple}
+          guestSentence={guestSentence}
+          inviteLine={kicker || phrase || NEON_WEDDING.inviteLine}
+          venueStreet={venueStreet}
+          venueCity={venueCity}
           hint={hint}
         />
       </View>

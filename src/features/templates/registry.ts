@@ -42,6 +42,15 @@ import {
   PELLICULE_WEDDING,
 } from './pellicule/data';
 import { PELLICULE_THEME_ORDER, PELLICULE_THEMES } from './pellicule/themes';
+import {
+  NEON_GALLERY,
+  NEON_IMAGES,
+  NEON_PROGRAM,
+  NEON_STORY,
+  NEON_VENUE,
+  NEON_WEDDING,
+} from './neon/data';
+import { NEON_THEME_ORDER, NEON_THEMES } from './neon/themes';
 import type { PhotoFrameOption } from '@/features/invitation/types';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import { ELEGANCE_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
@@ -66,7 +75,14 @@ export interface TemplateDefaultCover {
   guestLine: string;
 }
 
-export type CoverLayout = 'classic' | 'winterPoster' | 'birthdayPoster' | 'conference' | 'splitPanel' | 'filmStrip';
+export type CoverLayout =
+  | 'classic'
+  | 'winterPoster'
+  | 'birthdayPoster'
+  | 'conference'
+  | 'splitPanel'
+  | 'filmStrip'
+  | 'neonScript';
 
 export interface TemplateDefinition {
   key: string;
@@ -155,6 +171,16 @@ const pelliculeThemes: TemplateThemeDefinition[] = PELLICULE_THEME_ORDER.map((ke
   dressLabel: PELLICULE_THEMES[key].dressLabel,
   dressHint: PELLICULE_THEMES[key].dressHint,
   colors: PELLICULE_THEMES[key].colors,
+}));
+
+const neonThemes: TemplateThemeDefinition[] = NEON_THEME_ORDER.map((key) => ({
+  key,
+  label: NEON_THEMES[key].label,
+  swatch: NEON_THEMES[key].swatch,
+  isDark: NEON_THEMES[key].isDark,
+  dressLabel: NEON_THEMES[key].dressLabel,
+  dressHint: NEON_THEMES[key].dressHint,
+  colors: NEON_THEMES[key].colors,
 }));
 
 const conferenceThemes: TemplateThemeDefinition[] = CONFERENCE_THEME_ORDER.map((key) => ({
@@ -272,6 +298,33 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultKicker: PELLICULE_WEDDING.kicker,
     defaultVenue: PELLICULE_VENUE,
     themes: pelliculeThemes,
+    photoFrames: [],
+  },
+  {
+    key: 'neon',
+    id: 9,
+    name: 'Néon',
+    category: 'wedding',
+    description: 'Photo plein cadre, script lumineux et or — timeline, lieu, détails, compte à rebours.',
+    coverImage: NEON_IMAGES.cover,
+    galleryImages: NEON_GALLERY,
+    countdownImage: NEON_IMAGES.countdown,
+    couplePhoto: { uri: NEON_IMAGES.couple, frame: normalizePhotoFrame('soft') },
+    story: NEON_STORY,
+    program: NEON_PROGRAM,
+    defaultCover: {
+      title: NEON_WEDDING.heroScript,
+      dateLabel: NEON_WEDDING.dateLabel,
+      couple: NEON_WEDDING.couple,
+      guestLine: NEON_WEDDING.guestLine,
+    },
+    defaultThemeKey: 'noirOr',
+    coverLayout: 'neonScript',
+    ornaments: 'elegance',
+    motions: { coverEnter: true, sectionReveal: true },
+    defaultKicker: NEON_WEDDING.inviteLine,
+    defaultVenue: NEON_VENUE,
+    themes: neonThemes,
     photoFrames: [],
   },
   {

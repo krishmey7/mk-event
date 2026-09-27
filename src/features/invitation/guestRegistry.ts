@@ -170,11 +170,28 @@ export function buildCatalogPreviewConfig(
     };
     defaultThemeKey: string;
     defaultKicker?: string;
-    defaultVenue?: Venue;
+    defaultVenue?: {
+      name: string;
+      street: string;
+      zip: string;
+      city: string;
+      lat?: number | null;
+      lng?: number | null;
+    };
   },
   eventThemeKey?: string | null,
 ): InvitationConfig {
   const themeKey = (eventThemeKey ?? '').trim() || template.defaultThemeKey;
+  const venue: Venue = template.defaultVenue
+    ? {
+        name: template.defaultVenue.name,
+        street: template.defaultVenue.street,
+        zip: template.defaultVenue.zip,
+        city: template.defaultVenue.city,
+        lat: template.defaultVenue.lat ?? null,
+        lng: template.defaultVenue.lng ?? null,
+      }
+    : DEFAULT_VENUE;
   return {
     templateKey: template.key,
     guests: DEMO_GUESTS,
@@ -183,7 +200,7 @@ export function buildCatalogPreviewConfig(
     themeKey,
     revealEffect: 'fade',
     galleryStyle: 'masonry',
-    venue: template.defaultVenue ?? DEFAULT_VENUE,
+    venue,
     couplePhoto: {
       uri: template.couplePhoto.uri || template.coverImage,
       frame: template.couplePhoto.frame || 'soft',

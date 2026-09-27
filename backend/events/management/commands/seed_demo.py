@@ -32,6 +32,7 @@ class Command(BaseCommand):
             ("hiver", "Hiver", "wedding"),
             ("aurore", "Aurore", "wedding"),
             ("pellicule", "Pellicule", "wedding"),
+            ("neon", "Néon", "wedding"),
             ("celebration", "Célébration", "birthday"),
             ("summit", "Summit", "corporate"),
             ("moderne", "Moderne", "birthday"),

@@ -38,6 +38,7 @@ import { CoverDiscoverHint } from './InvitationCover';
 import { TemplateCover } from './TemplateCover';
 import { SealCountdown } from '@/features/templates/aurore/SealCountdown';
 import { FilmCountdown } from '@/features/templates/pellicule/FilmCountdown';
+import { HeartCountdown } from '@/features/templates/neon/HeartCountdown';
 import {
   AuroreBreak,
   AurorePage,
@@ -54,7 +55,15 @@ import {
   PelliculeVenueCard,
   PelliculeFlourish,
 } from '@/features/templates/pellicule/chrome';
+import {
+  NeonDetailsSection,
+  NeonPage,
+  NeonProgramItem,
+  NeonSectionHeader,
+  NeonVenueCard,
+} from '@/features/templates/neon/chrome';
 import { PELLICULE_WEDDING } from '@/features/templates/pellicule/data';
+import { NEON_DETAILS, NEON_IMAGES, NEON_WEDDING } from '@/features/templates/neon/data';
 import { GuestQr } from '@/components/ui/GuestQr';
 import { buildGuestLink, guestAccessKey } from '@/features/invitation/qr';
 import { IconBubble, LabeledField, PillButton, SectionHeader, ThemedInput } from '@/features/templates/elegance/widgets';
@@ -194,7 +203,8 @@ export function GuestInvitation({ slug, config, guest }: {
   const winter = layout === 'winterPoster';
   const aurore = layout === 'splitPanel';
   const pellicule = layout === 'filmStrip';
-  const branded = aurore || pellicule;
+  const neon = layout === 'neonScript';
+  const branded = aurore || pellicule || neon;
   const voix = {
     ...DEFAULT_VOIX,
     ...config.voix,
@@ -299,21 +309,32 @@ export function GuestInvitation({ slug, config, guest }: {
             cover={pageCover}
             venue={config.venue}
             stripPhotos={galleryItems.map((photo) => photo.uri)}
-            timeLabel={pellicule ? PELLICULE_WEDDING.timeLabel : undefined}
+            timeLabel={
+              pellicule
+                ? PELLICULE_WEDDING.timeLabel
+                : neon
+                  ? NEON_WEDDING.timeLabel
+                  : undefined
+            }
             onScrollDown={scrollToStory}
           />
 
+          {!neon && storyItems.length > 0 ? (
           <View onLayout={(event) => { storyY.current = event.nativeEvent.layout.y; }}>
             <GuestStorySection
               theme={theme}
               winter={winter}
               aurore={aurore}
               pellicule={pellicule}
+              neon={neon}
               story={storyItems}
               couple={pageCover.couple}
               onSelect={setStory}
             />
           </View>
+          ) : (
+            <View onLayout={(event) => { storyY.current = event.nativeEvent.layout.y; }} />
+          )}
 
           {aurore ? <AuroreBreak gold={theme.colors.accent} /> : pellicule ? (
             <View style={{ alignItems: 'center', paddingVertical: 8 }}>
@@ -326,10 +347,25 @@ export function GuestInvitation({ slug, config, guest }: {
             winter={winter}
             aurore={aurore}
             pellicule={pellicule}
+            neon={neon}
             venue={config.venue}
+            venuePhotoUri={neon ? NEON_IMAGES.venue : undefined}
             program={programItems}
             dateLabel={pageCover.dateLabel}
           />
+
+          {neon ? (
+            <SectionShell winter={false} aurore={false} pellicule={false} neon theme={theme}>
+              <NeonDetailsSection
+                dress={config.dressCode?.trim() || NEON_DETAILS.dress}
+                transport={config.practical?.access || NEON_DETAILS.transport}
+                hotel={config.practical?.hotel || NEON_DETAILS.hotel}
+                ink={theme.colors.text}
+                gold={theme.colors.accent}
+                muted={theme.colors.textMuted}
+              />
+            </SectionShell>
+          ) : null}
 
           {aurore ? <AuroreBreak gold={theme.colors.accent} /> : pellicule ? (
             <View style={{ alignItems: 'center', paddingVertical: 8 }}>
@@ -345,6 +381,7 @@ export function GuestInvitation({ slug, config, guest }: {
             winter={winter}
             seal={layout === 'splitPanel'}
             film={layout === 'filmStrip'}
+            neon={neon}
             dateLabel={pageCover.dateLabel}
           />
 
@@ -362,6 +399,7 @@ export function GuestInvitation({ slug, config, guest }: {
             winter={winter}
             aurore={aurore}
             pellicule={pellicule}
+            neon={neon}
           />
 
           {aurore ? <AuroreBreak gold={theme.colors.accent} /> : pellicule ? null : winter ? <WinterBreak theme={theme} /> : null}
@@ -372,6 +410,7 @@ export function GuestInvitation({ slug, config, guest }: {
               winter={winter}
               aurore={aurore}
               pellicule={pellicule}
+              neon={neon}
               styleKey={normalizeGalleryStyle(config.galleryStyle)}
               photos={galleryItems}
             />
@@ -390,6 +429,7 @@ export function GuestInvitation({ slug, config, guest }: {
             winter={winter}
             aurore={aurore}
             pellicule={pellicule}
+            neon={neon}
           />
 
           <View style={styles.footer}>
@@ -397,6 +437,8 @@ export function GuestInvitation({ slug, config, guest }: {
               <View style={{ width: 8, height: 8, borderWidth: 1, borderColor: theme.colors.accent, transform: [{ rotate: '45deg' }] }} />
             ) : pellicule ? (
               <View style={{ width: 18, height: 18, borderWidth: 2, borderColor: theme.colors.primary }} />
+            ) : neon ? (
+              <View style={{ width: 10, height: 10, borderRadius: 5, borderWidth: 1.5, borderColor: theme.colors.accent }} />
             ) : winter ? (
               <SnowflakeSvg color={theme.colors.accent} size={18} />
             ) : (
@@ -675,10 +717,11 @@ function FallingSnow() {
   );
 }
 
-function SectionShell({ winter, aurore, pellicule, theme, children, style }: {
+function SectionShell({ winter, aurore, pellicule, neon, theme, children, style }: {
   winter: boolean;
   aurore?: boolean;
   pellicule?: boolean;
+  neon?: boolean;
   theme: TemplateTheme;
   children: ReactNode;
   style?: object;
@@ -695,6 +738,13 @@ function SectionShell({ winter, aurore, pellicule, theme, children, style }: {
       <PelliculePage paper={theme.colors.bg} ink={theme.colors.text} style={style}>
         {children}
       </PelliculePage>
+    );
+  }
+  if (neon) {
+    return (
+      <NeonPage paper={theme.colors.bg} style={style}>
+        {children}
+      </NeonPage>
     );
   }
   if (winter) {
@@ -719,6 +769,7 @@ function SectionHead({
   winter,
   aurore,
   pellicule,
+  neon,
   theme,
   kicker,
   title,
@@ -727,6 +778,7 @@ function SectionHead({
   winter: boolean;
   aurore?: boolean;
   pellicule?: boolean;
+  neon?: boolean;
   theme: TemplateTheme;
   kicker?: string;
   title: string;
@@ -750,6 +802,18 @@ function SectionHead({
         title={title}
         subtitle={subtitle}
         ink={theme.colors.text}
+        muted={theme.colors.textMuted}
+      />
+    );
+  }
+  if (neon) {
+    return (
+      <NeonSectionHeader
+        kicker={kicker}
+        title={title}
+        subtitle={subtitle}
+        ink={theme.colors.text}
+        gold={theme.colors.accent}
         muted={theme.colors.textMuted}
       />
     );
@@ -849,11 +913,12 @@ function GuestCoverSection({
 
 /* ── 2. Notre histoire — cartes CLIQUABLES vers le détail ── */
 
-function GuestStorySection({ theme, winter, aurore, pellicule, story, couple, onSelect }: {
+function GuestStorySection({ theme, winter, aurore, pellicule, neon, story, couple, onSelect }: {
   theme: TemplateTheme;
   winter: boolean;
   aurore?: boolean;
   pellicule?: boolean;
+  neon?: boolean;
   story: StoryMilestone[];
   couple: string;
   onSelect: (story: StoryMilestone) => void;
@@ -861,12 +926,13 @@ function GuestStorySection({ theme, winter, aurore, pellicule, story, couple, on
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
   return (
-    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
           aurore={aurore}
           pellicule={pellicule}
+          neon={neon}
           theme={theme}
           kicker="NOTRE HISTOIRE"
           title={couple}
@@ -944,27 +1010,30 @@ function GuestStorySection({ theme, winter, aurore, pellicule, story, couple, on
 
 /* ── 3. Le programme — timeline dorée + carte du lieu ── */
 
-function GuestProgramSection({ theme, winter, aurore, pellicule, venue, program, dateLabel }: {
+function GuestProgramSection({ theme, winter, aurore, pellicule, neon, venue, venuePhotoUri, program, dateLabel }: {
   theme: TemplateTheme;
   winter: boolean;
   aurore?: boolean;
   pellicule?: boolean;
+  neon?: boolean;
   venue: Venue;
+  venuePhotoUri?: string;
   program: ProgramStep[];
   dateLabel: string;
 }) {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
   return (
-    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} theme={theme} style={winter || aurore || pellicule ? undefined : { backgroundColor: c.bg }}>
+    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme} style={winter || aurore || pellicule || neon ? undefined : { backgroundColor: c.bg }}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
           aurore={aurore}
           pellicule={pellicule}
+          neon={neon}
           theme={theme}
-          kicker="LE PROGRAMME"
-          title="Notre journée"
+          kicker={neon ? 'THE DAY' : 'LE PROGRAMME'}
+          title={neon ? 'Le jour J' : 'Notre journée'}
           subtitle={dateLabel}
         />
       </Reveal>
@@ -994,6 +1063,17 @@ function GuestProgramSection({ theme, winter, aurore, pellicule, venue, program,
                   frame={c.primary}
                   paper={c.bg}
                   muted={c.textMuted}
+                />
+              ) : neon ? (
+                <NeonProgramItem
+                  time={step.time}
+                  title={step.title}
+                  place={step.place}
+                  icon={step.icon}
+                  ink={c.text}
+                  gold={c.accent}
+                  muted={c.textMuted}
+                  last={last}
                 />
               ) : winter ? (
                 <WinterProgramItem
@@ -1076,13 +1156,33 @@ function GuestProgramSection({ theme, winter, aurore, pellicule, venue, program,
             }}
           />
         </Reveal>
+      ) : neon ? (
+        <Reveal effect={revealEffect} delay={120}>
+          <NeonVenueCard
+            venueName={venue.name || 'Lieu à définir'}
+            address={[venue.street, [venue.zip, venue.city].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}
+            photoUri={venuePhotoUri}
+            ink={c.text}
+            gold={c.accent}
+            muted={c.textMuted}
+            map={
+              venueHasCoords(venue) ? (
+                <VenueMap lat={venue.lat!} lng={venue.lng!} height={180} />
+              ) : null
+            }
+            onDirections={() => {
+              const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+              void Linking.openURL(venueDirectionsUrl(venue, platform));
+            }}
+          />
+        </Reveal>
       ) : (
         <VenueCard venue={venue} theme={theme} />
       )}
 
       {winter ? (
         <WinterFlora colors={c} />
-      ) : aurore || pellicule ? null : (
+      ) : aurore || pellicule || neon ? null : (
         <View style={styles.floraRow} pointerEvents="none">
           <Ionicons name="leaf-outline" size={24} color={c.accent} style={styles.leafLeft} />
           <Ionicons name="flower-outline" size={64} color={c.accent} />
@@ -1143,7 +1243,7 @@ function VenueCard({ venue, theme }: { venue: Venue; theme: TemplateTheme }) {
 
 /* ── 4. Compte à rebours — bloc sombre immersif ── */
 
-function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, seal, film, dateLabel }: {
+function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, seal, film, neon, dateLabel }: {
   liked: boolean;
   onToggleLike: () => void;
   imageUri: string;
@@ -1151,6 +1251,7 @@ function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, s
   winter: boolean;
   seal: boolean;
   film?: boolean;
+  neon?: boolean;
   dateLabel: string;
 }) {
   const c = theme.colors;
@@ -1230,6 +1331,30 @@ function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, s
     );
   }
 
+  if (neon) {
+    return (
+      <View style={[styles.countdown, { backgroundColor: c.bg, overflow: 'hidden' }]}>
+        <HeartCountdown
+          days={days}
+          hours={blocks[0].value}
+          minutes={blocks[1].value}
+          seconds={blocks[2].value}
+          ink={c.text}
+          gold={c.accent}
+          muted={c.textMuted}
+          paper={c.bg}
+          ringsUri={imageUri || NEON_IMAGES.rings}
+          closing={NEON_WEDDING.closing}
+        />
+        <View style={[styles.countdownLike, { position: 'absolute', top: 0, right: 0 }]}>
+          <Pressable accessibilityRole="button" onPress={onToggleLike} hitSlop={8} style={styles.circleBtn}>
+            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={19} color={liked ? '#E25555' : c.accent} />
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   const inner = (
     <>
       <View style={styles.countdownLike}>
@@ -1295,7 +1420,7 @@ function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, s
 
 /* ── 5. RSVP — pré-rempli, boissons de l'organisateur, QR pass ── */
 
-function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicule }: {
+function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicule, neon }: {
   slug: string;
   guest: Guest;
   drinks: string[];
@@ -1303,6 +1428,7 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
   winter: boolean;
   aurore?: boolean;
   pellicule?: boolean;
+  neon?: boolean;
 }) {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
@@ -1350,8 +1476,8 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
 
   if (!canRsvp) {
     return (
-      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} theme={theme}>
-        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} theme={theme} kicker="RSVP" title="Votre réponse" />
+      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme}>
+        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme} kicker="RSVP" title="Votre réponse" />
         <Reveal effect={revealEffect} delay={0}>
           <View style={[styles.successCard, { backgroundColor: c.surface, borderColor: c.border }]}>
             <Text style={[styles.successText, { color: c.textMuted }]}>
@@ -1366,8 +1492,8 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
   /* Après validation : le QR pass individuel s'active. */
   if (answer !== null) {
     return (
-      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} theme={theme}>
-        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} theme={theme} kicker="RSVP" title="Votre réponse" />
+      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme}>
+        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme} kicker="RSVP" title="Votre réponse" />
 
         <Reveal effect={revealEffect} delay={0}>
           <View style={[styles.successCard, { backgroundColor: c.surface, borderColor: c.border }]}>
@@ -1420,12 +1546,13 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
   }
 
   return (
-    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
           aurore={aurore}
           pellicule={pellicule}
+          neon={neon}
           theme={theme}
           kicker="RSVP"
           title={`Confirme ta présence, ${guest.firstName}`}
@@ -1503,11 +1630,12 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
 
 /* ── 6. Galerie — grille / carrousel / maçonnerie ── */
 
-function GuestGallerySection({ theme, winter, aurore, pellicule, styleKey, photos: incoming }: {
+function GuestGallerySection({ theme, winter, aurore, pellicule, neon, styleKey, photos: incoming }: {
   theme: TemplateTheme;
   winter: boolean;
   aurore?: boolean;
   pellicule?: boolean;
+  neon?: boolean;
   styleKey: GalleryStyleKey;
   photos: { uri: string; category: string }[];
 }) {
@@ -1523,11 +1651,13 @@ function GuestGallerySection({ theme, winter, aurore, pellicule, styleKey, photo
   const photoReveal: RevealEffectKey = winter ? 'none' : revealEffect;
 
   return (
-    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
           aurore={aurore}
+          pellicule={pellicule}
+          neon={neon}
           theme={theme}
           title="Notre galerie"
           subtitle="Revivez les plus beaux moments de notre histoire…"
@@ -1549,7 +1679,7 @@ function GuestGallerySection({ theme, winter, aurore, pellicule, styleKey, photo
               <Image
                 source={{ uri: photo.uri }}
                 resizeMode="cover"
-                style={[styles.sliderPhoto, { backgroundColor: c.surfaceAlt }, (aurore || pellicule) && { borderWidth: 1, borderColor: aurore ? c.accent : c.primary }]}
+                style={[styles.sliderPhoto, { backgroundColor: c.surfaceAlt }, (aurore || pellicule || neon) && { borderWidth: 1, borderColor: aurore || neon ? c.accent : c.primary }]}
               />
             </Reveal>
           ))}
@@ -1569,7 +1699,7 @@ function GuestGallerySection({ theme, winter, aurore, pellicule, styleKey, photo
                         ? styles.galleryPhotoSquare
                         : { height: photo.height },
                       { backgroundColor: c.surfaceAlt },
-                      (aurore || pellicule) && { borderWidth: 1, borderColor: aurore ? c.accent : c.primary },
+                      (aurore || pellicule || neon) && { borderWidth: 1, borderColor: aurore || neon ? c.accent : c.primary },
                     ]}
                   />
                 </Reveal>
@@ -1591,6 +1721,7 @@ function GuestGuestbookSection({
   winter,
   aurore,
   pellicule,
+  neon,
 }: {
   slug: string;
   guest: Guest;
@@ -1598,6 +1729,7 @@ function GuestGuestbookSection({
   winter: boolean;
   aurore?: boolean;
   pellicule?: boolean;
+  neon?: boolean;
 }) {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
@@ -1668,11 +1800,13 @@ function GuestGuestbookSection({
   };
 
   return (
-    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
           aurore={aurore}
+          pellicule={pellicule}
+          neon={neon}
           theme={theme}
           title="Laisse-nous un petit mot"
           subtitle="Un message, un vœu, une pensée, tout nous fera chaud au cœur !"

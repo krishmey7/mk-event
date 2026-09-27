@@ -11,7 +11,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
-import { GoldText } from './chrome';
+import { GoldText, AuroreAtmosphere } from './chrome';
 
 function splitTitle(title: string): { save: string; mid: string; date: string } | null {
   const parts = title.trim().split(/\s+/);
@@ -173,6 +173,7 @@ export function AuroraCover({
       </View>
 
       <View style={[styles.panel, { backgroundColor: panel }]}>
+        <AuroreAtmosphere panel={panel} cover />
         <View style={[styles.copy, { paddingHorizontal: 10, paddingBottom: hint ? 108 : 16 }]}>
           <View style={styles.hero}>
             {stacked ? (

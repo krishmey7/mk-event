@@ -22,6 +22,8 @@ export function templateStudio(layout: CoverLayout): TemplateStudioCapabilities 
       return { backgroundPhoto: false, couplePhoto: true, coupleFrames: true };
     case 'splitPanel':
       return { backgroundPhoto: false, couplePhoto: true, coupleFrames: false };
+    case 'filmStrip':
+      return { backgroundPhoto: false, couplePhoto: false, coupleFrames: false };
     case 'birthdayPoster':
     case 'conference':
       return { backgroundPhoto: false, couplePhoto: false, coupleFrames: false };

@@ -226,11 +226,17 @@ const styles = StyleSheet.create({
   },
 });
 
-export function CoverDiscoverHint({ chevron }: { chevron?: ReactNode }) {
+export function CoverDiscoverHint({
+  chevron,
+  color = 'rgba(255, 255, 255, 0.85)',
+}: {
+  chevron?: ReactNode;
+  color?: string;
+}) {
   return (
     <>
-      <Text style={styles.scrollHintLabel}>Découvrir</Text>
-      {chevron ?? <Ionicons name="chevron-down" size={24} color="rgba(255, 255, 255, 0.92)" />}
+      <Text style={[styles.scrollHintLabel, { color }]}>Découvrir</Text>
+      {chevron ?? <Ionicons name="chevron-down" size={24} color={color} />}
     </>
   );
 }

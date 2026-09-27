@@ -33,6 +33,15 @@ import {
   AURORE_WEDDING,
 } from './aurore/data';
 import { AURORE_THEME_ORDER, AURORE_THEMES } from './aurore/themes';
+import {
+  PELLICULE_GALLERY,
+  PELLICULE_IMAGES,
+  PELLICULE_PROGRAM,
+  PELLICULE_STORY,
+  PELLICULE_VENUE,
+  PELLICULE_WEDDING,
+} from './pellicule/data';
+import { PELLICULE_THEME_ORDER, PELLICULE_THEMES } from './pellicule/themes';
 import type { PhotoFrameOption } from '@/features/invitation/types';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import { ELEGANCE_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
@@ -57,7 +66,7 @@ export interface TemplateDefaultCover {
   guestLine: string;
 }
 
-export type CoverLayout = 'classic' | 'winterPoster' | 'birthdayPoster' | 'conference' | 'splitPanel';
+export type CoverLayout = 'classic' | 'winterPoster' | 'birthdayPoster' | 'conference' | 'splitPanel' | 'filmStrip';
 
 export interface TemplateDefinition {
   key: string;
@@ -136,6 +145,16 @@ const auroreThemes: TemplateThemeDefinition[] = AURORE_THEME_ORDER.map((key) => 
   dressLabel: AURORE_THEMES[key].dressLabel,
   dressHint: AURORE_THEMES[key].dressHint,
   colors: AURORE_THEMES[key].colors,
+}));
+
+const pelliculeThemes: TemplateThemeDefinition[] = PELLICULE_THEME_ORDER.map((key) => ({
+  key,
+  label: PELLICULE_THEMES[key].label,
+  swatch: PELLICULE_THEMES[key].swatch,
+  isDark: PELLICULE_THEMES[key].isDark,
+  dressLabel: PELLICULE_THEMES[key].dressLabel,
+  dressHint: PELLICULE_THEMES[key].dressHint,
+  colors: PELLICULE_THEMES[key].colors,
 }));
 
 const conferenceThemes: TemplateThemeDefinition[] = CONFERENCE_THEME_ORDER.map((key) => ({
@@ -226,6 +245,33 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultKicker: AURORE_WEDDING.kicker,
     defaultVenue: AURORE_VENUE,
     themes: auroreThemes,
+    photoFrames: [],
+  },
+  {
+    key: 'pellicule',
+    id: 8,
+    name: 'Pellicule',
+    category: 'wedding',
+    description: 'Bande photo et panneau calligraphié — réservez la date, papier ivoire.',
+    coverImage: PELLICULE_IMAGES.cover,
+    galleryImages: PELLICULE_GALLERY,
+    countdownImage: PELLICULE_IMAGES.countdown,
+    couplePhoto: { uri: PELLICULE_IMAGES.couple, frame: normalizePhotoFrame('soft') },
+    story: PELLICULE_STORY,
+    program: PELLICULE_PROGRAM,
+    defaultCover: {
+      title: PELLICULE_WEDDING.kicker,
+      dateLabel: PELLICULE_WEDDING.dateLabel,
+      couple: PELLICULE_WEDDING.couple,
+      guestLine: PELLICULE_WEDDING.guestLine,
+    },
+    defaultThemeKey: 'ivoire',
+    coverLayout: 'filmStrip',
+    ornaments: 'elegance',
+    motions: { coverEnter: true, sectionReveal: true },
+    defaultKicker: PELLICULE_WEDDING.kicker,
+    defaultVenue: PELLICULE_VENUE,
+    themes: pelliculeThemes,
     photoFrames: [],
   },
   {

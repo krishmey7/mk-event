@@ -52,6 +52,15 @@ const AURORE_FROM_SETUP: Record<string, string> = {
   noir: 'noir',
 };
 
+const PELLICULE_FROM_SETUP: Record<string, string> = {
+  sauge: 'sauge',
+  champagne: 'champagne',
+  rose: 'rose',
+  marine: 'marine',
+  bordeaux: 'bordeaux',
+  noir: 'ivoire',
+};
+
 export function resolveTemplateThemeKey(
   template: TemplateDefinition,
   eventThemeKey?: string | null,
@@ -70,7 +79,9 @@ export function resolveTemplateThemeKey(
           ? CONFERENCE_FROM_SETUP[raw]
           : template.key === 'aurore'
             ? AURORE_FROM_SETUP[raw]
-            : ELEGANCE_FROM_SETUP[raw];
+            : template.key === 'pellicule'
+              ? PELLICULE_FROM_SETUP[raw]
+              : ELEGANCE_FROM_SETUP[raw];
 
   if (mapped && template.themes.some((item) => item.key === mapped)) return mapped;
   return template.defaultThemeKey;

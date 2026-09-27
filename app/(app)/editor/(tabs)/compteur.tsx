@@ -10,6 +10,7 @@ import { useEditor } from '@/features/editor/EditorContext';
 import { resolveCountdownTargetMs } from '@/features/editor/snapshot';
 import { useStudioChrome } from '@/features/editor/useStudioChrome';
 import { SealCountdown } from '@/features/templates/aurore/SealCountdown';
+import { FilmCountdown } from '@/features/templates/pellicule/FilmCountdown';
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');
 
@@ -39,7 +40,7 @@ export default function CompteurTabScreen({ embedded = false }: { embedded?: boo
     { value: pad2(seconds), label: 'Secondes' },
   ];
 
-  const body = template.coverLayout === 'splitPanel' ? (
+  const sealBody = (
     <>
       {embedded ? null : (
         <EditorHint>
@@ -65,7 +66,42 @@ export default function CompteurTabScreen({ embedded = false }: { embedded?: boo
         />
       </View>
     </>
-  ) : (
+  );
+
+  const filmBody = (
+    <>
+      {embedded ? null : (
+        <EditorHint>
+          {`Aperçu calé sur la date de couverture (${cover.dateLabel || 'non définie'}).`}
+        </EditorHint>
+      )}
+      {embedded ? (
+        <Text style={[styles.dateHint, { color: colors.textMuted }]}>
+          Basé sur la date Infos · {cover.dateLabel || 'non définie'}
+        </Text>
+      ) : null}
+      <View style={[styles.previewCard, styles.sealCard]}>
+        <FilmCountdown
+          days={days}
+          hours={pad2(hours)}
+          minutes={pad2(minutes)}
+          seconds={pad2(seconds)}
+          ink={invitationTheme.colors.text}
+          frame={invitationTheme.colors.primary}
+          paper={invitationTheme.colors.bg}
+          footer={(
+            <Text style={[styles.sealVite, { color: invitationTheme.colors.text }]}>À très vite</Text>
+          )}
+        />
+      </View>
+    </>
+  );
+
+  const body = template.coverLayout === 'splitPanel'
+    ? sealBody
+    : template.coverLayout === 'filmStrip'
+      ? filmBody
+      : (
     <>
       {embedded ? null : (
         <EditorHint>

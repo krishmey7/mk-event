@@ -31,6 +31,7 @@ class Command(BaseCommand):
             ("elegance", "Élégance", "wedding"),
             ("hiver", "Hiver", "wedding"),
             ("aurore", "Aurore", "wedding"),
+            ("pellicule", "Pellicule", "wedding"),
             ("celebration", "Célébration", "birthday"),
             ("summit", "Summit", "corporate"),
             ("moderne", "Moderne", "birthday"),

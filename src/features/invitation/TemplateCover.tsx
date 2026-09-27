@@ -11,8 +11,10 @@ import type { TemplateColors } from '@/features/templates/elegance/themes';
 import { WinterCover } from '@/features/templates/hiver/WinterCover';
 import { BirthdayPoster } from '@/features/templates/birthday/BirthdayPoster';
 import { AuroraCover } from '@/features/templates/aurore/AuroraCover';
+import { PelliculeCover } from '@/features/templates/pellicule/PelliculeCover';
 import { TemplateOrnaments, type OrnamentKey } from '@/features/templates/ornaments';
 import type { CoverLayout } from '@/features/templates/registry';
+import { PELLICULE_WEDDING } from '@/features/templates/pellicule/data';
 
 export function TemplateCover({
   layout = 'classic',
@@ -42,6 +44,7 @@ export function TemplateCover({
   timePlace,
   address,
   closing,
+  stripPhotos,
 }: {
   layout?: CoverLayout;
   ornaments?: OrnamentKey;
@@ -70,6 +73,7 @@ export function TemplateCover({
   timePlace?: string;
   address?: string;
   closing?: string;
+  stripPhotos?: string[];
 }) {
   if (layout === 'birthdayPoster') {
     return (
@@ -88,6 +92,25 @@ export function TemplateCover({
           closing={closing || 'see you!'}
           celebrant={couple}
           compact={compact}
+        />
+      </View>
+    );
+  }
+
+  if (layout === 'filmStrip') {
+    return (
+      <View style={styles.fill}>
+        <PelliculeCover
+          colors={colors}
+          guest={guest}
+          title={title || PELLICULE_WEDDING.kicker}
+          dateLabel={dateLabel}
+          timeLabel={timePlace || PELLICULE_WEDDING.timeLabel}
+          couple={couple}
+          guestSentence={guestSentence}
+          venueName={venueName}
+          stripPhotos={stripPhotos}
+          hint={hint}
         />
       </View>
     );

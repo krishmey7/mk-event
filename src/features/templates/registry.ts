@@ -252,7 +252,7 @@ export const TEMPLATES: TemplateDefinition[] = [
     id: 8,
     name: 'Pellicule',
     category: 'wedding',
-    description: 'Bande photo et panneau calligraphié — réservez la date, papier ivoire.',
+    description: 'Bande photo et panneau sombre calligraphié — réservez la date, fond texturé.',
     coverImage: PELLICULE_IMAGES.cover,
     galleryImages: PELLICULE_GALLERY,
     countdownImage: PELLICULE_IMAGES.countdown,

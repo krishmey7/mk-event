@@ -3,12 +3,12 @@
  */
 
 import { type ReactNode, useMemo } from 'react';
-import { Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import type { Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
-import { PelliculeFlourish } from './chrome';
+import { PelliculeFlourish, pelliculeAtmosphere } from './chrome';
 import { PELLICULE_IMAGES } from './data';
 
 function splitCouple(couple: string): { left: string; right: string } | null {
@@ -17,15 +17,6 @@ function splitCouple(couple: string): { left: string; right: string } | null {
     return { left: parts[0].trim(), right: parts[1].trim() };
   }
   return null;
-}
-
-function paperWeb(paper: string) {
-  if (Platform.OS !== 'web') return { backgroundColor: paper };
-  return {
-    backgroundColor: paper,
-    backgroundImage:
-      'radial-gradient(ellipse 100% 70% at 70% 40%, rgba(255,255,255,0.5) 0%, transparent 60%), linear-gradient(160deg, rgba(0,0,0,0.035) 0%, transparent 45%, rgba(0,0,0,0.04) 100%)',
-  } as const;
 }
 
 export function PelliculeCover({
@@ -87,7 +78,7 @@ export function PelliculeCover({
         ))}
       </View>
 
-      <View style={[styles.panel, paperWeb(paper)]}>
+      <View style={[styles.panel, pelliculeAtmosphere(paper) as object]}>
         <View style={[styles.copy, { paddingBottom: hint ? 72 : 20 }]}>
           <PelliculeFlourish color={ink} width={200} />
 

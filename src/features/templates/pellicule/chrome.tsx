@@ -78,12 +78,31 @@ export function PelliculeFlourish({ color, width = 240 }: { color: string; width
   );
 }
 
-function paperStyle(paper: string) {
-  if (Platform.OS !== 'web') return { backgroundColor: paper };
+function mixHex(hex: string, toward: number, amount: number): string {
+  const raw = hex.replace('#', '');
+  const channels = [0, 1, 2].map((i) => parseInt(raw.slice(i * 2, i * 2 + 2), 16));
+  return `#${channels
+    .map((c) => Math.max(0, Math.min(255, Math.round(c + (toward - c) * amount))).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
+/** Fond sombre non plat : halo plus clair au centre, coins plus profonds. */
+export function pelliculeAtmosphere(panel: string): Record<string, string> {
+  if (Platform.OS !== 'web') return { backgroundColor: panel };
+  const lift = mixHex(panel, 255, 0.16);
+  const mid = mixHex(panel, 255, 0.06);
+  const deep = mixHex(panel, 0, 0.28);
   return {
-    backgroundColor: paper,
-    backgroundImage: `radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255,255,255,0.55) 0%, transparent 55%), linear-gradient(135deg, rgba(0,0,0,0.03) 0%, transparent 40%, rgba(0,0,0,0.04) 100%)`,
+    backgroundColor: panel,
+    backgroundImage: [
+      `radial-gradient(ellipse 120% 90% at 58% 32%, ${lift} 0%, ${mid} 28%, ${panel} 55%, ${deep} 100%)`,
+      `linear-gradient(180deg, ${mixHex(panel, 0, 0.12)} 0%, transparent 20%, transparent 75%, ${mixHex(panel, 0, 0.2)} 100%)`,
+    ].join(', '),
   };
+}
+
+function paperStyle(paper: string) {
+  return pelliculeAtmosphere(paper);
 }
 
 export function PelliculePage({

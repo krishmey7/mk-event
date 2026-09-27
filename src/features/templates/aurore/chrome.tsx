@@ -66,7 +66,7 @@ export function GoldText({
   gold: string;
   style?: StyleProp<TextStyle>;
   numberOfLines?: number;
-  /** Épaissit le glyphe (Great Vibes n’a pas de vrai bold). */
+  /** Épaissit le glyphe sans casser le dégradé or. */
   bold?: boolean;
 }) {
   const foil = (
@@ -77,17 +77,27 @@ export function GoldText({
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
-          ...(bold
-            ? {
-                fontWeight: '700' as const,
-                WebkitTextStroke: `0.9px ${gold}`,
-                paintOrder: 'stroke fill',
-                textShadow: `0 0 0.5px ${gold}, 0.6px 0 0 ${gold}, -0.6px 0 0 ${gold}`,
-              }
-            : null),
         }
-      : { color: gold, fontWeight: bold ? ('700' as const) : undefined }
+      : { color: gold }
   ) as TextStyle;
+
+  if (bold) {
+    return (
+      <View style={styles.boldWrap}>
+        <Text
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+          style={[style, foil, styles.boldGhost]}
+          numberOfLines={numberOfLines}
+        >
+          {children}
+        </Text>
+        <Text style={[style, foil]} numberOfLines={numberOfLines}>
+          {children}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <Text style={[style, foil]} numberOfLines={numberOfLines}>
@@ -262,6 +272,14 @@ export function AuroreVenueCard({
 }
 
 const styles = StyleSheet.create({
+  boldWrap: { position: 'relative', alignItems: 'center' },
+  boldGhost: {
+    position: 'absolute',
+    left: 0.7,
+    top: 0,
+    right: -0.7,
+    opacity: 0.55,
+  },
   page: { paddingHorizontal: 26, paddingTop: 28, paddingBottom: 36, position: 'relative', overflow: 'hidden' },
   pageInner: { zIndex: 1 },
   pageRule: { alignSelf: 'center', width: 42, height: 1, marginBottom: 22, opacity: 0.9 },

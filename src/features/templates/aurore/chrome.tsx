@@ -29,11 +29,12 @@ export function AuroreAtmosphere({
   cover?: boolean;
 }) {
   if (Platform.OS !== 'web') return null;
-  const lift = mixHex(panel, 255, 0.2);
-  const mid = mixHex(panel, 255, 0.08);
-  const shade = mixHex(panel, 0, 0.2);
-  const deep = mixHex(panel, 0, 0.42);
-  const at = cover ? '8% 32%' : '42% 28%';
+  const lift = mixHex(panel, 255, 0.22);
+  const mid = mixHex(panel, 255, 0.1);
+  const shade = mixHex(panel, 0, 0.18);
+  const deep = mixHex(panel, 0, 0.4);
+  /** Cover : halo depuis le joint photo (gauche). Pages : halo centré. */
+  const at = cover ? '12% 40%' : '42% 28%';
   return createElement('div', {
     'aria-hidden': true,
     style: {
@@ -43,9 +44,12 @@ export function AuroreAtmosphere({
       pointerEvents: 'none',
       backgroundColor: panel,
       backgroundImage: [
-        `radial-gradient(ellipse 130% 95% at ${at}, ${lift} 0%, ${mid} 22%, ${panel} 48%, ${shade} 76%, ${deep} 100%)`,
-        `linear-gradient(180deg, ${mixHex(panel, 0, 0.12)} 0%, transparent 18%, transparent 72%, ${mixHex(panel, 0, 0.22)} 100%)`,
-      ].join(', '),
+        `radial-gradient(ellipse 140% 110% at ${at}, ${lift} 0%, ${mid} 24%, ${panel} 50%, ${shade} 78%, ${deep} 100%)`,
+        `linear-gradient(180deg, ${mixHex(panel, 0, 0.14)} 0%, transparent 20%, transparent 70%, ${mixHex(panel, 0, 0.24)} 100%)`,
+        cover
+          ? `linear-gradient(90deg, ${mixHex(panel, 255, 0.06)} 0%, transparent 28%, transparent 100%)`
+          : 'none',
+      ].filter((layer) => layer !== 'none').join(', '),
     },
   });
 }

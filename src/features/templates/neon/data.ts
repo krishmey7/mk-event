@@ -57,12 +57,3 @@ export const NEON_VENUE = {
   lat: 34.0959,
   lng: -118.3677,
 };
-
-export const NEON_DETAILS = {
-  dress:
-    'Tenue semi-formelle et élégante. N’hésitez pas à ajouter une touche pastel pour coller à notre thème.',
-  transport:
-    'Des navettes circulent entre l’hôtel partenaire et le lieu à partir de 14h30, puis jusqu’à 1h du matin.',
-  hotel:
-    'Un contingent de chambres est réservé au Sunset Inn. Mentionnez « Mariage Emma & Lucas » au +1 310 555 0182.',
-};

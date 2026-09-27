@@ -191,7 +191,7 @@ export function NeonCover({
         {names ? (
           <View style={styles.namesRow}>
             <Text style={styles.name}>{names.left.toUpperCase()}</Text>
-            <Text style={[styles.and, { color: gold }]}>et</Text>
+            <Text style={[styles.and, { color: gold }]}>and</Text>
             <Text style={styles.name}>{names.right.toUpperCase()}</Text>
           </View>
         ) : (
@@ -259,38 +259,38 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   heroScript: {
-    fontFamily: 'GreatVibes_400Regular',
-    fontSize: 78,
-    lineHeight: 86,
+    fontFamily: 'Allura_400Regular',
+    fontSize: 86,
+    lineHeight: 96,
     textAlign: 'center',
-    textShadowColor: 'rgba(255,255,255,0.35)',
+    textShadowColor: 'rgba(255,255,255,0.45)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 18,
+    textShadowRadius: 22,
   },
   namesRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'center',
-    gap: 10,
+    gap: 12,
     flexWrap: 'wrap',
   },
   name: {
-    fontFamily: 'CormorantGaramond_600SemiBold',
-    fontSize: 22,
-    letterSpacing: 3.2,
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 20,
+    letterSpacing: 4,
     color: '#FFFFFF',
     textAlign: 'center',
   },
   and: {
-    fontFamily: 'GreatVibes_400Regular',
-    fontSize: 22,
-    lineHeight: 24,
+    fontFamily: 'Allura_400Regular',
+    fontSize: 28,
+    lineHeight: 30,
   },
   invite: {
     fontFamily: 'Inter_400Regular',
-    fontSize: 11,
-    lineHeight: 16,
-    letterSpacing: 1.4,
+    fontSize: 10,
+    lineHeight: 15,
+    letterSpacing: 1.6,
     textTransform: 'uppercase',
     color: 'rgba(255,255,255,0.82)',
     textAlign: 'center',
@@ -298,10 +298,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   welcome: {
-    fontFamily: 'CormorantGaramond_400Regular_Italic',
-    fontSize: 15,
-    lineHeight: 20,
-    color: 'rgba(255,255,255,0.78)',
+    fontFamily: 'Allura_400Regular',
+    fontSize: 22,
+    lineHeight: 26,
+    color: 'rgba(255,255,255,0.88)',
     textAlign: 'center',
   },
   dateRule: {
@@ -334,8 +334,8 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.75)',
   },
   day: {
-    fontFamily: 'CormorantGaramond_600SemiBold',
-    fontSize: 44,
+    fontFamily: 'PlayfairDisplay_700Bold',
+    fontSize: 42,
     lineHeight: 46,
     color: '#FFFFFF',
   },

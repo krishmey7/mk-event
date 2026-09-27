@@ -56,14 +56,13 @@ import {
   PelliculeFlourish,
 } from '@/features/templates/pellicule/chrome';
 import {
-  NeonDetailsSection,
   NeonPage,
   NeonProgramItem,
   NeonSectionHeader,
   NeonVenueCard,
 } from '@/features/templates/neon/chrome';
 import { PELLICULE_WEDDING } from '@/features/templates/pellicule/data';
-import { NEON_DETAILS, NEON_IMAGES, NEON_WEDDING } from '@/features/templates/neon/data';
+import { NEON_IMAGES, NEON_WEDDING } from '@/features/templates/neon/data';
 import { GuestQr } from '@/components/ui/GuestQr';
 import { buildGuestLink, guestAccessKey } from '@/features/invitation/qr';
 import { IconBubble, LabeledField, PillButton, SectionHeader, ThemedInput } from '@/features/templates/elegance/widgets';
@@ -353,19 +352,6 @@ export function GuestInvitation({ slug, config, guest }: {
             program={programItems}
             dateLabel={pageCover.dateLabel}
           />
-
-          {neon ? (
-            <SectionShell winter={false} aurore={false} pellicule={false} neon theme={theme}>
-              <NeonDetailsSection
-                dress={config.dressCode?.trim() || NEON_DETAILS.dress}
-                transport={config.practical?.access || NEON_DETAILS.transport}
-                hotel={config.practical?.hotel || NEON_DETAILS.hotel}
-                ink={theme.colors.text}
-                gold={theme.colors.accent}
-                muted={theme.colors.textMuted}
-              />
-            </SectionShell>
-          ) : null}
 
           {aurore ? <AuroreBreak gold={theme.colors.accent} /> : pellicule ? (
             <View style={{ alignItems: 'center', paddingVertical: 8 }}>
@@ -1032,8 +1018,8 @@ function GuestProgramSection({ theme, winter, aurore, pellicule, neon, venue, ve
           pellicule={pellicule}
           neon={neon}
           theme={theme}
-          kicker={neon ? 'THE DAY' : 'LE PROGRAMME'}
-          title={neon ? 'Le jour J' : 'Notre journée'}
+          kicker={neon ? 'LE JOUR' : 'LE PROGRAMME'}
+          title={neon ? 'Notre journée' : 'Notre journée'}
           subtitle={dateLabel}
         />
       </Reveal>

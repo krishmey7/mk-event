@@ -27,6 +27,13 @@ import {
   CormorantGaramond_500Medium,
   CormorantGaramond_600SemiBold,
 } from '@expo-google-fonts/cormorant-garamond';
+import {
+  PlayfairDisplay_400Regular,
+  PlayfairDisplay_500Medium,
+  PlayfairDisplay_600SemiBold,
+  PlayfairDisplay_700Bold,
+} from '@expo-google-fonts/playfair-display';
+import { Allura_400Regular } from '@expo-google-fonts/allura';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { AuthProvider } from '@/context/AuthContext';
@@ -90,6 +97,11 @@ export default function RootLayout() {
     CormorantGaramond_400Regular_Italic,
     CormorantGaramond_500Medium,
     CormorantGaramond_600SemiBold,
+    PlayfairDisplay_400Regular,
+    PlayfairDisplay_500Medium,
+    PlayfairDisplay_600SemiBold,
+    PlayfairDisplay_700Bold,
+    Allura_400Regular,
   });
 
   useEffect(() => {

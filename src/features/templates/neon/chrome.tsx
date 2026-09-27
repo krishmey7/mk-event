@@ -1,5 +1,5 @@
 /**
- * Pages intérieures Néon — timeline or, lieu photo, détails pratiques.
+ * Pages intérieures Néon — timeline or, lieu photo (sans bloc infos hors studio).
  */
 
 import { type ReactNode } from 'react';
@@ -129,7 +129,7 @@ export function NeonVenueCard({
   if (!address && !venueName) return null;
   return (
     <View style={styles.venue}>
-      <NeonSectionHeader kicker="LE LIEU" title="The Venue" ink={ink} gold={gold} muted={muted} />
+      <NeonSectionHeader kicker="LE LIEU" title="Où célébrer" ink={ink} gold={gold} muted={muted} />
       {photoUri ? (
         <View style={styles.venuePhotoWrap}>
           <Image source={{ uri: photoUri }} style={styles.venuePhoto} resizeMode="cover" />
@@ -151,45 +151,6 @@ export function NeonVenueCard({
   );
 }
 
-export function NeonDetailsSection({
-  dress,
-  transport,
-  hotel,
-  ink,
-  gold,
-  muted,
-}: {
-  dress?: string;
-  transport?: string;
-  hotel?: string;
-  ink: string;
-  gold: string;
-  muted: string;
-}) {
-  const blocks = [
-    dress ? { title: 'Dress code', body: dress, icon: 'shirt-outline' as const } : null,
-    transport ? { title: 'Transport', body: transport, icon: 'bus-outline' as const } : null,
-    hotel ? { title: 'Hébergement', body: hotel, icon: 'bed-outline' as const } : null,
-  ].filter(Boolean) as { title: string; body: string; icon: keyof typeof Ionicons.glyphMap }[];
-
-  if (blocks.length === 0) return null;
-
-  return (
-    <View style={styles.details}>
-      <NeonSectionHeader kicker="INFOS" title="The Details" ink={ink} gold={gold} muted={muted} />
-      {blocks.map((block) => (
-        <View key={block.title} style={styles.detailBlock}>
-          <View style={styles.detailHead}>
-            <Ionicons name={block.icon} size={16} color={gold} />
-            <Text style={[styles.detailTitle, { color: ink }]}>{block.title}</Text>
-          </View>
-          <Text style={[styles.detailBody, { color: muted }]}>{block.body}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   page: {
     paddingHorizontal: 28,
@@ -205,18 +166,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   title: {
-    fontFamily: 'CormorantGaramond_600SemiBold',
-    fontSize: 34,
-    lineHeight: 40,
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 32,
+    lineHeight: 38,
     textAlign: 'center',
     marginTop: 6,
   },
   goldRule: { width: 36, height: 1.5, marginTop: 12, marginBottom: 10 },
   subtitle: {
-    fontFamily: 'CormorantGaramond_400Regular_Italic',
+    fontFamily: 'PlayfairDisplay_400Regular',
     fontSize: 15,
     lineHeight: 21,
     textAlign: 'center',
+    fontStyle: 'italic',
   },
   programRow: { flexDirection: 'row', width: '100%', minHeight: 78 },
   rail: { width: 36, alignItems: 'center' },
@@ -238,14 +200,14 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   programTitle: {
-    fontFamily: 'CormorantGaramond_600SemiBold',
-    fontSize: 22,
-    lineHeight: 26,
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 20,
+    lineHeight: 24,
     marginTop: 2,
   },
   place: {
-    fontFamily: 'CormorantGaramond_400Regular',
-    fontSize: 15,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
     lineHeight: 20,
     marginTop: 2,
   },
@@ -258,15 +220,15 @@ const styles = StyleSheet.create({
   },
   venuePhoto: { width: '100%', height: '100%' },
   venueName: {
-    fontFamily: 'CormorantGaramond_600SemiBold',
-    fontSize: 26,
-    lineHeight: 30,
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 24,
+    lineHeight: 28,
     textAlign: 'center',
   },
   venueAddress: {
-    fontFamily: 'CormorantGaramond_400Regular',
-    fontSize: 15,
-    lineHeight: 21,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    lineHeight: 20,
     textAlign: 'center',
     marginTop: 6,
   },
@@ -291,18 +253,5 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     color: '#141414',
-  },
-  details: { width: '100%', alignItems: 'center' },
-  detailBlock: { width: '100%', marginBottom: 20 },
-  detailHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  detailTitle: {
-    fontFamily: 'CormorantGaramond_600SemiBold',
-    fontSize: 20,
-    lineHeight: 24,
-  },
-  detailBody: {
-    fontFamily: 'CormorantGaramond_400Regular',
-    fontSize: 16,
-    lineHeight: 23,
   },
 });

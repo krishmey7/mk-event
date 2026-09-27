@@ -58,7 +58,7 @@ export function HeartCountdown({
       </View>
 
       <View style={styles.body}>
-        <Text style={[styles.kicker, { color: gold }]}>THE COUNTDOWN</Text>
+        <Text style={[styles.kicker, { color: gold }]}>LE COMPTE À REBOURS</Text>
         <Text style={[styles.script, { color: ink }]}>dans</Text>
 
         <View style={styles.row}>
@@ -113,9 +113,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   script: {
-    fontFamily: 'GreatVibes_400Regular',
-    fontSize: 36,
-    lineHeight: 42,
+    fontFamily: 'Allura_400Regular',
+    fontSize: 40,
+    lineHeight: 46,
   },
   row: {
     flexDirection: 'row',
@@ -126,8 +126,8 @@ const styles = StyleSheet.create({
   },
   unit: { alignItems: 'center', minWidth: 58 },
   value: {
-    fontFamily: 'CormorantGaramond_600SemiBold',
-    fontSize: 36,
+    fontFamily: 'PlayfairDisplay_600SemiBold',
+    fontSize: 34,
     lineHeight: 40,
     textAlign: 'center',
   },
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sep: {
-    fontFamily: 'CormorantGaramond_600SemiBold',
+    fontFamily: 'PlayfairDisplay_600SemiBold',
     fontSize: 28,
     lineHeight: 40,
     marginTop: 2,
@@ -151,9 +151,9 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   closing: {
-    fontFamily: 'GreatVibes_400Regular',
-    fontSize: 28,
-    lineHeight: 34,
+    fontFamily: 'Allura_400Regular',
+    fontSize: 30,
+    lineHeight: 36,
     textAlign: 'center',
     marginTop: 10,
   },

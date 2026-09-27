@@ -364,20 +364,18 @@ export function GuestInvitation({ slug, config, guest }: {
             pellicule={pellicule}
           />
 
-          {aurore ? <AuroreBreak gold={theme.colors.accent} /> : pellicule ? (
-            <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-              <PelliculeFlourish color={theme.colors.text} width={120} />
-            </View>
-          ) : winter ? <WinterBreak theme={theme} /> : null}
+          {aurore ? <AuroreBreak gold={theme.colors.accent} /> : pellicule ? null : winter ? <WinterBreak theme={theme} /> : null}
 
-          <GuestGallerySection
-            theme={theme}
-            winter={winter}
-            aurore={aurore}
-            pellicule={pellicule}
-            styleKey={normalizeGalleryStyle(config.galleryStyle)}
-            photos={galleryItems}
-          />
+          {pellicule ? null : (
+            <GuestGallerySection
+              theme={theme}
+              winter={winter}
+              aurore={aurore}
+              pellicule={pellicule}
+              styleKey={normalizeGalleryStyle(config.galleryStyle)}
+              photos={galleryItems}
+            />
+          )}
 
           {aurore ? <AuroreBreak gold={theme.colors.accent} /> : pellicule ? (
             <View style={{ alignItems: 'center', paddingVertical: 8 }}>

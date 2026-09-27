@@ -9,30 +9,70 @@ import Svg, { Path } from 'react-native-svg';
 
 import type { IconName } from '@/features/templates/elegance/data';
 
-/** Volute symétrique haut / bas, comme sur l’affiche. */
-export function PelliculeFlourish({ color, width = 220 }: { color: string; width?: number }) {
-  const h = Math.round(width * 0.18);
+/** Volute calligraphiée symétrique — calquée sur l’affiche Lydia & Hector. */
+export function PelliculeFlourish({ color, width = 240 }: { color: string; width?: number }) {
+  const h = Math.round(width * 0.2);
   return (
-    <Svg width={width} height={h} viewBox="0 0 220 40" accessibilityElementsHidden>
+    <Svg width={width} height={h} viewBox="0 0 320 64" accessibilityElementsHidden>
+      {/* Branche gauche : pointe → boucles → centre */}
       <Path
-        d="M8 20 C28 8, 42 8, 58 20 C74 32, 88 32, 110 20 C132 8, 146 8, 162 20 C178 32, 192 32, 212 20"
+        d="M14 32
+           C34 32 42 32 52 32
+           C62 18 78 14 86 26
+           C90 34 82 40 74 36
+           C68 32 72 26 80 28
+           C96 32 104 48 120 44
+           C132 40 130 24 118 26
+           C110 28 114 36 126 36
+           C140 36 148 22 160 28"
+        stroke={color}
+        strokeWidth="1.15"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Branche droite (miroir) */}
+      <Path
+        d="M306 32
+           C286 32 278 32 268 32
+           C258 18 242 14 234 26
+           C230 34 238 40 246 36
+           C252 32 248 26 240 28
+           C224 32 216 48 200 44
+           C188 40 190 24 202 26
+           C210 28 206 36 194 36
+           C180 36 172 22 160 28"
+        stroke={color}
+        strokeWidth="1.15"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Fleur centrale à quatre boucles */}
+      <Path
+        d="M160 32
+           C160 20 146 14 144 24
+           C142 32 154 36 160 32
+           C160 20 174 14 176 24
+           C178 32 166 36 160 32
+           C148 32 142 44 152 46
+           C160 48 164 38 160 32
+           C172 32 178 44 168 46
+           C160 48 156 38 160 32"
         stroke={color}
         strokeWidth="1.2"
         fill="none"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
+      {/* Accents intérieurs des boucles latérales */}
       <Path
-        d="M40 20 C48 12, 56 12, 64 20 M156 20 C164 12, 172 12, 180 20"
+        d="M74 30 C70 22 80 20 82 28 M246 30 C250 22 240 20 238 28
+           M118 32 C114 40 124 42 126 34 M202 32 C206 40 196 42 194 34"
         stroke={color}
-        strokeWidth="0.9"
+        strokeWidth="0.85"
         fill="none"
         strokeLinecap="round"
-      />
-      <Path
-        d="M100 20 L110 10 L120 20 L110 30 Z"
-        stroke={color}
-        strokeWidth="0.9"
-        fill="none"
       />
     </Svg>
   );

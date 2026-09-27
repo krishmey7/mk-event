@@ -37,8 +37,8 @@ function rgba(hex: string, alpha: number): string {
 }
 
 /**
- * Voile émeraude : large zone claire à gauche (couple visible),
- * opacification progressive seulement sur le tiers droit (texte).
+ * Photo cadrée à gauche (couple dans la zone claire).
+ * Vert large à droite, fondu seulement sur la bande médiane.
  */
 function WebPanelFade({ panel }: { panel: string }) {
   return createElement('div', {
@@ -51,19 +51,18 @@ function WebPanelFade({ panel }: { panel: string }) {
       backgroundImage: [
         `linear-gradient(90deg,
           transparent 0%,
-          transparent 36%,
-          ${rgba(panel, 0.06)} 46%,
-          ${rgba(panel, 0.22)} 54%,
-          ${rgba(panel, 0.48)} 62%,
-          ${rgba(panel, 0.75)} 70%,
-          ${rgba(panel, 0.92)} 78%,
-          ${panel} 86%,
+          transparent 32%,
+          ${rgba(panel, 0.12)} 40%,
+          ${rgba(panel, 0.38)} 48%,
+          ${rgba(panel, 0.7)} 56%,
+          ${rgba(panel, 0.92)} 64%,
+          ${panel} 72%,
           ${panel} 100%)`,
         `linear-gradient(180deg,
-          ${rgba(panel, 0.12)} 0%,
+          ${rgba(panel, 0.14)} 0%,
           transparent 18%,
           transparent 82%,
-          ${rgba(panel, 0.2)} 100%)`,
+          ${rgba(panel, 0.22)} 100%)`,
       ].join(', '),
     },
   });
@@ -84,11 +83,11 @@ function NativePanelFade({
       <Defs>
         <LinearGradient id="auroreCoverFade" x1="0" y1="0" x2={width} y2="0" gradientUnits="userSpaceOnUse">
           <Stop offset="0" stopColor={panel} stopOpacity="0" />
-          <Stop offset="0.36" stopColor={panel} stopOpacity="0" />
-          <Stop offset="0.5" stopColor={panel} stopOpacity="0.15" />
-          <Stop offset="0.62" stopColor={panel} stopOpacity="0.45" />
-          <Stop offset="0.74" stopColor={panel} stopOpacity="0.8" />
-          <Stop offset="0.86" stopColor={panel} stopOpacity="1" />
+          <Stop offset="0.32" stopColor={panel} stopOpacity="0" />
+          <Stop offset="0.42" stopColor={panel} stopOpacity="0.2" />
+          <Stop offset="0.52" stopColor={panel} stopOpacity="0.55" />
+          <Stop offset="0.64" stopColor={panel} stopOpacity="0.9" />
+          <Stop offset="0.74" stopColor={panel} stopOpacity="1" />
           <Stop offset="1" stopColor={panel} stopOpacity="1" />
         </LinearGradient>
       </Defs>
@@ -147,7 +146,7 @@ export function AuroraCover({
   const gold = colors.accent;
   const muted = colors.textMuted;
   const cream = colors.text;
-  const contentW = useMemo(() => Math.max(140, Math.round(box.w * 0.52)), [box.w]);
+  const contentW = useMemo(() => Math.max(140, Math.round(box.w * 0.44)), [box.w]);
   const scale = Math.min(1.08, Math.max(0.9, contentW / 190));
   const script = Math.min(52, Math.max(34, (contentW - 20) / 2.2));
   const stacked = splitTitle(title);
@@ -177,7 +176,7 @@ export function AuroraCover({
               zIndex: 0,
               backgroundImage: `url("${couplePhoto.uri}")`,
               backgroundSize: 'cover',
-              backgroundPosition: '28% center',
+              backgroundPosition: '18% center',
               backgroundRepeat: 'no-repeat',
             },
           })

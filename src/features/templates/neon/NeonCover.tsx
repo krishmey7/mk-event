@@ -1,5 +1,5 @@
 /**
- * Couverture Néon — photo plein cadre B&W, script « Oui », cœur or, bloc date.
+ * Couverture Néon — photo plein cadre B&W, script « We Do », cœur or, bloc date.
  */
 
 import { createElement, type ReactNode, useMemo } from 'react';

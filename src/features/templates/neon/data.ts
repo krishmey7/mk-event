@@ -1,5 +1,5 @@
 /**
- * Néon — Emma & Lucas, couverture photo B&W, or et script « Oui ».
+ * Néon — Emma & Lucas, couverture photo B&W, or et script « We Do ».
  */
 
 import type { ProgramStep, StoryMilestone } from '../elegance/data';
@@ -15,7 +15,7 @@ export const NEON_WEDDING = {
   month: 'Juillet',
   day: '22',
   year: '2026',
-  heroScript: 'Oui',
+  heroScript: 'We Do',
   inviteLine: 'Avec leurs familles, ils vous invitent à célébrer leur mariage',
   guestLine: '{{Nom}}, nous avons hâte de célébrer avec vous.',
   closing: 'On a hâte de fêter ça',

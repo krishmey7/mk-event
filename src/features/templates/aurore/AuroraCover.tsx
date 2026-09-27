@@ -11,7 +11,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
-import { GoldText, AuroreAtmosphere } from './chrome';
+import { GoldText } from './chrome';
 
 function splitTitle(title: string): { save: string; mid: string; date: string } | null {
   const parts = title.trim().split(/\s+/);
@@ -37,8 +37,8 @@ function rgba(hex: string, alpha: number): string {
 }
 
 /**
- * Voile émeraude : transparent à gauche → panneau plein à droite.
- * Large zone de transition pour un fondu propre (pas de trait net).
+ * Voile émeraude : large zone claire à gauche (couple visible),
+ * opacification progressive seulement sur le tiers droit (texte).
  */
 function WebPanelFade({ panel }: { panel: string }) {
   return createElement('div', {
@@ -51,19 +51,19 @@ function WebPanelFade({ panel }: { panel: string }) {
       backgroundImage: [
         `linear-gradient(90deg,
           transparent 0%,
-          transparent 18%,
-          ${rgba(panel, 0.08)} 28%,
-          ${rgba(panel, 0.28)} 38%,
-          ${rgba(panel, 0.55)} 48%,
-          ${rgba(panel, 0.82)} 58%,
-          ${rgba(panel, 0.96)} 68%,
-          ${panel} 78%,
+          transparent 36%,
+          ${rgba(panel, 0.06)} 46%,
+          ${rgba(panel, 0.22)} 54%,
+          ${rgba(panel, 0.48)} 62%,
+          ${rgba(panel, 0.75)} 70%,
+          ${rgba(panel, 0.92)} 78%,
+          ${panel} 86%,
           ${panel} 100%)`,
         `linear-gradient(180deg,
-          ${rgba(panel, 0.18)} 0%,
-          transparent 22%,
-          transparent 78%,
-          ${rgba(panel, 0.28)} 100%)`,
+          ${rgba(panel, 0.12)} 0%,
+          transparent 18%,
+          transparent 82%,
+          ${rgba(panel, 0.2)} 100%)`,
       ].join(', '),
     },
   });
@@ -84,11 +84,11 @@ function NativePanelFade({
       <Defs>
         <LinearGradient id="auroreCoverFade" x1="0" y1="0" x2={width} y2="0" gradientUnits="userSpaceOnUse">
           <Stop offset="0" stopColor={panel} stopOpacity="0" />
-          <Stop offset="0.22" stopColor={panel} stopOpacity="0" />
-          <Stop offset="0.36" stopColor={panel} stopOpacity="0.2" />
-          <Stop offset="0.5" stopColor={panel} stopOpacity="0.5" />
-          <Stop offset="0.64" stopColor={panel} stopOpacity="0.82" />
-          <Stop offset="0.78" stopColor={panel} stopOpacity="1" />
+          <Stop offset="0.36" stopColor={panel} stopOpacity="0" />
+          <Stop offset="0.5" stopColor={panel} stopOpacity="0.15" />
+          <Stop offset="0.62" stopColor={panel} stopOpacity="0.45" />
+          <Stop offset="0.74" stopColor={panel} stopOpacity="0.8" />
+          <Stop offset="0.86" stopColor={panel} stopOpacity="1" />
           <Stop offset="1" stopColor={panel} stopOpacity="1" />
         </LinearGradient>
       </Defs>

@@ -60,11 +60,14 @@ export function GoldText({
   gold,
   style,
   numberOfLines,
+  bold,
 }: {
   children: string;
   gold: string;
   style?: StyleProp<TextStyle>;
   numberOfLines?: number;
+  /** Épaissit le glyphe (Great Vibes n’a pas de vrai bold). */
+  bold?: boolean;
 }) {
   const foil = (
     Platform.OS === 'web'
@@ -74,8 +77,16 @@ export function GoldText({
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
+          ...(bold
+            ? {
+                fontWeight: '700' as const,
+                WebkitTextStroke: `0.9px ${gold}`,
+                paintOrder: 'stroke fill',
+                textShadow: `0 0 0.5px ${gold}, 0.6px 0 0 ${gold}, -0.6px 0 0 ${gold}`,
+              }
+            : null),
         }
-      : { color: gold }
+      : { color: gold, fontWeight: bold ? ('700' as const) : undefined }
   ) as TextStyle;
 
   return (

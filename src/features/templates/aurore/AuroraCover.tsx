@@ -134,8 +134,8 @@ export function AuroraCover({
   const gold = colors.accent;
   const muted = colors.textMuted;
   const cream = colors.text;
-  const scale = Math.min(1.12, Math.max(0.92, (panelW || 200) / 200));
-  const script = Math.min(62, Math.max(50, ((panelW || 200) - 16) / 3.1));
+  const scale = Math.min(1.14, Math.max(0.95, (panelW || 200) / 190));
+  const script = Math.min(74, Math.max(58, ((panelW || 200) - 12) / 2.55));
   const stacked = splitTitle(title);
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
@@ -184,24 +184,26 @@ export function AuroraCover({
           <View style={styles.hero}>
             {stacked ? (
               <View style={styles.scriptBlock}>
-                <GoldText gold={gold} style={[styles.scriptBig, { fontSize: script, lineHeight: script * 1.12 }]}>
+                <GoldText bold gold={gold} style={[styles.scriptBig, { fontSize: script, lineHeight: script * 1.08 }]}>
                   {stacked.save}
                 </GoldText>
                 <GoldText
+                  bold
                   gold={gold}
-                  style={[styles.scriptMid, { fontSize: script * 0.46, lineHeight: script * 0.62, marginTop: -script * 0.34 }]}
+                  style={[styles.scriptMid, { fontSize: script * 0.48, lineHeight: script * 0.62, marginTop: -script * 0.32 }]}
                 >
                   {stacked.mid}
                 </GoldText>
                 <GoldText
+                  bold
                   gold={gold}
-                  style={[styles.scriptBig, { fontSize: script, lineHeight: script * 1.12, marginTop: -script * 0.26 }]}
+                  style={[styles.scriptBig, { fontSize: script, lineHeight: script * 1.08, marginTop: -script * 0.24 }]}
                 >
                   {stacked.date}
                 </GoldText>
               </View>
             ) : (
-              <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 48 * scale, lineHeight: 54 * scale }]}>
+              <GoldText bold gold={gold} style={[styles.scriptBig, { fontSize: 58 * scale, lineHeight: 64 * scale }]}>
                 {title}
               </GoldText>
             )}

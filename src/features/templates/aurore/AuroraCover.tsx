@@ -1,6 +1,6 @@
 /**
- * Couverture Aurore — colonne photo à gauche (couple entier visible),
- * panneau émeraude large à droite, fondu doux au joint.
+ * Couverture Aurore — photo pleine colonne à gauche (couple visible),
+ * panneau émeraude à droite, fondu doux au joint (pas de bande verte à gauche).
  */
 
 import { createElement, type ReactNode, useMemo, useState } from 'react';
@@ -36,9 +36,8 @@ function rgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-/** Fondu sur le bord droit de la photo → panneau (web). */
-function WebEdgeFade({ panel, width }: { panel: string; width: number }) {
-  if (width <= 0) return null;
+/** Fondu sur le bord droit de la photo → panneau. */
+function WebEdgeFade({ panel }: { panel: string }) {
   return createElement('div', {
     'aria-hidden': true,
     style: {
@@ -46,14 +45,14 @@ function WebEdgeFade({ panel, width }: { panel: string; width: number }) {
       top: 0,
       right: 0,
       bottom: 0,
-      width,
+      width: '42%',
       zIndex: 2,
       pointerEvents: 'none',
       backgroundImage: `linear-gradient(90deg,
         transparent 0%,
-        ${rgba(panel, 0.15)} 28%,
-        ${rgba(panel, 0.45)} 52%,
-        ${rgba(panel, 0.78)} 76%,
+        ${rgba(panel, 0.12)} 30%,
+        ${rgba(panel, 0.42)} 55%,
+        ${rgba(panel, 0.78)} 78%,
         ${panel} 100%)`,
     },
   });
@@ -129,62 +128,51 @@ export function AuroraCover({
   dressCode?: string;
   hint?: ReactNode;
 }) {
-  const [box, setBox] = useState({ w: 0, h: 0 });
+  const [photoBox, setPhotoBox] = useState({ w: 0, h: 0 });
   const panel = colors.bg;
   const gold = colors.accent;
   const muted = colors.textMuted;
   const cream = colors.text;
-  /** ~42 % photo (couple entier) / ~58 % vert. */
-  const photoW = useMemo(() => (box.w > 0 ? Math.round(box.w * 0.42) : 0), [box.w]);
-  const panelW = useMemo(() => (box.w > 0 ? box.w - photoW : 0), [box.w, photoW]);
-  const fadeW = useMemo(() => Math.max(36, Math.round(photoW * 0.38)), [photoW]);
-  const scale = Math.min(1.08, Math.max(0.9, (panelW || 190) / 190));
-  const script = Math.min(52, Math.max(34, ((panelW || 190) - 20) / 2.2));
+  const panelScale = 1;
+  const script = 44;
+  const scale = panelScale;
   const stacked = splitTitle(title);
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
   const dress = (dressCode ?? '').trim();
   const onWeb = Platform.OS === 'web';
+  const fadeW = useMemo(() => Math.max(40, Math.round(photoBox.w * 0.4)), [photoBox.w]);
 
   return (
-    <View
-      style={[styles.fill, { backgroundColor: panel }]}
-      onLayout={(event) => {
-        const next = {
-          w: Math.round(event.nativeEvent.layout.width),
-          h: Math.round(event.nativeEvent.layout.height),
-        };
-        if (next.w !== box.w || next.h !== box.h) setBox(next);
-      }}
-    >
-      <View style={[styles.photoCol, photoW > 0 ? { width: photoW } : { flex: 0.42 }]}>
+    <View style={[styles.fill, { backgroundColor: panel }]}>
+      {/* Colonne photo : Image plein cadre, pas de trou vert à gauche. */}
+      <View
+        style={styles.photoCol}
+        onLayout={(event) => {
+          const next = {
+            w: Math.round(event.nativeEvent.layout.width),
+            h: Math.round(event.nativeEvent.layout.height),
+          };
+          if (next.w !== photoBox.w || next.h !== photoBox.h) setPhotoBox(next);
+        }}
+      >
         {couplePhoto.uri ? (
-          onWeb ? (
-            createElement('div', {
-              'aria-hidden': true,
-              style: {
-                position: 'absolute',
-                inset: 0,
-                backgroundImage: `url("${couplePhoto.uri}")`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center center',
-                backgroundRepeat: 'no-repeat',
-              },
-            })
-          ) : (
-            <Image source={{ uri: couplePhoto.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-          )
+          <Image
+            source={{ uri: couplePhoto.uri }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+          />
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: panel }]} />
         )}
         {onWeb ? (
-          <WebEdgeFade panel={panel} width={fadeW} />
+          <WebEdgeFade panel={panel} />
         ) : (
-          <NativeEdgeFade panel={panel} width={fadeW} height={box.h} />
+          <NativeEdgeFade panel={panel} width={fadeW} height={photoBox.h} />
         )}
       </View>
 
-      <View style={[styles.panel, panelW > 0 ? { width: panelW } : { flex: 0.58 }, { backgroundColor: panel }]}>
+      <View style={[styles.panel, { backgroundColor: panel }]}>
         <View style={[styles.copy, { paddingHorizontal: 10, paddingBottom: hint ? 108 : 16 }]}>
           <View style={styles.hero}>
             {stacked ? (
@@ -206,7 +194,7 @@ export function AuroraCover({
                 </GoldText>
               </View>
             ) : (
-              <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 52 * scale, lineHeight: 58 * scale }]}>
+              <GoldText gold={gold} style={[styles.scriptBig, { fontSize: 48 * scale, lineHeight: 54 * scale }]}>
                 {title}
               </GoldText>
             )}
@@ -214,18 +202,18 @@ export function AuroraCover({
             {couple.trim() ? (
               <GoldText
                 gold={gold}
-                style={[styles.names, { fontSize: 30 * scale, lineHeight: 34 * scale }]}
+                style={[styles.names, { fontSize: 28 * scale, lineHeight: 32 * scale }]}
                 numberOfLines={2}
               >
                 {couple.trim()}
               </GoldText>
             ) : null}
 
-            <Text style={[styles.welcome, { color: cream, fontSize: 20 * scale, lineHeight: 26 * scale }]}>
+            <Text style={[styles.welcome, { color: cream, fontSize: 18 * scale, lineHeight: 24 * scale }]}>
               {`Bienvenue, ${guest.firstName}`}
             </Text>
             {welcome ? (
-              <Text style={[styles.sentence, { color: cream, fontSize: 16 * scale, lineHeight: 22 * scale }]}>
+              <Text style={[styles.sentence, { color: cream, fontSize: 15 * scale, lineHeight: 21 * scale }]}>
                 {welcome}
               </Text>
             ) : null}
@@ -234,19 +222,19 @@ export function AuroraCover({
           <View style={styles.bottom}>
             {dateLabel.trim() ? (
               <View style={styles.infoRow}>
-                <GoldMark gold={gold} ink={panel} icon="calendar-outline" size={20 * scale} />
-                <GoldText gold={gold} style={[styles.date, { fontSize: 16 * scale }]}>{dateLabel.trim()}</GoldText>
+                <GoldMark gold={gold} ink={panel} icon="calendar-outline" size={18 * scale} />
+                <GoldText gold={gold} style={[styles.date, { fontSize: 15 * scale }]}>{dateLabel.trim()}</GoldText>
               </View>
             ) : null}
 
             {venueName?.trim() ? (
               <View style={styles.venue}>
                 <View style={styles.infoRow}>
-                  <GoldMark gold={gold} ink={panel} icon="business-outline" size={20 * scale} />
-                  <GoldText gold={gold} style={[styles.venueName, { fontSize: 18 * scale }]}>{venueName.trim()}</GoldText>
+                  <GoldMark gold={gold} ink={panel} icon="business-outline" size={18 * scale} />
+                  <GoldText gold={gold} style={[styles.venueName, { fontSize: 16 * scale }]}>{venueName.trim()}</GoldText>
                 </View>
                 {place.map((line) => (
-                  <Text key={line} style={[styles.address, { color: muted, fontSize: 14 * scale }]}>
+                  <Text key={line} style={[styles.address, { color: muted, fontSize: 13 * scale }]}>
                     {line}
                   </Text>
                 ))}
@@ -254,7 +242,7 @@ export function AuroraCover({
             ) : null}
 
             {dress ? (
-              <Text style={[styles.dress, { color: muted, fontSize: 14 * scale }]}>{dress}</Text>
+              <Text style={[styles.dress, { color: muted, fontSize: 13 * scale }]}>{dress}</Text>
             ) : null}
           </View>
         </View>
@@ -267,10 +255,13 @@ export function AuroraCover({
 
 const styles = StyleSheet.create({
   fill: { flex: 1, flexDirection: 'row', overflow: 'hidden' },
+  /** ~46 % photo / ~54 % texte — photo collée au bord gauche. */
   photoCol: {
+    flex: 0.46,
     position: 'relative',
     overflow: 'hidden',
-    zIndex: 1,
+    alignSelf: 'stretch',
+    backgroundColor: '#0A0A0A',
   },
   edgeFade: {
     position: 'absolute',
@@ -279,9 +270,10 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   panel: {
+    flex: 0.54,
     position: 'relative',
     overflow: 'hidden',
-    zIndex: 2,
+    alignSelf: 'stretch',
   },
   copy: {
     flex: 1,

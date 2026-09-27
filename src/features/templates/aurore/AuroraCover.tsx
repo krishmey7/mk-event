@@ -146,7 +146,7 @@ export function AuroraCover({
   const gold = colors.accent;
   const muted = colors.textMuted;
   const cream = colors.text;
-  const contentW = useMemo(() => Math.max(140, Math.round(box.w * 0.44)), [box.w]);
+  const contentW = useMemo(() => Math.max(150, Math.round(box.w * 0.54)), [box.w]);
   const scale = Math.min(1.08, Math.max(0.9, contentW / 190));
   const script = Math.min(52, Math.max(34, (contentW - 20) / 2.2));
   const stacked = splitTitle(title);
@@ -176,16 +176,21 @@ export function AuroraCover({
               zIndex: 0,
               backgroundImage: `url("${couplePhoto.uri}")`,
               backgroundSize: 'cover',
-              backgroundPosition: '18% center',
+              /* Décale le cadrage à gauche : le marié reste dans la zone claire. */
+              backgroundPosition: 'left center',
               backgroundRepeat: 'no-repeat',
+              transform: 'translateX(-11%) scale(1.12)',
+              transformOrigin: 'left center',
             },
           })
         ) : (
-          <Image
-            source={{ uri: couplePhoto.uri }}
-            style={StyleSheet.absoluteFill}
-            resizeMode="cover"
-          />
+          <View style={styles.nativePhotoWrap}>
+            <Image
+              source={{ uri: couplePhoto.uri }}
+              style={styles.nativePhoto}
+              resizeMode="cover"
+            />
+          </View>
         )
       ) : (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: panel }]} />
@@ -279,6 +284,15 @@ export function AuroraCover({
 
 const styles = StyleSheet.create({
   fill: { flex: 1, overflow: 'hidden', position: 'relative' },
+  nativePhotoWrap: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  nativePhoto: {
+    width: '112%',
+    height: '100%',
+    marginLeft: '-11%',
+  },
   contentRow: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 2,

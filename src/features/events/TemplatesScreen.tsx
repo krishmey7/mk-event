@@ -1,11 +1,10 @@
 /**
  * Catalogue — miniatures teintes, filtrées strictement par type d’événement.
- * Clic → aperçu plein écran + bouton flottant Éditer.
+ * Clic → aperçu = vue invité complète + bouton flottant Éditer.
  */
 
 import { useMemo, useState } from 'react';
 import {
-  Dimensions,
   Modal,
   Pressable,
   ScrollView,
@@ -23,9 +22,14 @@ import { brandColors, fontFamilies, shadows, spacing } from '@/constants/theme';
 import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import { CoverDiscoverHint, COVER_STAGE, ScaledInvitationStage } from '@/features/invitation/InvitationCover';
+import { CoverDiscoverHint, ScaledInvitationStage } from '@/features/invitation/InvitationCover';
 import { TemplateCover } from '@/features/invitation/TemplateCover';
-import { DEMO_GUESTS } from '@/features/invitation/guestRegistry';
+import { GuestInvitation } from '@/features/invitation/GuestInvitation';
+import {
+  DEMO_GUESTS,
+  STUDIO_PREVIEW_GUEST,
+  buildCatalogPreviewConfig,
+} from '@/features/invitation/guestRegistry';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import { TEMPLATES, type TemplateDefinition } from '@/features/templates/registry';
 import { resolveTemplateTheme } from '@/features/templates/resolveTheme';
@@ -141,99 +145,45 @@ function TemplatePreviewModal({
   onEdit: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const { theme, mode } = useAppTheme();
+  const { theme } = useAppTheme();
   const c = theme.colors;
+
+  const config = useMemo(
+    () => (template ? buildCatalogPreviewConfig(template, eventThemeKey) : null),
+    [template, eventThemeKey],
+  );
+  const guest = DEMO_GUESTS[0] ?? STUDIO_PREVIEW_GUEST;
   const themed = template ? resolveTemplateTheme(template, eventThemeKey) : null;
-  const guest = DEMO_GUESTS[0];
-  const window = Dimensions.get('window');
-  const previewWidth = Math.min(window.width - 32, 390);
-  const previewHeight = (previewWidth / COVER_STAGE.width) * COVER_STAGE.height;
+  const statusStyle = themed?.isDark ? 'light' : 'dark';
 
   return (
     <Modal
-      visible={template !== null && themed !== null}
+      visible={template !== null && config !== null}
       animationType="fade"
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <View style={[styles.previewScreen, { backgroundColor: c.background }]}>
-        <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+      <View style={styles.guestPreview}>
+        <StatusBar style={statusStyle} />
 
-        <View style={[styles.previewTop, { paddingTop: insets.top + 8 }]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Fermer l’aperçu"
-            onPress={onClose}
-            hitSlop={10}
-            style={[styles.previewClose, { backgroundColor: c.surfaceElevated, borderColor: c.border }]}
-          >
-            <Ionicons name="close" size={20} color={c.textPrimary} />
-          </Pressable>
-          {template && themed ? (
-            <View style={styles.previewTitles}>
-              <Text style={[styles.previewName, { color: c.textPrimary }]} numberOfLines={1}>
-                {template.name}
-              </Text>
-              <Text style={[styles.previewMeta, { color: c.textMuted }]} numberOfLines={1}>
-                {EVENT_TYPE_LABELS[template.category]} · {themed.label}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.previewTitles} />
-          )}
-          <View style={{ width: 40 }} />
-        </View>
+        {config && template ? (
+          <GuestInvitation
+            key={`${template.key}-${eventThemeKey}`}
+            slug={`catalog-${template.key}`}
+            config={config}
+            guest={guest}
+          />
+        ) : null}
 
-        <View style={styles.previewStageWrap}>
-          {template && themed ? (
-            <View
-              style={[
-                styles.previewPhone,
-                {
-                  width: previewWidth,
-                  height: previewHeight + 18,
-                  backgroundColor: c.surfaceElevated,
-                  borderColor: c.border,
-                },
-                shadows.md,
-              ]}
-            >
-              <View style={styles.previewNotch} />
-              <View style={[styles.previewScreenInner, { width: previewWidth - 14, height: previewHeight }]}>
-                <ScaledInvitationStage width={previewWidth - 14}>
-                  <TemplateCover
-                    layout={template.coverLayout}
-                    ornaments={template.ornaments}
-                    colors={themed.colors}
-                    isDark={themed.isDark}
-                    coverUri={template.coverImage}
-                    couplePhoto={{
-                      uri: template.couplePhoto.uri,
-                      frame: normalizePhotoFrame(template.couplePhoto.frame),
-                    }}
-                    guest={guest}
-                    title={template.defaultCover.title}
-                    dateLabel={template.defaultCover.dateLabel}
-                    couple={template.defaultCover.couple}
-                    phrase={template.defaultKicker || 'Pour notre grand jour'}
-                    guestSentence={template.defaultCover.guestLine}
-                    kicker={template.defaultKicker}
-                    venueName={template.defaultVenue?.name}
-                    venueStreet={template.defaultVenue?.street}
-                    venueCity={template.defaultVenue?.city}
-                    stripPhotos={template.galleryImages}
-                    timePlace={template.key === 'pellicule' ? '20H00' : undefined}
-                    hint={(
-                      <CoverDiscoverHint
-                        color={template.coverLayout === 'filmStrip' ? themed.colors.text : undefined}
-                      />
-                    )}
-                  />
-                </ScaledInvitationStage>
-              </View>
-            </View>
-          ) : null}
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Fermer l’aperçu"
+          onPress={onClose}
+          hitSlop={8}
+          style={[styles.guestClose, { top: insets.top + 10 }]}
+        >
+          <Ionicons name="close" size={18} color="#FFFFFF" />
+        </Pressable>
 
         <Pressable
           accessibilityRole="button"
@@ -431,57 +381,24 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     color: 'rgba(28,23,18,0.45)',
   },
-  previewScreen: { flex: 1 },
-  previewTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    gap: 10,
-  },
-  previewClose: {
+  guestPreview: { flex: 1, backgroundColor: '#100E0B' },
+  guestClose: {
+    position: 'absolute',
+    left: 14,
+    zIndex: 20,
     width: 40,
     height: 40,
     borderRadius: 20,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  previewTitles: { flex: 1, alignItems: 'center' },
-  previewName: { fontFamily: fontFamilies.sansSemiBold, fontSize: 16 },
-  previewMeta: { fontFamily: fontFamilies.sans, fontSize: 12, marginTop: 2 },
-  previewStageWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 96,
-  },
-  previewPhone: {
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 7,
-    paddingBottom: 10,
-  },
-  previewNotch: {
-    alignSelf: 'center',
-    width: 42,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: 'rgba(28, 23, 18, 0.18)',
-    marginBottom: 6,
-  },
-  previewScreenInner: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    alignSelf: 'center',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   editFab: {
     position: 'absolute',
     alignSelf: 'center',
     left: 24,
     right: 24,
+    zIndex: 20,
     minHeight: 52,
     borderRadius: 26,
     flexDirection: 'row',

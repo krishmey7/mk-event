@@ -151,3 +151,58 @@ export function resolveGuest(config: InvitationConfig, guestId?: string | string
     STUDIO_PREVIEW_GUEST
   );
 }
+
+/** Config démo pour l’aperçu catalogue = même rendu que la vue invité. */
+export function buildCatalogPreviewConfig(
+  template: {
+    key: string;
+    coverImage: string;
+    countdownImage: string;
+    galleryImages: string[];
+    couplePhoto: { uri: string; frame: string };
+    story: StoryMilestone[];
+    program: ProgramStep[];
+    defaultCover: {
+      title: string;
+      dateLabel: string;
+      couple: string;
+      guestLine: string;
+    };
+    defaultThemeKey: string;
+    defaultKicker?: string;
+    defaultVenue?: Venue;
+  },
+  eventThemeKey?: string | null,
+): InvitationConfig {
+  const themeKey = (eventThemeKey ?? '').trim() || template.defaultThemeKey;
+  return {
+    templateKey: template.key,
+    guests: DEMO_GUESTS,
+    drinks: DEFAULT_DRINKS,
+    diets: DEFAULT_DIETS,
+    themeKey,
+    revealEffect: 'fade',
+    galleryStyle: 'masonry',
+    venue: template.defaultVenue ?? DEFAULT_VENUE,
+    couplePhoto: {
+      uri: template.couplePhoto.uri || template.coverImage,
+      frame: template.couplePhoto.frame || 'soft',
+    },
+    dressCode: '',
+    cover: {
+      title: template.defaultCover.title,
+      dateLabel: template.defaultCover.dateLabel,
+      couple: template.defaultCover.couple,
+      guestLine: template.defaultCover.guestLine,
+      kicker: template.defaultKicker ?? '',
+      photoUri: template.coverImage,
+    },
+    story: template.story,
+    program: template.program,
+    gallery: template.galleryImages.map((uri, index) => ({
+      uri,
+      category: (['ceremonie', 'cocktail', 'soiree'] as const)[index % 3],
+    })),
+    countdownImage: template.countdownImage,
+  };
+}

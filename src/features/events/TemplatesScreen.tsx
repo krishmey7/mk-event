@@ -1,9 +1,18 @@
 /**
  * Catalogue — miniatures teintes, filtrées strictement par type d’événement.
+ * Clic → aperçu plein écran + bouton flottant Éditer.
  */
 
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Dimensions,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -14,7 +23,7 @@ import { brandColors, fontFamilies, shadows, spacing } from '@/constants/theme';
 import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import { CoverDiscoverHint, ScaledInvitationStage } from '@/features/invitation/InvitationCover';
+import { CoverDiscoverHint, COVER_STAGE, ScaledInvitationStage } from '@/features/invitation/InvitationCover';
 import { TemplateCover } from '@/features/invitation/TemplateCover';
 import { DEMO_GUESTS } from '@/features/invitation/guestRegistry';
 import { normalizePhotoFrame } from '@/features/invitation/types';
@@ -39,6 +48,7 @@ export function TemplatesScreen() {
   const columns = isDesktop ? 3 : 2;
   const cellWidth = columns === 3 ? '31.5%' : '48.2%';
   const c = theme.colors;
+  const [preview, setPreview] = useState<TemplateDefinition | null>(null);
 
   const templates = useMemo(
     () => TEMPLATES.filter((item) => item.category === type),
@@ -71,7 +81,7 @@ export function TemplatesScreen() {
               <TemplateThumb
                 template={template}
                 eventThemeKey={themeKey}
-                onPress={() => openTemplateEditor(router, template.key, themeKey)}
+                onPress={() => setPreview(template)}
               />
             </View>
           ))}
@@ -103,7 +113,146 @@ export function TemplatesScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      <TemplatePreviewModal
+        template={preview}
+        eventThemeKey={themeKey}
+        onClose={() => setPreview(null)}
+        onEdit={() => {
+          if (!preview) return;
+          const key = preview.key;
+          setPreview(null);
+          openTemplateEditor(router, key, themeKey);
+        }}
+      />
     </View>
+  );
+}
+
+function TemplatePreviewModal({
+  template,
+  eventThemeKey,
+  onClose,
+  onEdit,
+}: {
+  template: TemplateDefinition | null;
+  eventThemeKey: string;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const { theme, mode } = useAppTheme();
+  const c = theme.colors;
+  const themed = template ? resolveTemplateTheme(template, eventThemeKey) : null;
+  const guest = DEMO_GUESTS[0];
+  const window = Dimensions.get('window');
+  const previewWidth = Math.min(window.width - 32, 390);
+  const previewHeight = (previewWidth / COVER_STAGE.width) * COVER_STAGE.height;
+
+  return (
+    <Modal
+      visible={template !== null && themed !== null}
+      animationType="fade"
+      presentationStyle="fullScreen"
+      onRequestClose={onClose}
+    >
+      <View style={[styles.previewScreen, { backgroundColor: c.background }]}>
+        <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+
+        <View style={[styles.previewTop, { paddingTop: insets.top + 8 }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Fermer l’aperçu"
+            onPress={onClose}
+            hitSlop={10}
+            style={[styles.previewClose, { backgroundColor: c.surfaceElevated, borderColor: c.border }]}
+          >
+            <Ionicons name="close" size={20} color={c.textPrimary} />
+          </Pressable>
+          {template && themed ? (
+            <View style={styles.previewTitles}>
+              <Text style={[styles.previewName, { color: c.textPrimary }]} numberOfLines={1}>
+                {template.name}
+              </Text>
+              <Text style={[styles.previewMeta, { color: c.textMuted }]} numberOfLines={1}>
+                {EVENT_TYPE_LABELS[template.category]} · {themed.label}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.previewTitles} />
+          )}
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.previewStageWrap}>
+          {template && themed ? (
+            <View
+              style={[
+                styles.previewPhone,
+                {
+                  width: previewWidth,
+                  height: previewHeight + 18,
+                  backgroundColor: c.surfaceElevated,
+                  borderColor: c.border,
+                },
+                shadows.md,
+              ]}
+            >
+              <View style={styles.previewNotch} />
+              <View style={[styles.previewScreenInner, { width: previewWidth - 14, height: previewHeight }]}>
+                <ScaledInvitationStage width={previewWidth - 14}>
+                  <TemplateCover
+                    layout={template.coverLayout}
+                    ornaments={template.ornaments}
+                    colors={themed.colors}
+                    isDark={themed.isDark}
+                    coverUri={template.coverImage}
+                    couplePhoto={{
+                      uri: template.couplePhoto.uri,
+                      frame: normalizePhotoFrame(template.couplePhoto.frame),
+                    }}
+                    guest={guest}
+                    title={template.defaultCover.title}
+                    dateLabel={template.defaultCover.dateLabel}
+                    couple={template.defaultCover.couple}
+                    phrase={template.defaultKicker || 'Pour notre grand jour'}
+                    guestSentence={template.defaultCover.guestLine}
+                    kicker={template.defaultKicker}
+                    venueName={template.defaultVenue?.name}
+                    venueStreet={template.defaultVenue?.street}
+                    venueCity={template.defaultVenue?.city}
+                    stripPhotos={template.galleryImages}
+                    timePlace={template.key === 'pellicule' ? '20H00' : undefined}
+                    hint={(
+                      <CoverDiscoverHint
+                        color={template.coverLayout === 'filmStrip' ? themed.colors.text : undefined}
+                      />
+                    )}
+                  />
+                </ScaledInvitationStage>
+              </View>
+            </View>
+          ) : null}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Éditer ce modèle"
+          onPress={onEdit}
+          style={[
+            styles.editFab,
+            {
+              backgroundColor: c.accent,
+              bottom: Math.max(insets.bottom, 12) + 16,
+            },
+            shadows.lg,
+          ]}
+        >
+          <Ionicons name="create-outline" size={20} color={c.onAccent} />
+          <Text style={[styles.editFabLabel, { color: c.onAccent }]}>Éditer</Text>
+        </Pressable>
+      </View>
+    </Modal>
   );
 }
 
@@ -131,7 +280,7 @@ function TemplateThumb({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={template.name}
+      accessibilityLabel={`Aperçu ${template.name}`}
       onPress={onPress}
       style={({ pressed }) => [pressed && styles.pressed]}
     >
@@ -281,5 +430,68 @@ const styles = StyleSheet.create({
     fontSize: 22,
     letterSpacing: 4,
     color: 'rgba(28,23,18,0.45)',
+  },
+  previewScreen: { flex: 1 },
+  previewTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    gap: 10,
+  },
+  previewClose: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewTitles: { flex: 1, alignItems: 'center' },
+  previewName: { fontFamily: fontFamilies.sansSemiBold, fontSize: 16 },
+  previewMeta: { fontFamily: fontFamilies.sans, fontSize: 12, marginTop: 2 },
+  previewStageWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 96,
+  },
+  previewPhone: {
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 7,
+    paddingBottom: 10,
+  },
+  previewNotch: {
+    alignSelf: 'center',
+    width: 42,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: 'rgba(28, 23, 18, 0.18)',
+    marginBottom: 6,
+  },
+  previewScreenInner: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    alignSelf: 'center',
+    backgroundColor: '#1A1A1A',
+  },
+  editFab: {
+    position: 'absolute',
+    alignSelf: 'center',
+    left: 24,
+    right: 24,
+    minHeight: 52,
+    borderRadius: 26,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  editFabLabel: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 16,
+    letterSpacing: 0.2,
   },
 });

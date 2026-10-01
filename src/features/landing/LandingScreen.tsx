@@ -101,7 +101,7 @@ export function LandingScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: L.ink }]}>
-      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} translucent />
       <LandingAtmosphere />
 
       <MarketingNav onJump={jump} />
@@ -226,6 +226,8 @@ export function LandingScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    height: '100%',
+    width: '100%',
   },
   scroll: {
     flex: 1,

@@ -8,7 +8,7 @@
       content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, shrink-to-fit=no"
     />
     <meta name="theme-color" content="#2A1824" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#2A1824" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F7F0E8" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2A1824" />
     <meta name="application-name" content="MK Events" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -39,51 +39,89 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <style id="expo-reset">
-      /* Plein écran PWA : le fond doit peindre sous status bar + home indicator. */
+      /* Edge-to-edge : peindre sous status bar + home indicator / nav Android. */
+      :root {
+        --mk-app-height: 100dvh;
+        --mk-bg: #2a1824;
+      }
       html,
-      body,
-      #root {
+      body {
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
-        background-color: #2a1824;
-      }
-      html {
-        /* Safari onglet */
         min-height: 100%;
         min-height: -webkit-fill-available;
         min-height: 100dvh;
+        min-height: 100svh;
+        background-color: var(--mk-bg);
+        color-scheme: light dark;
       }
       body {
         overflow: hidden;
-        min-height: 100%;
-        min-height: -webkit-fill-available;
-        min-height: 100dvh;
-        /* iOS standalone : 100vh inclut la safe area (bug WebKit #254868). */
         overscroll-behavior: none;
         -webkit-tap-highlight-color: transparent;
+        /* iOS standalone : 100vh inclut la safe area (WebKit #254868). */
+        min-height: 100vh;
       }
       #root {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: var(--mk-app-height, 100%);
+        max-height: 100%;
         display: flex;
         flex-direction: column;
-        flex: 1;
-        min-height: 100%;
-        min-height: -webkit-fill-available;
-        min-height: 100dvh;
+        overflow: hidden;
+        background-color: var(--mk-bg);
       }
-      /* Installé sur l’écran d’accueil — forcer la hauteur physique. */
+      /* RN Web : SafeAreaProvider / Navigation créent des wrappers sans hauteur. */
+      #root > div,
+      #root > div > div {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+      }
       @media all and (display-mode: standalone),
         all and (display-mode: fullscreen),
         all and (display-mode: minimal-ui) {
         html,
-        body,
-        #root {
+        body {
           height: 100vh;
           min-height: 100vh;
         }
+        #root {
+          height: 100vh;
+          max-height: none;
+        }
       }
     </style>
+
+    <script>
+      (function () {
+        function syncAppHeight() {
+          var h =
+            (window.visualViewport && window.visualViewport.height) ||
+            window.innerHeight ||
+            document.documentElement.clientHeight;
+          if (!h) return;
+          document.documentElement.style.setProperty('--mk-app-height', h + 'px');
+        }
+        syncAppHeight();
+        window.addEventListener('resize', syncAppHeight, { passive: true });
+        window.addEventListener('orientationchange', syncAppHeight, { passive: true });
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', syncAppHeight, { passive: true });
+          window.visualViewport.addEventListener('scroll', syncAppHeight, { passive: true });
+        }
+      })();
+    </script>
 
     <script>
       if ('serviceWorker' in navigator) {

@@ -127,18 +127,62 @@ export default function RootLayout() {
   );
 }
 
+/** Plein écran web : hauteur visuelle + fond edge-to-edge sous les barres OS. */
+function useWebFullscreenShell(background: string, mode: 'light' | 'dark') {
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+
+    const root = document.documentElement;
+    const applyChrome = () => {
+      root.style.setProperty('--mk-bg', background);
+      root.style.backgroundColor = background;
+      document.body.style.backgroundColor = background;
+      const rootEl = document.getElementById('root');
+      if (rootEl) rootEl.style.backgroundColor = background;
+
+      const metas = document.querySelectorAll('meta[name="theme-color"]');
+      metas.forEach((meta) => {
+        const media = meta.getAttribute('media');
+        if (!media) {
+          meta.setAttribute('content', background);
+          return;
+        }
+        if (media.includes('dark') && mode === 'dark') meta.setAttribute('content', background);
+        if (media.includes('light') && mode === 'light') meta.setAttribute('content', background);
+      });
+    };
+
+    const syncHeight = () => {
+      const h =
+        window.visualViewport?.height ??
+        window.innerHeight ??
+        document.documentElement.clientHeight;
+      if (h > 0) root.style.setProperty('--mk-app-height', `${Math.round(h)}px`);
+    };
+
+    applyChrome();
+    syncHeight();
+
+    window.addEventListener('resize', syncHeight);
+    window.addEventListener('orientationchange', syncHeight);
+    window.visualViewport?.addEventListener('resize', syncHeight);
+    window.visualViewport?.addEventListener('scroll', syncHeight);
+    document.addEventListener('visibilitychange', syncHeight);
+
+    return () => {
+      window.removeEventListener('resize', syncHeight);
+      window.removeEventListener('orientationchange', syncHeight);
+      window.visualViewport?.removeEventListener('resize', syncHeight);
+      window.visualViewport?.removeEventListener('scroll', syncHeight);
+      document.removeEventListener('visibilitychange', syncHeight);
+    };
+  }, [background, mode]);
+}
+
 function RootChrome() {
   const { theme, mode } = useAppTheme();
   useWebInputChromeFix(mode);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
-    const bg = theme.colors.background;
-    document.documentElement.style.backgroundColor = bg;
-    document.body.style.backgroundColor = bg;
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', mode === 'dark' ? '#2A1824' : bg);
-  }, [theme.colors.background, mode]);
+  useWebFullscreenShell(theme.colors.background, mode);
 
   return (
     <>
@@ -146,7 +190,11 @@ function RootChrome() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: theme.colors.background, flex: 1 },
+          contentStyle: {
+            backgroundColor: theme.colors.background,
+            flex: 1,
+            minHeight: '100%',
+          },
         }}
       />
       <PwaInstallPrompt />

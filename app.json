@@ -16,8 +16,19 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mkevent.app"
     },
+    "androidStatusBar": {
+      "translucent": true,
+      "backgroundColor": "#00000000",
+      "barStyle": "light-content"
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#00000000",
+      "barStyle": "light-content",
+      "enforceContrast": false
+    },
     "android": {
-      "package": "com.mkevent.app"
+      "package": "com.mkevent.app",
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "bundler": "metro",

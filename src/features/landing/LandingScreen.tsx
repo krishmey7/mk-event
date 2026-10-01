@@ -1,15 +1,17 @@
 /**
- * Landing — une composition : marque, invitation produit, CTA.
+ * Landing marketing — hero marque + page scrollable moderne.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -17,23 +19,42 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '@/components/ui/Logo';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import { fontFamilies, shadows, spacing } from '@/constants/theme';
+import { fontFamilies, shadows } from '@/constants/theme';
+import { getTemplate } from '@/features/templates/registry';
 import { LandingAtmosphere } from './LandingAtmosphere';
+import { MarketingNav } from './components/MarketingNav';
+import { MarketingTemplatePreview } from './components/MarketingTemplatePreview';
+import {
+  FeaturesSection,
+  FinalCtaSection,
+  GuestTeaserSection,
+  HowItWorksSection,
+  MarketingFooter,
+  TemplatesShowcase,
+} from './components/MarketingSections';
+import { LANDING } from './landingTokens';
 
-const ACCENT = '#E07A5F';
-const ACCENT_DEEP = '#C45D45';
-const INK = '#2A1824';
-const PAPER = '#F7F0E8';
+type Anchor = 'features' | 'modeles' | 'parcours';
 
 export function LandingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height: windowH } = useWindowDimensions();
   const { isTablet, isDesktop } = useBreakpoint();
-  const titleSize = isDesktop ? 42 : isTablet ? 36 : 28;
+  const scrollRef = useRef<ScrollView>(null);
+  const [anchors, setAnchors] = useState<Record<Anchor, number>>({
+    parcours: 0,
+    features: 0,
+    modeles: 0,
+  });
+
+  const titleSize = isDesktop ? 52 : isTablet ? 40 : 32;
+  const heroMin = Math.max(640, windowH - 8);
+  const previewTemplate = getTemplate('aurore');
 
   const fade = useRef(new Animated.Value(0)).current;
-  const rise = useRef(new Animated.Value(18)).current;
-  const cardRise = useRef(new Animated.Value(28)).current;
+  const rise = useRef(new Animated.Value(22)).current;
+  const visualRise = useRef(new Animated.Value(36)).current;
 
   useEffect(() => {
     void import('@/features/onboarding/onboardingHeroes')
@@ -42,250 +63,275 @@ export function LandingScreen() {
   }, []);
 
   useEffect(() => {
-    Animated.stagger(120, [
+    Animated.stagger(140, [
       Animated.parallel([
         Animated.timing(fade, {
           toValue: 1,
-          duration: 700,
+          duration: 780,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(rise, {
           toValue: 0,
-          duration: 700,
+          duration: 780,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
       ]),
-      Animated.timing(cardRise, {
+      Animated.timing(visualRise, {
         toValue: 0,
-        duration: 750,
+        duration: 820,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fade, rise, cardRise]);
+  }, [fade, rise, visualRise]);
+
+  const jump = (anchor: Anchor) => {
+    const y = anchors[anchor];
+    if (y > 0) {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+    }
+  };
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
+    <View style={styles.root}>
       <StatusBar style="light" />
       <LandingAtmosphere />
 
-      <Animated.View style={[styles.top, { opacity: fade, transform: [{ translateY: rise }] }]}>
-        <Logo size="xl" variant="light" />
-        <Text style={[styles.title, { fontSize: titleSize, lineHeight: titleSize + 8 }]}>
-          Des invitations{'\n'}
-          <Text style={styles.titleAccent}>numériques vivantes</Text>
-        </Text>
-        <Text style={styles.subtitle}>
-          Créez, personnalisez, publiez — RSVP et check-in inclus.
-        </Text>
-      </Animated.View>
+      <MarketingNav onJump={jump} />
 
-      <Animated.View
-        style={[
-          styles.cardWrap,
-          { opacity: fade, transform: [{ translateY: cardRise }] },
-        ]}
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        showsVerticalScrollIndicator={false}
       >
-        <InvitePreview />
-      </Animated.View>
+        {/* Hero — une composition, marque dominante */}
+        <View style={[styles.hero, { minHeight: heroMin - insets.top - 56 }]}>
+          <View style={[styles.heroInner, isDesktop && styles.heroInnerDesktop]}>
+            <Animated.View
+              style={[
+                styles.heroCopy,
+                isDesktop && styles.heroCopyDesktop,
+                { opacity: fade, transform: [{ translateY: rise }] },
+              ]}
+            >
+              <Logo size="xl" variant="light" />
+              <Text
+                style={[
+                  styles.title,
+                  { fontSize: titleSize, lineHeight: titleSize + 10 },
+                  isDesktop && styles.titleDesktop,
+                ]}
+              >
+                Des invitations{'\n'}
+                <Text style={styles.titleAccent}>numériques vivantes</Text>
+              </Text>
+              <Text style={[styles.subtitle, isDesktop && styles.subtitleDesktop]}>
+                Créez, personnalisez et publiez. RSVP, pass QR et check-in inclus —
+                pour mariages, anniversaires et événements pro.
+              </Text>
+              <View style={[styles.heroActions, isDesktop && styles.heroActionsDesktop]}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Commencer"
+                  onPress={() => router.push('/onboarding')}
+                  style={({ pressed }) => [styles.cta, pressed && styles.pressed, shadows.sm]}
+                >
+                  <Text style={styles.ctaLabel}>Commencer</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => jump('modeles')}
+                  style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+                >
+                  <Text style={styles.secondaryLabel}>Voir les modèles</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
 
-      <Animated.View style={[styles.actions, { opacity: fade }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Commencer"
-          onPress={() => router.push('/onboarding')}
-          style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
-        >
-          <Text style={styles.ctaLabel}>Commencer</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push('/login')}
-          hitSlop={10}
-          style={({ pressed }) => [pressed && styles.pressed]}
-        >
-          <Text style={styles.link}>J’ai déjà un compte</Text>
-        </Pressable>
-      </Animated.View>
-    </View>
-  );
-}
-
-function InvitePreview() {
-  return (
-    <View style={styles.stage}>
-      <View style={[styles.shadowCard, styles.shadowLeft]} />
-      <View style={[styles.shadowCard, styles.shadowRight]} />
-
-      <View style={styles.invite}>
-        <View style={styles.inviteAccent} />
-        <Text style={styles.inviteKicker}>SAVE THE DATE</Text>
-        <Text style={styles.inviteNames}>Léa & Thomas</Text>
-        <View style={styles.inviteRule} />
-        <Text style={styles.inviteDate}>14 juin 2025</Text>
-        <Text style={styles.invitePlace}>Château de Bellevue</Text>
-        <View style={styles.inviteChip}>
-          <Text style={styles.inviteChipText}>RSVP ouvert</Text>
+            <Animated.View
+              style={[
+                styles.heroVisual,
+                { opacity: fade, transform: [{ translateY: visualRise }] },
+              ]}
+            >
+              <MarketingTemplatePreview
+                template={previewTemplate}
+                width={isDesktop ? 280 : isTablet ? 250 : 230}
+                showLabel={false}
+              />
+              <Text style={styles.heroVisualCaption}>Aurore — aperçu réel du modèle</Text>
+            </Animated.View>
+          </View>
         </View>
-      </View>
+
+        <View style={styles.proof}>
+          <Text style={styles.proofItem}>Mariages</Text>
+          <Text style={styles.proofDot}>·</Text>
+          <Text style={styles.proofItem}>Anniversaires</Text>
+          <Text style={styles.proofDot}>·</Text>
+          <Text style={styles.proofItem}>Conférences</Text>
+        </View>
+
+        <HowItWorksSection
+          onLayout={(event) => {
+            const y = event.nativeEvent.layout.y;
+            setAnchors((prev) => (prev.parcours === y ? prev : { ...prev, parcours: y }));
+          }}
+        />
+        <FeaturesSection
+          onLayout={(event) => {
+            const y = event.nativeEvent.layout.y;
+            setAnchors((prev) => (prev.features === y ? prev : { ...prev, features: y }));
+          }}
+        />
+        <TemplatesShowcase
+          onLayout={(event) => {
+            const y = event.nativeEvent.layout.y;
+            setAnchors((prev) => (prev.modeles === y ? prev : { ...prev, modeles: y }));
+          }}
+        />
+        <GuestTeaserSection />
+        <FinalCtaSection />
+        <MarketingFooter />
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  root: {
     flex: 1,
-    backgroundColor: INK,
+    backgroundColor: LANDING.ink,
+  },
+  scroll: {
+    flex: 1,
+  },
+  hero: {
+    width: '100%',
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    paddingBottom: 28,
+  },
+  heroInner: {
+    maxWidth: LANDING.maxWidth,
+    width: '100%',
+    alignSelf: 'center',
+    alignItems: 'center',
+    gap: 36,
+  },
+  heroInnerDesktop: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    overflow: 'hidden',
+    gap: 48,
   },
-  top: {
+  heroCopy: {
     alignItems: 'center',
     gap: 16,
     width: '100%',
-    maxWidth: 440,
-    paddingTop: 8,
+    maxWidth: 480,
+  },
+  heroCopyDesktop: {
+    alignItems: 'flex-start',
+    flex: 1,
   },
   title: {
     fontFamily: fontFamilies.serifSemiBold,
     textAlign: 'center',
-    color: '#F7F0E8',
-    letterSpacing: -0.5,
-    marginTop: 8,
+    color: LANDING.cream,
+    letterSpacing: -0.6,
+    marginTop: 4,
+  },
+  titleDesktop: {
+    textAlign: 'left',
   },
   titleAccent: {
     fontFamily: fontFamilies.serifItalic,
-    color: ACCENT,
+    color: LANDING.coral,
   },
   subtitle: {
     fontFamily: fontFamilies.sans,
-    fontSize: 14.5,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 23,
     textAlign: 'center',
-    color: 'rgba(247, 240, 232, 0.62)',
-    maxWidth: 320,
+    color: LANDING.creamMuted,
+    maxWidth: 420,
   },
-  cardWrap: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 360,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 220,
+  subtitleDesktop: {
+    textAlign: 'left',
   },
-  stage: {
-    width: 260,
-    height: 300,
-    alignItems: 'center',
+  heroActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 8,
     justifyContent: 'center',
   },
-  shadowCard: {
-    position: 'absolute',
-    width: 200,
-    height: 260,
-    borderRadius: 20,
-    backgroundColor: 'rgba(247,240,232,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(247,240,232,0.08)',
-  },
-  shadowLeft: {
-    transform: [{ rotate: '-8deg' }, { translateX: -28 }],
-  },
-  shadowRight: {
-    transform: [{ rotate: '8deg' }, { translateX: 28 }],
-    backgroundColor: 'rgba(224, 122, 95, 0.14)',
-  },
-  invite: {
-    width: 210,
-    height: 280,
-    borderRadius: 22,
-    backgroundColor: PAPER,
-    alignItems: 'center',
-    paddingTop: 22,
-    paddingHorizontal: 18,
-    ...shadows.lg,
-  },
-  inviteAccent: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: ACCENT_DEEP,
-    marginBottom: 18,
-  },
-  inviteKicker: {
-    fontFamily: fontFamilies.sansMedium,
-    fontSize: 9,
-    letterSpacing: 3.2,
-    color: ACCENT_DEEP,
-    marginBottom: 10,
-  },
-  inviteNames: {
-    fontFamily: fontFamilies.serifSemiBold,
-    fontSize: 26,
-    lineHeight: 32,
-    color: INK,
-    textAlign: 'center',
-  },
-  inviteRule: {
-    width: 40,
-    height: 1.5,
-    backgroundColor: ACCENT,
-    marginVertical: 14,
-  },
-  inviteDate: {
-    fontFamily: fontFamilies.sansSemiBold,
-    fontSize: 13,
-    color: INK,
-    marginBottom: 4,
-  },
-  invitePlace: {
-    fontFamily: fontFamilies.sans,
-    fontSize: 12,
-    color: '#6B5560',
-    textAlign: 'center',
-  },
-  inviteChip: {
-    marginTop: 'auto',
-    marginBottom: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: 'rgba(224, 122, 95, 0.14)',
-  },
-  inviteChipText: {
-    fontFamily: fontFamilies.sansMedium,
-    fontSize: 11,
-    color: ACCENT_DEEP,
-  },
-  actions: {
-    alignItems: 'center',
-    gap: 14,
-    width: '100%',
-    paddingBottom: 4,
+  heroActionsDesktop: {
+    justifyContent: 'flex-start',
   },
   cta: {
-    minWidth: 240,
-    minHeight: 54,
+    minWidth: 168,
+    minHeight: 52,
     borderRadius: 14,
-    backgroundColor: ACCENT,
+    backgroundColor: LANDING.coral,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 28,
-    ...shadows.sm,
+    paddingHorizontal: 22,
   },
   ctaLabel: {
     fontFamily: fontFamilies.sansSemiBold,
-    fontSize: 16,
+    fontSize: 15,
     color: '#FFFFFF',
   },
-  link: {
+  secondary: {
+    minHeight: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: LANDING.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    backgroundColor: LANDING.surface,
+  },
+  secondaryLabel: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 14,
-    color: 'rgba(247, 240, 232, 0.72)',
+    color: LANDING.cream,
   },
-  pressed: { opacity: 0.82 },
+  heroVisual: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  heroVisualCaption: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 12,
+    color: LANDING.creamFaint,
+  },
+  proof: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: LANDING.border,
+  },
+  proofItem: {
+    fontFamily: fontFamilies.sansMedium,
+    fontSize: 13,
+    letterSpacing: 0.4,
+    color: LANDING.creamMuted,
+  },
+  proofDot: {
+    color: LANDING.creamFaint,
+    fontSize: 13,
+  },
+  pressed: { opacity: 0.84 },
 });

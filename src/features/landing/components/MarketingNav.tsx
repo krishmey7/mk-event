@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '@/components/ui/Logo';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import { fontFamilies } from '@/constants/theme';
+import { landingFonts } from '../landingFonts';
 import { LANDING } from '../landingTokens';
 
 type LandingAnchor = 'platform' | 'journey' | 'models' | 'faq';
@@ -127,12 +127,12 @@ const styles = StyleSheet.create({
     gap: 22,
   },
   link: {
-    fontFamily: fontFamilies.sansMedium,
+    ...landingFonts.medium,
     fontSize: 14,
     color: LANDING.textMuted,
   },
   login: {
-    fontFamily: fontFamilies.sansMedium,
+    ...landingFonts.medium,
     fontSize: 14,
     color: LANDING.text,
   },
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   ctaLabel: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 13,
     color: '#FFFFFF',
   },

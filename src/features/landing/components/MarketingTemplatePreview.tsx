@@ -11,7 +11,7 @@ import { DEMO_GUESTS } from '@/features/invitation/guestRegistry';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import { resolveTemplateTheme } from '@/features/templates/resolveTheme';
 import type { TemplateDefinition } from '@/features/templates/registry';
-import { fontFamilies } from '@/constants/theme';
+import { landingFonts } from '../landingFonts';
 import { LANDING } from '../landingTokens';
 
 export function MarketingTemplatePreview({
@@ -146,12 +146,12 @@ const styles = StyleSheet.create({
   placeholder: { flex: 1 },
   meta: { alignItems: 'center', marginTop: 14, gap: 2 },
   name: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 14,
     color: LANDING.text,
   },
   category: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 12,
     color: LANDING.textFaint,
   },

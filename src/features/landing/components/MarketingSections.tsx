@@ -15,7 +15,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { fontFamilies } from '@/constants/theme';
+import { landingFonts } from '../landingFonts';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { TEMPLATES } from '@/features/templates/registry';
 import { MarketingTemplatePreview } from './MarketingTemplatePreview';
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   kicker: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 12,
     letterSpacing: 2.2,
     textTransform: 'uppercase',
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    fontFamily: fontFamilies.serifSemiBold,
+    ...landingFonts.bold,
     fontSize: 30,
     lineHeight: 36,
     letterSpacing: -0.4,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   lead: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 15,
     lineHeight: 22,
     color: LANDING.textMuted,
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   miniFeatureLabel: {
-    fontFamily: fontFamilies.sansMedium,
+    ...landingFonts.medium,
     fontSize: 14,
     color: LANDING.text,
   },
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   windowTitle: {
     flex: 1,
     textAlign: 'center',
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 12,
     color: LANDING.textMuted,
   },
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#5C7A4A',
   },
   liveLabel: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 10,
     color: '#47723B',
   },
@@ -594,12 +594,12 @@ const styles = StyleSheet.create({
     backgroundColor: LANDING.coralSoft,
   },
   statValue: {
-    fontFamily: fontFamilies.serifSemiBold,
+    ...landingFonts.bold,
     fontSize: 24,
     color: LANDING.text,
   },
   statLabel: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 10,
     color: LANDING.textMuted,
   },
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   responseAvatarLabel: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 10,
     color: '#FFFFFF',
   },
@@ -635,12 +635,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   responseName: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 12,
     color: LANDING.text,
   },
   responseMeta: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 10,
     color: LANDING.textMuted,
   },
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(92, 122, 74, 0.12)',
   },
   responseStatusLabel: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 9,
     color: '#47723B',
   },
@@ -669,12 +669,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   timelineTitle: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 11,
     color: LANDING.text,
   },
   timelineValue: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 10,
     color: LANDING.coral,
   },
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   timelineLabel: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 9,
     color: LANDING.textFaint,
   },
@@ -721,19 +721,19 @@ const styles = StyleSheet.create({
     minHeight: 190,
   },
   stepN: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 12,
     letterSpacing: 1.6,
     color: LANDING.coral,
   },
   stepTitle: {
-    fontFamily: fontFamilies.serifMedium,
+    ...landingFonts.semibold,
     fontSize: 22,
     lineHeight: 28,
     color: LANDING.text,
   },
   stepText: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 14,
     lineHeight: 21,
     color: LANDING.textMuted,
@@ -774,13 +774,13 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   capabilityTitle: {
-    fontFamily: fontFamilies.serifMedium,
+    ...landingFonts.semibold,
     fontSize: 19,
     color: LANDING.text,
     marginBottom: 6,
   },
   capabilityText: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 13,
     lineHeight: 20,
     color: LANDING.textMuted,
@@ -824,12 +824,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   audienceTabLabel: {
-    fontFamily: fontFamilies.sansMedium,
+    ...landingFonts.medium,
     fontSize: 12,
     color: LANDING.textFaint,
   },
   audienceTabLabelActive: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     color: LANDING.text,
   },
   audienceBody: {
@@ -847,7 +847,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   audienceTitle: {
-    fontFamily: fontFamilies.serifSemiBold,
+    ...landingFonts.bold,
     fontSize: 26,
     lineHeight: 32,
     textAlign: 'center',
@@ -856,7 +856,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   audienceText: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 14,
     lineHeight: 22,
     textAlign: 'center',
@@ -894,7 +894,7 @@ const styles = StyleSheet.create({
   },
   faqQuestion: {
     flex: 1,
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 15,
     lineHeight: 22,
     color: LANDING.text,
@@ -913,7 +913,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   faqAnswer: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 14,
     lineHeight: 22,
     color: LANDING.textMuted,
@@ -933,7 +933,7 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
   finalTitle: {
-    fontFamily: fontFamilies.serifSemiBold,
+    ...landingFonts.bold,
     fontSize: 28,
     lineHeight: 34,
     textAlign: 'center',
@@ -941,7 +941,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   finalText: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
@@ -963,7 +963,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   finalCtaLabel: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 15,
     color: '#FFFFFF',
   },
@@ -986,7 +986,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   footerBrand: {
-    fontFamily: fontFamilies.serifSemiBold,
+    ...landingFonts.bold,
     fontSize: 16,
     color: LANDING.text,
   },
@@ -995,7 +995,7 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   footerLink: {
-    fontFamily: fontFamilies.sansMedium,
+    ...landingFonts.medium,
     fontSize: 13,
     color: LANDING.textMuted,
   },

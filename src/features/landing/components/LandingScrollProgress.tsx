@@ -5,7 +5,7 @@
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { fontFamilies } from '@/constants/theme';
+import { landingFonts } from '../landingFonts';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { LANDING } from '../landingTokens';
 
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     backgroundColor: LANDING.coral,
   },
   label: {
-    fontFamily: fontFamilies.sansMedium,
+    ...landingFonts.medium,
     fontSize: 11,
     color: LANDING.textFaint,
     minWidth: 90,

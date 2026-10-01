@@ -6,7 +6,7 @@ import { Platform, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-
 import { Ionicons } from '@expo/vector-icons';
 
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import { fontFamilies } from '@/constants/theme';
+import { landingFonts } from '../landingFonts';
 import { LANDING } from '../landingTokens';
 
 const STEPS = [
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     marginBottom: 52,
   },
   kicker: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 12,
     letterSpacing: 2.2,
     textTransform: 'uppercase',
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontFamily: fontFamilies.serifSemiBold,
+    ...landingFonts.bold,
     fontSize: 34,
     lineHeight: 41,
     letterSpacing: -0.5,
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   lead: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 15,
     lineHeight: 23,
     color: 'rgba(255, 249, 245, 0.66)',
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   railLabel: {
-    fontFamily: fontFamilies.sansMedium,
+    ...landingFonts.medium,
     fontSize: 15,
     color: 'rgba(255, 249, 245, 0.36)',
   },
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 249, 245, 0.7)',
   },
   railLabelActive: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 18,
     color: '#FFFFFF',
   },
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     backgroundColor: LANDING.coralSoft,
   },
   cardTag: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 11,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     color: LANDING.coral,
   },
   cardTitle: {
-    fontFamily: fontFamilies.serifSemiBold,
+    ...landingFonts.bold,
     fontSize: 25,
     lineHeight: 31,
     letterSpacing: -0.3,
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     maxWidth: 480,
   },
   cardText: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 15,
     lineHeight: 23,
     color: LANDING.textMuted,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     top: 22,
   },
   cardIndexText: {
-    fontFamily: fontFamilies.serifSemiBold,
+    ...landingFonts.bold,
     fontSize: 42,
     color: 'rgba(224, 122, 95, 0.1)',
   },

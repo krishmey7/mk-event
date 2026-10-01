@@ -24,7 +24,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '@/components/ui/Logo';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import { fontFamilies } from '@/constants/theme';
 import { getTemplate } from '@/features/templates/registry';
 import { LandingAtmosphere } from './LandingAtmosphere';
 import { MarketingNav } from './components/MarketingNav';
@@ -48,6 +47,7 @@ import {
   ScrollStorySection,
 } from './components/ScrollStorySection';
 import { LANDING } from './landingTokens';
+import { ensureLandingFontsLoaded, landingFonts } from './landingFonts';
 
 export function LandingScreen() {
   const router = useRouter();
@@ -82,6 +82,8 @@ export function LandingScreen() {
       .then((m) => m.prefetchOnboardingHeroes())
       .catch(() => undefined);
   }, []);
+
+  useEffect(() => ensureLandingFontsLoaded(), []);
 
   /** Forcer le chrome web en clair tant que le landing est monté. */
   useEffect(() => {
@@ -356,7 +358,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontFamily: fontFamilies.serifSemiBold,
+    ...landingFonts.bold,
     textAlign: 'center',
     letterSpacing: -0.6,
     color: LANDING.text,
@@ -366,11 +368,11 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   titleAccent: {
-    fontFamily: fontFamilies.serifItalic,
+    ...landingFonts.medium,
     color: LANDING.coral,
   },
   subtitle: {
-    fontFamily: fontFamilies.sans,
+    ...landingFonts.regular,
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'center',
@@ -405,7 +407,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   ctaLabel: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 15,
     color: '#FFFFFF',
   },
@@ -420,7 +422,7 @@ const styles = StyleSheet.create({
     backgroundColor: LANDING.surfaceGlass,
   },
   secondaryLabel: {
-    fontFamily: fontFamilies.sansMedium,
+    ...landingFonts.medium,
     fontSize: 14,
     color: LANDING.text,
   },
@@ -453,7 +455,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   scrollCueLabel: {
-    fontFamily: fontFamilies.sansSemiBold,
+    ...landingFonts.semibold,
     fontSize: 9,
     letterSpacing: 1.5,
     textTransform: 'uppercase',

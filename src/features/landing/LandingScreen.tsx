@@ -13,9 +13,12 @@ import {
   StyleSheet,
   Text,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   useWindowDimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,10 +31,22 @@ import { MarketingNav } from './components/MarketingNav';
 import { MarketingTemplatePreview } from './components/MarketingTemplatePreview';
 import {
   FinalCtaSection,
+  AudienceSection,
+  CapabilitiesSection,
+  FaqSection,
   HowItWorksSection,
   MarketingFooter,
+  PlatformSection,
   TemplatesShowcase,
 } from './components/MarketingSections';
+import {
+  LandingScrollProgress,
+  type LandingSectionId,
+} from './components/LandingScrollProgress';
+import {
+  SCROLL_STORY_STEP_COUNT,
+  ScrollStorySection,
+} from './components/ScrollStorySection';
 import { LANDING } from './landingTokens';
 
 export function LandingScreen() {
@@ -40,7 +55,17 @@ export function LandingScreen() {
   const { height: windowH } = useWindowDimensions();
   const { isTablet, isDesktop } = useBreakpoint();
   const scrollRef = useRef<ScrollView>(null);
-  const [modelsY, setModelsY] = useState(0);
+  const [anchors, setAnchors] = useState({
+    platform: 0,
+    journey: 0,
+    models: 0,
+    faq: 0,
+  });
+  const [storyY, setStoryY] = useState(0);
+  const [storyHeight, setStoryHeight] = useState(1);
+  const [storyStep, setStoryStep] = useState(0);
+  const [maxScroll, setMaxScroll] = useState(1);
+  const [scrollPosition, setScrollPosition] = useState(0);
 
   const titleSize = isDesktop ? 52 : isTablet ? 40 : 34;
   const heroMin = Math.max(640, windowH - 8);
@@ -50,6 +75,7 @@ export function LandingScreen() {
   const fade = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(18)).current;
   const visualRise = useRef(new Animated.Value(28)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     void import('@/features/onboarding/onboardingHeroes')
@@ -104,10 +130,30 @@ export function LandingScreen() {
     ]).start();
   }, [fade, rise, visualRise]);
 
-  const jumpModels = () => {
-    if (modelsY > 0) {
-      scrollRef.current?.scrollTo({ y: Math.max(0, modelsY - 12), animated: true });
+  const jump = (anchor: keyof typeof anchors) => {
+    const y = anchors[anchor];
+    if (y > 0) {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
     }
+  };
+
+  const activeSection: LandingSectionId =
+    scrollPosition >= anchors.models - windowH * 0.34 && anchors.models > 0
+      ? 'modeles'
+      : scrollPosition >= anchors.journey - windowH * 0.34 && anchors.journey > 0
+        ? 'parcours'
+        : scrollPosition >= anchors.platform - windowH * 0.34 && anchors.platform > 0
+          ? 'experience'
+          : 'hero';
+
+  const selectSection = (section: LandingSectionId) => {
+    if (section === 'hero') {
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+      return;
+    }
+    if (section === 'experience') jump('platform');
+    if (section === 'parcours') jump('journey');
+    if (section === 'modeles') jump('models');
   };
 
   return (
@@ -115,13 +161,44 @@ export function LandingScreen() {
       <StatusBar style="dark" translucent />
       <LandingAtmosphere tone="light" />
 
-      <MarketingNav onJumpModels={jumpModels} />
+      <MarketingNav onJump={jump} />
+      <LandingScrollProgress
+        active={activeSection}
+        progress={scrollPosition / Math.max(1, maxScroll)}
+        onSelect={selectSection}
+      />
 
-      <ScrollView
+      <Animated.ScrollView
         ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onContentSizeChange={(_, contentHeight) => {
+          setMaxScroll(Math.max(1, contentHeight - windowH));
+        }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          {
+            useNativeDriver: false,
+            listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+              const y = event.nativeEvent.contentOffset.y;
+              setScrollPosition(y);
+              if (storyY <= 0 || storyHeight <= 1) return;
+              const storyContentTop = storyY + 230;
+              const usableHeight = Math.max(1, storyHeight - 300);
+              const local = y + windowH * 0.42 - storyContentTop;
+              const next = Math.max(
+                0,
+                Math.min(
+                  SCROLL_STORY_STEP_COUNT - 1,
+                  Math.floor((local / usableHeight) * SCROLL_STORY_STEP_COUNT),
+                ),
+              );
+              setStoryStep((current) => (current === next ? current : next));
+            },
+          },
+        )}
       >
         <View style={[styles.hero, { minHeight: heroMin - insets.top - 64 }]}>
           <View style={[styles.heroInner, isDesktop && styles.heroInnerDesktop]}>
@@ -157,7 +234,7 @@ export function LandingScreen() {
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={jumpModels}
+                  onPress={() => jump('models')}
                   style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
                 >
                   <Text style={styles.secondaryLabel}>Voir les modèles</Text>
@@ -180,18 +257,59 @@ export function LandingScreen() {
               />
             </Animated.View>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Découvrir la plateforme"
+            onPress={() => jump('platform')}
+            style={({ pressed }) => [styles.scrollCue, pressed && styles.pressed]}
+          >
+            <Text style={styles.scrollCueLabel}>Découvrir</Text>
+            <View style={styles.scrollCueLine}>
+              <View style={styles.scrollCueFill} />
+            </View>
+            <Ionicons name="chevron-down" size={14} color={LANDING.coral} />
+          </Pressable>
         </View>
 
+        <PlatformSection
+          onLayout={(event) => {
+            const y = event.nativeEvent.layout.y;
+            setAnchors((current) =>
+              current.platform === y ? current : { ...current, platform: y },
+            );
+          }}
+        />
+        <ScrollStorySection
+          activeStep={storyStep}
+          onLayout={(event) => {
+            const { y, height } = event.nativeEvent.layout;
+            setStoryY((current) => (current === y ? current : y));
+            setStoryHeight((current) => (current === height ? current : height));
+            setAnchors((current) =>
+              current.journey === y ? current : { ...current, journey: y },
+            );
+          }}
+        />
         <HowItWorksSection />
+        <CapabilitiesSection />
         <TemplatesShowcase
           onLayout={(event) => {
             const y = event.nativeEvent.layout.y;
-            setModelsY((prev) => (prev === y ? prev : y));
+            setAnchors((current) =>
+              current.models === y ? current : { ...current, models: y },
+            );
+          }}
+        />
+        <AudienceSection />
+        <FaqSection
+          onLayout={(event) => {
+            const y = event.nativeEvent.layout.y;
+            setAnchors((current) => (current.faq === y ? current : { ...current, faq: y }));
           }}
         />
         <FinalCtaSection />
         <MarketingFooter />
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -212,6 +330,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingBottom: 48,
     paddingTop: 12,
+    position: 'relative',
   },
   heroInner: {
     maxWidth: LANDING.maxWidth,
@@ -325,6 +444,33 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(107, 58, 92, 0.12)',
     bottom: '8%',
     right: -20,
+  },
+  scrollCue: {
+    position: 'absolute',
+    bottom: 12,
+    alignSelf: 'center',
+    alignItems: 'center',
+    gap: 5,
+  },
+  scrollCueLabel: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 9,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: LANDING.textFaint,
+  },
+  scrollCueLine: {
+    width: 2,
+    height: 24,
+    borderRadius: 2,
+    overflow: 'hidden',
+    backgroundColor: LANDING.borderStrong,
+  },
+  scrollCueFill: {
+    width: '100%',
+    height: '55%',
+    borderRadius: 2,
+    backgroundColor: LANDING.coral,
   },
   pressed: { opacity: 0.86 },
 });

@@ -11,7 +11,13 @@ import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { fontFamilies } from '@/constants/theme';
 import { LANDING } from '../landingTokens';
 
-export function MarketingNav({ onJumpModels }: { onJumpModels: () => void }) {
+type LandingAnchor = 'platform' | 'journey' | 'models' | 'faq';
+
+export function MarketingNav({
+  onJump,
+}: {
+  onJump: (anchor: LandingAnchor) => void;
+}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDesktop } = useBreakpoint();
@@ -26,16 +32,27 @@ export function MarketingNav({ onJumpModels }: { onJumpModels: () => void }) {
       >
         <Logo size={isDesktop ? 'md' : 'sm'} variant="ink" />
 
+        {isDesktop ? (
+          <View style={styles.links}>
+            {[
+              ['platform', 'Plateforme'],
+              ['journey', 'Parcours'],
+              ['models', 'Modèles'],
+              ['faq', 'FAQ'],
+            ].map(([anchor, label]) => (
+              <Pressable
+                key={anchor}
+                onPress={() => onJump(anchor as LandingAnchor)}
+                hitSlop={8}
+                style={({ pressed }) => pressed && styles.pressed}
+              >
+                <Text style={styles.link}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+
         <View style={styles.actions}>
-          {isDesktop ? (
-            <Pressable
-              onPress={onJumpModels}
-              hitSlop={8}
-              style={({ pressed }) => pressed && styles.pressed}
-            >
-              <Text style={styles.link}>Modèles</Text>
-            </Pressable>
-          ) : null}
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push('/login')}
@@ -101,6 +118,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
+  },
+  links: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 22,
   },
   link: {
     fontFamily: fontFamilies.sansMedium,

@@ -1,6 +1,6 @@
 /**
- * Landing marketing — hero marque + page scrollable moderne.
- * Suit automatiquement le thème système (clair / sombre).
+ * Landing — claire : marque, promesse, produit, parcours, modèles.
+ * Pas de preuve sociale.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -21,22 +21,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Logo } from '@/components/ui/Logo';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import { fontFamilies, shadows } from '@/constants/theme';
+import { fontFamilies } from '@/constants/theme';
 import { getTemplate } from '@/features/templates/registry';
 import { LandingAtmosphere } from './LandingAtmosphere';
 import { MarketingNav } from './components/MarketingNav';
 import { MarketingTemplatePreview } from './components/MarketingTemplatePreview';
 import {
-  FeaturesSection,
   FinalCtaSection,
-  GuestTeaserSection,
   HowItWorksSection,
   MarketingFooter,
   TemplatesShowcase,
 } from './components/MarketingSections';
 import { LANDING, useLandingTokens } from './landingTokens';
-
-type Anchor = 'features' | 'modeles' | 'parcours';
 
 export function LandingScreen() {
   const router = useRouter();
@@ -46,20 +42,17 @@ export function LandingScreen() {
   const { height: windowH } = useWindowDimensions();
   const { isTablet, isDesktop } = useBreakpoint();
   const scrollRef = useRef<ScrollView>(null);
-  const [anchors, setAnchors] = useState<Record<Anchor, number>>({
-    parcours: 0,
-    features: 0,
-    modeles: 0,
-  });
+  const [modelsY, setModelsY] = useState(0);
 
-  const titleSize = isDesktop ? 52 : isTablet ? 40 : 32;
-  const heroMin = Math.max(640, windowH - 8);
+  const titleSize = isDesktop ? 48 : isTablet ? 38 : 32;
+  const heroMin = Math.max(620, windowH - 8);
   const previewTemplate = getTemplate('aurore');
   const logoVariant = mode === 'dark' ? 'light' : 'ink';
+  const previewW = isDesktop ? 300 : isTablet ? 260 : 236;
 
   const fade = useRef(new Animated.Value(0)).current;
-  const rise = useRef(new Animated.Value(22)).current;
-  const visualRise = useRef(new Animated.Value(36)).current;
+  const rise = useRef(new Animated.Value(18)).current;
+  const visualRise = useRef(new Animated.Value(28)).current;
 
   useEffect(() => {
     void import('@/features/onboarding/onboardingHeroes')
@@ -68,34 +61,33 @@ export function LandingScreen() {
   }, []);
 
   useEffect(() => {
-    Animated.stagger(140, [
+    Animated.stagger(120, [
       Animated.parallel([
         Animated.timing(fade, {
           toValue: 1,
-          duration: 780,
+          duration: 700,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(rise, {
           toValue: 0,
-          duration: 780,
+          duration: 700,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
       ]),
       Animated.timing(visualRise, {
         toValue: 0,
-        duration: 820,
+        duration: 760,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();
   }, [fade, rise, visualRise]);
 
-  const jump = (anchor: Anchor) => {
-    const y = anchors[anchor];
-    if (y > 0) {
-      scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+  const jumpModels = () => {
+    if (modelsY > 0) {
+      scrollRef.current?.scrollTo({ y: Math.max(0, modelsY - 12), animated: true });
     }
   };
 
@@ -104,16 +96,15 @@ export function LandingScreen() {
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} translucent />
       <LandingAtmosphere />
 
-      <MarketingNav onJump={jump} />
+      <MarketingNav onJumpModels={jumpModels} />
 
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero — une composition, marque dominante */}
-        <View style={[styles.hero, { minHeight: heroMin - insets.top - 56 }]}>
+        <View style={[styles.hero, { minHeight: heroMin - insets.top - 52 }]}>
           <View style={[styles.heroInner, isDesktop && styles.heroInnerDesktop]}>
             <Animated.View
               style={[
@@ -126,7 +117,7 @@ export function LandingScreen() {
               <Text
                 style={[
                   styles.title,
-                  { fontSize: titleSize, lineHeight: titleSize + 10, color: L.cream },
+                  { fontSize: titleSize, lineHeight: titleSize + 8, color: L.cream },
                   isDesktop && styles.titleDesktop,
                 ]}
               >
@@ -140,8 +131,7 @@ export function LandingScreen() {
                   isDesktop && styles.subtitleDesktop,
                 ]}
               >
-                Créez, personnalisez et publiez. RSVP, pass QR et check-in inclus —
-                pour mariages, anniversaires et événements pro.
+                Créez, publiez, suivez les réponses — RSVP et pass QR inclus.
               </Text>
               <View style={[styles.heroActions, isDesktop && styles.heroActionsDesktop]}>
                 <Pressable
@@ -152,17 +142,16 @@ export function LandingScreen() {
                     styles.cta,
                     { backgroundColor: L.coral },
                     pressed && styles.pressed,
-                    shadows.sm,
                   ]}
                 >
                   <Text style={styles.ctaLabel}>Commencer</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => jump('modeles')}
+                  onPress={jumpModels}
                   style={({ pressed }) => [
                     styles.secondary,
-                    { borderColor: L.border, backgroundColor: L.surface },
+                    { borderColor: L.border },
                     pressed && styles.pressed,
                   ]}
                 >
@@ -177,45 +166,30 @@ export function LandingScreen() {
                 { opacity: fade, transform: [{ translateY: visualRise }] },
               ]}
             >
+              <View
+                style={[
+                  styles.previewGlow,
+                  {
+                    backgroundColor: mode === 'dark' ? 'rgba(224, 122, 95, 0.18)' : 'rgba(224, 122, 95, 0.14)',
+                  },
+                ]}
+              />
               <MarketingTemplatePreview
                 template={previewTemplate}
-                width={isDesktop ? 280 : isTablet ? 250 : 230}
+                width={previewW}
                 showLabel={false}
               />
-              <Text style={[styles.heroVisualCaption, { color: L.creamFaint }]}>
-                Aurore — aperçu réel du modèle
-              </Text>
             </Animated.View>
           </View>
         </View>
 
-        <View style={[styles.proof, { borderColor: L.border }]}>
-          <Text style={[styles.proofItem, { color: L.creamMuted }]}>Mariages</Text>
-          <Text style={[styles.proofDot, { color: L.creamFaint }]}>·</Text>
-          <Text style={[styles.proofItem, { color: L.creamMuted }]}>Anniversaires</Text>
-          <Text style={[styles.proofDot, { color: L.creamFaint }]}>·</Text>
-          <Text style={[styles.proofItem, { color: L.creamMuted }]}>Conférences</Text>
-        </View>
-
-        <HowItWorksSection
-          onLayout={(event) => {
-            const y = event.nativeEvent.layout.y;
-            setAnchors((prev) => (prev.parcours === y ? prev : { ...prev, parcours: y }));
-          }}
-        />
-        <FeaturesSection
-          onLayout={(event) => {
-            const y = event.nativeEvent.layout.y;
-            setAnchors((prev) => (prev.features === y ? prev : { ...prev, features: y }));
-          }}
-        />
+        <HowItWorksSection />
         <TemplatesShowcase
           onLayout={(event) => {
             const y = event.nativeEvent.layout.y;
-            setAnchors((prev) => (prev.modeles === y ? prev : { ...prev, modeles: y }));
+            setModelsY((prev) => (prev === y ? prev : y));
           }}
         />
-        <GuestTeaserSection />
         <FinalCtaSection />
         <MarketingFooter />
       </ScrollView>
@@ -236,26 +210,26 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 20,
     justifyContent: 'center',
-    paddingBottom: 28,
+    paddingBottom: 40,
   },
   heroInner: {
     maxWidth: LANDING.maxWidth,
     width: '100%',
     alignSelf: 'center',
     alignItems: 'center',
-    gap: 36,
+    gap: 40,
   },
   heroInnerDesktop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 48,
+    gap: 56,
   },
   heroCopy: {
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 460,
   },
   heroCopyDesktop: {
     alignItems: 'flex-start',
@@ -264,8 +238,8 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fontFamilies.serifSemiBold,
     textAlign: 'center',
-    letterSpacing: -0.6,
-    marginTop: 4,
+    letterSpacing: -0.5,
+    marginTop: 2,
   },
   titleDesktop: {
     textAlign: 'left',
@@ -275,10 +249,10 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: fontFamilies.sans,
-    fontSize: 15,
-    lineHeight: 23,
+    fontSize: 16,
+    lineHeight: 24,
     textAlign: 'center',
-    maxWidth: 420,
+    maxWidth: 380,
   },
   subtitleDesktop: {
     textAlign: 'left',
@@ -287,14 +261,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginTop: 8,
+    marginTop: 10,
     justifyContent: 'center',
   },
   heroActionsDesktop: {
     justifyContent: 'flex-start',
   },
   cta: {
-    minWidth: 168,
+    minWidth: 160,
     minHeight: 52,
     borderRadius: 14,
     alignItems: 'center',
@@ -320,30 +294,14 @@ const styles = StyleSheet.create({
   },
   heroVisual: {
     alignItems: 'center',
-    gap: 12,
-  },
-  heroVisualCaption: {
-    fontFamily: fontFamilies.sans,
-    fontSize: 12,
-  },
-  proof: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  proofItem: {
-    fontFamily: fontFamilies.sansMedium,
-    fontSize: 13,
-    letterSpacing: 0.4,
-  },
-  proofDot: {
-    fontSize: 13,
+  previewGlow: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    opacity: 0.9,
   },
   pressed: { opacity: 0.84 },
 });

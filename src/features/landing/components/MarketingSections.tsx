@@ -19,7 +19,7 @@ import { fontFamilies, shadows } from '@/constants/theme';
 import { TEMPLATES } from '@/features/templates/registry';
 import { BentoCard } from './BentoCard';
 import { MarketingTemplatePreview } from './MarketingTemplatePreview';
-import { LANDING } from '../landingTokens';
+import { LANDING, useLandingTokens } from '../landingTokens';
 
 export function SectionShell({
   children,
@@ -46,16 +46,18 @@ export function SectionHead({
   title: string;
   subtitle: string;
 }) {
+  const L = useLandingTokens();
   return (
     <View style={styles.head}>
-      <Text style={styles.kicker}>{kicker}</Text>
-      <Text style={styles.headTitle}>{title}</Text>
-      <Text style={styles.headSubtitle}>{subtitle}</Text>
+      <Text style={[styles.kicker, { color: L.coral }]}>{kicker}</Text>
+      <Text style={[styles.headTitle, { color: L.cream }]}>{title}</Text>
+      <Text style={[styles.headSubtitle, { color: L.creamMuted }]}>{subtitle}</Text>
     </View>
   );
 }
 
 export function HowItWorksSection({ onLayout }: { onLayout?: (e: LayoutChangeEvent) => void }) {
+  const L = useLandingTokens();
   const steps = [
     {
       n: '01',
@@ -83,10 +85,10 @@ export function HowItWorksSection({ onLayout }: { onLayout?: (e: LayoutChangeEve
       />
       <View style={styles.steps}>
         {steps.map((step) => (
-          <View key={step.n} style={styles.step}>
-            <Text style={styles.stepN}>{step.n}</Text>
-            <Text style={styles.stepTitle}>{step.title}</Text>
-            <Text style={styles.stepText}>{step.text}</Text>
+          <View key={step.n} style={[styles.step, { borderBottomColor: L.border }]}>
+            <Text style={[styles.stepN, { color: L.coral }]}>{step.n}</Text>
+            <Text style={[styles.stepTitle, { color: L.cream }]}>{step.title}</Text>
+            <Text style={[styles.stepText, { color: L.creamMuted }]}>{step.text}</Text>
           </View>
         ))}
       </View>
@@ -179,6 +181,7 @@ export function TemplatesShowcase({ onLayout }: { onLayout?: (e: LayoutChangeEve
 }
 
 export function GuestTeaserSection() {
+  const L = useLandingTokens();
   const points = [
     { icon: 'link-outline' as const, label: 'Un lien personnel' },
     { icon: 'checkmark-circle-outline' as const, label: 'RSVP en un geste' },
@@ -187,18 +190,18 @@ export function GuestTeaserSection() {
 
   return (
     <SectionShell padTop={40}>
-      <View style={styles.guestBand}>
-        <Text style={styles.kicker}>Côté invité</Text>
-        <Text style={styles.guestTitle}>Ouvrir. Répondre. Entrer.</Text>
-        <Text style={styles.guestText}>
+      <View style={[styles.guestBand, { borderColor: L.border, backgroundColor: L.surface }]}>
+        <Text style={[styles.kicker, { color: L.coral }]}>Côté invité</Text>
+        <Text style={[styles.guestTitle, { color: L.cream }]}>Ouvrir. Répondre. Entrer.</Text>
+        <Text style={[styles.guestText, { color: L.creamMuted }]}>
           L’invitation se lit d’un scroll : couverture, programme, compte à rebours,
           réponse et pass — sans application à installer.
         </Text>
         <View style={styles.guestRow}>
           {points.map((point) => (
             <View key={point.label} style={styles.guestPoint}>
-              <Ionicons name={point.icon} size={18} color={LANDING.coral} />
-              <Text style={styles.guestPointLabel}>{point.label}</Text>
+              <Ionicons name={point.icon} size={18} color={L.coral} />
+              <Text style={[styles.guestPointLabel, { color: L.cream }]}>{point.label}</Text>
             </View>
           ))}
         </View>
@@ -209,18 +212,26 @@ export function GuestTeaserSection() {
 
 export function FinalCtaSection() {
   const router = useRouter();
+  const L = useLandingTokens();
 
   return (
     <SectionShell padTop={48}>
       <View style={styles.final}>
-        <Text style={styles.finalTitle}>Prêt à faire vivre{'\n'}votre invitation ?</Text>
-        <Text style={styles.finalText}>
+        <Text style={[styles.finalTitle, { color: L.cream }]}>
+          Prêt à faire vivre{'\n'}votre invitation ?
+        </Text>
+        <Text style={[styles.finalText, { color: L.creamMuted }]}>
           Créez votre événement en quelques minutes. Publiez quand vous êtes prêt.
         </Text>
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push('/onboarding')}
-          style={({ pressed }) => [styles.finalCta, pressed && { opacity: 0.88 }, shadows.sm]}
+          style={({ pressed }) => [
+            styles.finalCta,
+            { backgroundColor: L.coral },
+            pressed && { opacity: 0.88 },
+            shadows.sm,
+          ]}
         >
           <Text style={styles.finalCtaLabel}>Créer mon invitation</Text>
         </Pressable>
@@ -231,24 +242,29 @@ export function FinalCtaSection() {
 
 export function MarketingFooter() {
   const router = useRouter();
+  const L = useLandingTokens();
 
   return (
-    <View style={styles.footer}>
+    <View style={[styles.footer, { borderTopColor: L.border }]}>
       <View style={styles.footerInner}>
-        <Text style={styles.footerBrand}>MK Events</Text>
-        <Text style={styles.footerTag}>Invitations numériques vivantes</Text>
+        <Text style={[styles.footerBrand, { color: L.cream }]}>MK Events</Text>
+        <Text style={[styles.footerTag, { color: L.creamFaint }]}>
+          Invitations numériques vivantes
+        </Text>
         <View style={styles.footerLinks}>
           <Pressable onPress={() => router.push('/login')} hitSlop={8}>
-            <Text style={styles.footerLink}>Connexion</Text>
+            <Text style={[styles.footerLink, { color: L.creamMuted }]}>Connexion</Text>
           </Pressable>
           <Pressable onPress={() => router.push('/register')} hitSlop={8}>
-            <Text style={styles.footerLink}>Inscription</Text>
+            <Text style={[styles.footerLink, { color: L.creamMuted }]}>Inscription</Text>
           </Pressable>
           <Pressable onPress={() => router.push('/onboarding')} hitSlop={8}>
-            <Text style={styles.footerLink}>Commencer</Text>
+            <Text style={[styles.footerLink, { color: L.creamMuted }]}>Commencer</Text>
           </Pressable>
         </View>
-        <Text style={styles.footerCopy}>© {new Date().getFullYear()} MK Events</Text>
+        <Text style={[styles.footerCopy, { color: L.creamFaint }]}>
+          © {new Date().getFullYear()} MK Events
+        </Text>
       </View>
     </View>
   );
@@ -276,20 +292,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 2.4,
     textTransform: 'uppercase',
-    color: LANDING.coral,
   },
   headTitle: {
     fontFamily: fontFamilies.serifSemiBold,
     fontSize: 30,
     lineHeight: 36,
-    color: LANDING.cream,
     letterSpacing: -0.4,
   },
   headSubtitle: {
     fontFamily: fontFamilies.sans,
     fontSize: 15,
     lineHeight: 22,
-    color: LANDING.creamMuted,
   },
   steps: {
     gap: 22,
@@ -298,25 +311,21 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingBottom: 18,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: LANDING.border,
   },
   stepN: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 12,
     letterSpacing: 2,
-    color: LANDING.coral,
   },
   stepTitle: {
     fontFamily: fontFamilies.serifMedium,
     fontSize: 22,
     lineHeight: 28,
-    color: LANDING.cream,
   },
   stepText: {
     fontFamily: fontFamilies.sans,
     fontSize: 14,
     lineHeight: 21,
-    color: LANDING.creamMuted,
     maxWidth: 480,
   },
   bento: {
@@ -345,8 +354,6 @@ const styles = StyleSheet.create({
   guestBand: {
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: LANDING.border,
-    backgroundColor: LANDING.surface,
     paddingVertical: 36,
     paddingHorizontal: 24,
     gap: 12,
@@ -355,14 +362,12 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.serifSemiBold,
     fontSize: 28,
     lineHeight: 34,
-    color: LANDING.cream,
     letterSpacing: -0.3,
   },
   guestText: {
     fontFamily: fontFamilies.sans,
     fontSize: 15,
     lineHeight: 22,
-    color: LANDING.creamMuted,
     maxWidth: 520,
   },
   guestRow: {
@@ -379,7 +384,6 @@ const styles = StyleSheet.create({
   guestPointLabel: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 13,
-    color: LANDING.cream,
   },
   final: {
     alignItems: 'center',
@@ -390,7 +394,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.serifSemiBold,
     fontSize: 32,
     lineHeight: 38,
-    color: LANDING.cream,
     textAlign: 'center',
     letterSpacing: -0.4,
   },
@@ -398,7 +401,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.sans,
     fontSize: 15,
     lineHeight: 22,
-    color: LANDING.creamMuted,
     textAlign: 'center',
     maxWidth: 400,
   },
@@ -407,7 +409,6 @@ const styles = StyleSheet.create({
     minWidth: 260,
     minHeight: 54,
     borderRadius: 14,
-    backgroundColor: LANDING.coral,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 28,
@@ -420,7 +421,6 @@ const styles = StyleSheet.create({
   footer: {
     width: '100%',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: LANDING.border,
     paddingHorizontal: 20,
     paddingTop: 28,
     paddingBottom: 40,
@@ -434,12 +434,10 @@ const styles = StyleSheet.create({
   footerBrand: {
     fontFamily: fontFamilies.serifSemiBold,
     fontSize: 18,
-    color: LANDING.cream,
   },
   footerTag: {
     fontFamily: fontFamilies.sans,
     fontSize: 13,
-    color: LANDING.creamFaint,
   },
   footerLinks: {
     flexDirection: 'row',
@@ -450,12 +448,10 @@ const styles = StyleSheet.create({
   footerLink: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 13,
-    color: LANDING.creamMuted,
   },
   footerCopy: {
     fontFamily: fontFamilies.sans,
     fontSize: 12,
-    color: LANDING.creamFaint,
     marginTop: 18,
   },
 });

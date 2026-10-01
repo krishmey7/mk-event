@@ -1,18 +1,13 @@
 /**
- * ──────────────────────────────────────────────────────────────
- *  MK EVENTS — LANDING / BentoCard
- * ──────────────────────────────────────────────────────────────
- *  Carte du « Bento Grid » de la landing (univers Dark Luxury) :
- *  icône or dans une pastille teintée, titre et description.
- *  Largeur pilotée par le parent (flex: 1 dans sa rangée de grille).
- * ──────────────────────────────────────────────────────────────
+ * Carte du Bento Grid — suit le thème app (clair / sombre).
  */
 
 import { type ComponentProps } from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { brandColors, darkTheme, radii, spacing } from '@/constants/theme';
+import { useAppTheme } from '@/context/ThemePreferenceContext';
+import { brandColors, radii, spacing } from '@/constants/theme';
 
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
@@ -24,13 +19,29 @@ export interface BentoCardProps {
 }
 
 export function BentoCard({ icon, title, description, style }: BentoCardProps) {
+  const { theme } = useAppTheme();
+  const c = theme.colors;
+
   return (
-    <View style={[styles.card, style]}>
-      <View style={styles.iconShell}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: c.surface,
+          borderColor: c.border,
+        },
+        style,
+      ]}
+    >
+      <View style={[styles.iconShell, { backgroundColor: c.accentMuted }]}>
         <Ionicons name={icon} size={22} color={brandColors.coralDeep} />
       </View>
-      <Text style={[darkTheme.typography.title, styles.title]}>{title}</Text>
-      <Text style={[darkTheme.typography.bodySmall, styles.description]}>{description}</Text>
+      <Text style={[theme.typography.title, styles.title, { color: c.textPrimary }]}>
+        {title}
+      </Text>
+      <Text style={[theme.typography.bodySmall, styles.description, { color: c.textSecondary }]}>
+        {description}
+      </Text>
     </View>
   );
 }
@@ -38,9 +49,7 @@ export function BentoCard({ icon, title, description, style }: BentoCardProps) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: darkTheme.colors.surface,
     borderWidth: 1,
-    borderColor: darkTheme.colors.border,
     borderRadius: radii.lg,
     padding: spacing.lg,
     gap: spacing.sm,
@@ -49,10 +58,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radii.md,
-    backgroundColor: darkTheme.colors.accentMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { color: darkTheme.colors.textPrimary, marginTop: 2 },
-  description: { color: darkTheme.colors.textSecondary, lineHeight: 19 },
+  title: { marginTop: 2 },
+  description: { lineHeight: 19 },
 });

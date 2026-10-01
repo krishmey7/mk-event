@@ -12,7 +12,7 @@ import { normalizePhotoFrame } from '@/features/invitation/types';
 import { resolveTemplateTheme } from '@/features/templates/resolveTheme';
 import type { TemplateDefinition } from '@/features/templates/registry';
 import { fontFamilies } from '@/constants/theme';
-import { LANDING } from '../landingTokens';
+import { useLandingTokens } from '../landingTokens';
 
 export function MarketingTemplatePreview({
   template,
@@ -23,6 +23,7 @@ export function MarketingTemplatePreview({
   width?: number;
   showLabel?: boolean;
 }) {
+  const L = useLandingTokens();
   const [stageWidth, setStageWidth] = useState(0);
   const themed = resolveTemplateTheme(template, template.defaultThemeKey);
   const guest = DEMO_GUESTS[0];
@@ -36,8 +37,13 @@ export function MarketingTemplatePreview({
 
   return (
     <View style={[styles.wrap, { width }]}>
-      <View style={[styles.phone, { width }]}>
-        <View style={styles.notch} />
+      <View
+        style={[
+          styles.phone,
+          { width, borderColor: L.border, backgroundColor: L.phoneChrome },
+        ]}
+      >
+        <View style={[styles.notch, { backgroundColor: L.phoneNotch }]} />
         <View
           style={[styles.screen, { width: screenW }]}
           onLayout={(event) => {
@@ -93,8 +99,8 @@ export function MarketingTemplatePreview({
       </View>
       {showLabel ? (
         <View style={styles.meta}>
-          <Text style={styles.name}>{template.name}</Text>
-          <Text style={styles.category}>
+          <Text style={[styles.name, { color: L.cream }]}>{template.name}</Text>
+          <Text style={[styles.category, { color: L.creamFaint }]}>
             {template.category === 'wedding'
               ? 'Mariage'
               : template.category === 'birthday'
@@ -112,8 +118,6 @@ const styles = StyleSheet.create({
   phone: {
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: LANDING.border,
-    backgroundColor: 'rgba(16, 12, 14, 0.85)',
     padding: 7,
     paddingBottom: 10,
   },
@@ -122,7 +126,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 5,
     borderRadius: 3,
-    backgroundColor: 'rgba(247, 240, 232, 0.18)',
     marginBottom: 6,
   },
   screen: {
@@ -137,11 +140,9 @@ const styles = StyleSheet.create({
   name: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 14,
-    color: LANDING.cream,
   },
   category: {
     fontFamily: fontFamilies.sans,
     fontSize: 12,
-    color: LANDING.creamFaint,
   },
 });

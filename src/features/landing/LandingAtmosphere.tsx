@@ -1,12 +1,15 @@
 ﻿/**
  * Atmosphère — halo coral + plum (landing / header dashboard).
+ * Suit le mode clair / sombre via `useAppTheme`.
  */
 
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Svg, { Defs, Ellipse, Line, RadialGradient, Stop } from 'react-native-svg';
 
-const INK = '#2A1824';
+import { useAppTheme } from '@/context/ThemePreferenceContext';
+import { useLandingTokens } from './landingTokens';
+
 const CORAL = '#E07A5F';
 const PLUM = '#6B3A5C';
 
@@ -16,6 +19,9 @@ export function LandingAtmosphere({
   /** Hauteur du panneau (sinon plein écran). */
   height?: number;
 } = {}) {
+  const { mode } = useAppTheme();
+  const L = useLandingTokens();
+  const isDark = mode === 'dark';
   const { width, height: windowHeight } = useWindowDimensions();
   const height = heightProp ?? windowHeight;
   const breath = useRef(new Animated.Value(0)).current;
@@ -47,15 +53,18 @@ export function LandingAtmosphere({
   });
   const glowOpacity = breath.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.6, 0.9],
+    outputRange: isDark ? [0.6, 0.9] : [0.45, 0.7],
   });
 
   const cx = width * 0.5;
   const cy = height * 0.45;
   const grainCount = Math.max(10, Math.round(height / 28));
+  const grainStroke = isDark ? '#F7F0E8' : '#2A1F24';
+  const midStop = isDark ? '#3A2434' : '#E8D9CE';
+  const floorCore = isDark ? '#1A1018' : '#EDE4D8';
 
   return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: INK }]}>
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: L.ink }]}>
       <Animated.View
         style={[
           styles.haloHost,
@@ -68,14 +77,14 @@ export function LandingAtmosphere({
         <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
           <Defs>
             <RadialGradient id="halo" cx="50%" cy="40%" r="62%">
-              <Stop offset="0%" stopColor={CORAL} stopOpacity="0.28" />
-              <Stop offset="35%" stopColor={PLUM} stopOpacity="0.16" />
-              <Stop offset="75%" stopColor="#3A2434" stopOpacity="0.35" />
-              <Stop offset="100%" stopColor={INK} stopOpacity="1" />
+              <Stop offset="0%" stopColor={CORAL} stopOpacity={isDark ? '0.28' : '0.22'} />
+              <Stop offset="35%" stopColor={PLUM} stopOpacity={isDark ? '0.16' : '0.1'} />
+              <Stop offset="75%" stopColor={midStop} stopOpacity={isDark ? '0.35' : '0.45'} />
+              <Stop offset="100%" stopColor={L.ink} stopOpacity="1" />
             </RadialGradient>
             <RadialGradient id="floor" cx="50%" cy="100%" r="55%">
-              <Stop offset="0%" stopColor="#1A1018" stopOpacity="0.85" />
-              <Stop offset="100%" stopColor={INK} stopOpacity="0" />
+              <Stop offset="0%" stopColor={floorCore} stopOpacity={isDark ? '0.85' : '0.55'} />
+              <Stop offset="100%" stopColor={L.ink} stopOpacity="0" />
             </RadialGradient>
           </Defs>
           <Ellipse
@@ -105,8 +114,8 @@ export function LandingAtmosphere({
               y1={y}
               x2={width}
               y2={y}
-              stroke="#F7F0E8"
-              strokeOpacity={index % 4 === 0 ? 0.035 : 0.012}
+              stroke={grainStroke}
+              strokeOpacity={index % 4 === 0 ? (isDark ? 0.035 : 0.045) : isDark ? 0.012 : 0.02}
               strokeWidth={1}
             />
           );

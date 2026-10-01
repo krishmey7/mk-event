@@ -7,9 +7,10 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '@/components/ui/Logo';
+import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { fontFamilies, shadows } from '@/constants/theme';
-import { LANDING } from '../landingTokens';
+import { LANDING, useLandingTokens } from '../landingTokens';
 
 export function MarketingNav({
   onJump,
@@ -19,22 +20,25 @@ export function MarketingNav({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDesktop } = useBreakpoint();
+  const { mode } = useAppTheme();
+  const L = useLandingTokens();
+  const logoVariant = mode === 'dark' ? 'light' : 'ink';
 
   return (
     <View style={[styles.bar, { paddingTop: Math.max(insets.top, 12) }]}>
       <View style={styles.inner}>
-        <Logo size={isDesktop ? 'md' : 'sm'} variant="light" />
+        <Logo size={isDesktop ? 'md' : 'sm'} variant={logoVariant} />
 
         {isDesktop ? (
           <View style={styles.links}>
             <Pressable onPress={() => onJump('parcours')} hitSlop={8} style={({ pressed }) => pressed && styles.pressed}>
-              <Text style={styles.link}>Parcours</Text>
+              <Text style={[styles.link, { color: L.creamMuted }]}>Parcours</Text>
             </Pressable>
             <Pressable onPress={() => onJump('features')} hitSlop={8} style={({ pressed }) => pressed && styles.pressed}>
-              <Text style={styles.link}>Fonctionnalités</Text>
+              <Text style={[styles.link, { color: L.creamMuted }]}>Fonctionnalités</Text>
             </Pressable>
             <Pressable onPress={() => onJump('modeles')} hitSlop={8} style={({ pressed }) => pressed && styles.pressed}>
-              <Text style={styles.link}>Modèles</Text>
+              <Text style={[styles.link, { color: L.creamMuted }]}>Modèles</Text>
             </Pressable>
           </View>
         ) : null}
@@ -46,13 +50,18 @@ export function MarketingNav({
             hitSlop={8}
             style={({ pressed }) => [pressed && styles.pressed]}
           >
-            <Text style={styles.login}>Connexion</Text>
+            <Text style={[styles.login, { color: L.cream }]}>Connexion</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Commencer"
             onPress={() => router.push('/onboarding')}
-            style={({ pressed }) => [styles.cta, pressed && styles.pressed, shadows.sm]}
+            style={({ pressed }) => [
+              styles.cta,
+              { backgroundColor: L.coral },
+              pressed && styles.pressed,
+              shadows.sm,
+            ]}
           >
             <Text style={styles.ctaLabel}>Commencer</Text>
           </Pressable>
@@ -88,7 +97,6 @@ const styles = StyleSheet.create({
   link: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 14,
-    color: LANDING.creamMuted,
   },
   actions: {
     flexDirection: 'row',
@@ -98,13 +106,11 @@ const styles = StyleSheet.create({
   login: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 14,
-    color: LANDING.cream,
   },
   cta: {
     minHeight: 40,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: LANDING.coral,
     alignItems: 'center',
     justifyContent: 'center',
   },

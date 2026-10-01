@@ -1,5 +1,6 @@
 /**
  * Landing marketing — hero marque + page scrollable moderne.
+ * Suit automatiquement le thème système (clair / sombre).
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -18,6 +19,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '@/components/ui/Logo';
+import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { fontFamilies, shadows } from '@/constants/theme';
 import { getTemplate } from '@/features/templates/registry';
@@ -32,13 +34,15 @@ import {
   MarketingFooter,
   TemplatesShowcase,
 } from './components/MarketingSections';
-import { LANDING } from './landingTokens';
+import { LANDING, useLandingTokens } from './landingTokens';
 
 type Anchor = 'features' | 'modeles' | 'parcours';
 
 export function LandingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { mode } = useAppTheme();
+  const L = useLandingTokens();
   const { height: windowH } = useWindowDimensions();
   const { isTablet, isDesktop } = useBreakpoint();
   const scrollRef = useRef<ScrollView>(null);
@@ -51,6 +55,7 @@ export function LandingScreen() {
   const titleSize = isDesktop ? 52 : isTablet ? 40 : 32;
   const heroMin = Math.max(640, windowH - 8);
   const previewTemplate = getTemplate('aurore');
+  const logoVariant = mode === 'dark' ? 'light' : 'ink';
 
   const fade = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(22)).current;
@@ -95,8 +100,8 @@ export function LandingScreen() {
   };
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
+    <View style={[styles.root, { backgroundColor: L.ink }]}>
+      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <LandingAtmosphere />
 
       <MarketingNav onJump={jump} />
@@ -117,18 +122,24 @@ export function LandingScreen() {
                 { opacity: fade, transform: [{ translateY: rise }] },
               ]}
             >
-              <Logo size="xl" variant="light" />
+              <Logo size="xl" variant={logoVariant} />
               <Text
                 style={[
                   styles.title,
-                  { fontSize: titleSize, lineHeight: titleSize + 10 },
+                  { fontSize: titleSize, lineHeight: titleSize + 10, color: L.cream },
                   isDesktop && styles.titleDesktop,
                 ]}
               >
                 Des invitations{'\n'}
-                <Text style={styles.titleAccent}>numériques vivantes</Text>
+                <Text style={[styles.titleAccent, { color: L.coral }]}>numériques vivantes</Text>
               </Text>
-              <Text style={[styles.subtitle, isDesktop && styles.subtitleDesktop]}>
+              <Text
+                style={[
+                  styles.subtitle,
+                  { color: L.creamMuted },
+                  isDesktop && styles.subtitleDesktop,
+                ]}
+              >
                 Créez, personnalisez et publiez. RSVP, pass QR et check-in inclus —
                 pour mariages, anniversaires et événements pro.
               </Text>
@@ -137,16 +148,25 @@ export function LandingScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Commencer"
                   onPress={() => router.push('/onboarding')}
-                  style={({ pressed }) => [styles.cta, pressed && styles.pressed, shadows.sm]}
+                  style={({ pressed }) => [
+                    styles.cta,
+                    { backgroundColor: L.coral },
+                    pressed && styles.pressed,
+                    shadows.sm,
+                  ]}
                 >
                   <Text style={styles.ctaLabel}>Commencer</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => jump('modeles')}
-                  style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+                  style={({ pressed }) => [
+                    styles.secondary,
+                    { borderColor: L.border, backgroundColor: L.surface },
+                    pressed && styles.pressed,
+                  ]}
                 >
-                  <Text style={styles.secondaryLabel}>Voir les modèles</Text>
+                  <Text style={[styles.secondaryLabel, { color: L.cream }]}>Voir les modèles</Text>
                 </Pressable>
               </View>
             </Animated.View>
@@ -162,17 +182,19 @@ export function LandingScreen() {
                 width={isDesktop ? 280 : isTablet ? 250 : 230}
                 showLabel={false}
               />
-              <Text style={styles.heroVisualCaption}>Aurore — aperçu réel du modèle</Text>
+              <Text style={[styles.heroVisualCaption, { color: L.creamFaint }]}>
+                Aurore — aperçu réel du modèle
+              </Text>
             </Animated.View>
           </View>
         </View>
 
-        <View style={styles.proof}>
-          <Text style={styles.proofItem}>Mariages</Text>
-          <Text style={styles.proofDot}>·</Text>
-          <Text style={styles.proofItem}>Anniversaires</Text>
-          <Text style={styles.proofDot}>·</Text>
-          <Text style={styles.proofItem}>Conférences</Text>
+        <View style={[styles.proof, { borderColor: L.border }]}>
+          <Text style={[styles.proofItem, { color: L.creamMuted }]}>Mariages</Text>
+          <Text style={[styles.proofDot, { color: L.creamFaint }]}>·</Text>
+          <Text style={[styles.proofItem, { color: L.creamMuted }]}>Anniversaires</Text>
+          <Text style={[styles.proofDot, { color: L.creamFaint }]}>·</Text>
+          <Text style={[styles.proofItem, { color: L.creamMuted }]}>Conférences</Text>
         </View>
 
         <HowItWorksSection
@@ -204,7 +226,6 @@ export function LandingScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: LANDING.ink,
   },
   scroll: {
     flex: 1,
@@ -241,7 +262,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fontFamilies.serifSemiBold,
     textAlign: 'center',
-    color: LANDING.cream,
     letterSpacing: -0.6,
     marginTop: 4,
   },
@@ -250,14 +270,12 @@ const styles = StyleSheet.create({
   },
   titleAccent: {
     fontFamily: fontFamilies.serifItalic,
-    color: LANDING.coral,
   },
   subtitle: {
     fontFamily: fontFamilies.sans,
     fontSize: 15,
     lineHeight: 23,
     textAlign: 'center',
-    color: LANDING.creamMuted,
     maxWidth: 420,
   },
   subtitleDesktop: {
@@ -277,7 +295,6 @@ const styles = StyleSheet.create({
     minWidth: 168,
     minHeight: 52,
     borderRadius: 14,
-    backgroundColor: LANDING.coral,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 22,
@@ -291,16 +308,13 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: LANDING.border,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 18,
-    backgroundColor: LANDING.surface,
   },
   secondaryLabel: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 14,
-    color: LANDING.cream,
   },
   heroVisual: {
     alignItems: 'center',
@@ -309,7 +323,6 @@ const styles = StyleSheet.create({
   heroVisualCaption: {
     fontFamily: fontFamilies.sans,
     fontSize: 12,
-    color: LANDING.creamFaint,
   },
   proof: {
     flexDirection: 'row',
@@ -321,16 +334,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: LANDING.border,
   },
   proofItem: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 13,
     letterSpacing: 0.4,
-    color: LANDING.creamMuted,
   },
   proofDot: {
-    color: LANDING.creamFaint,
     fontSize: 13,
   },
   pressed: { opacity: 0.84 },

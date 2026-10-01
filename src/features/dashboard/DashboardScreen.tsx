@@ -109,7 +109,7 @@ export function DashboardScreen() {
           if (next > 0 && Math.abs(next - headerHeight) > 1) setHeaderHeight(next);
         }}
       >
-        <LandingAtmosphere height={headerHeight} />
+        <LandingAtmosphere height={headerHeight} tone="dark" />
 
         <View style={[styles.headerInner, isDesktop && styles.headerInnerDesktop]}>
           <View style={styles.topBar}>

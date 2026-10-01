@@ -1,69 +1,49 @@
 /**
- * Tokens landing marketing — s’adaptent au mode clair / sombre (préférence système).
+ * Tokens landing — toujours mode clair (indépendant du thème système).
+ * Langage Edulex adapté : blancs doux, orbes, glass, ombres soft.
  */
 
-import { useMemo } from 'react';
-
-import { useAppTheme } from '@/context/ThemePreferenceContext';
-import type { ThemeMode } from '@/constants/theme';
-
 export type LandingTokens = {
-  ink: string;
-  inkSoft: string;
-  cream: string;
-  creamMuted: string;
-  creamFaint: string;
-  coral: string;
-  coralDeep: string;
-  plum: string;
-  border: string;
+  bg: string;
+  bgSoft: string;
   surface: string;
+  surfaceGlass: string;
+  text: string;
+  textMuted: string;
+  textFaint: string;
+  coral: string;
+  coralSoft: string;
+  plum: string;
+  plumSoft: string;
+  border: string;
+  borderStrong: string;
   phoneChrome: string;
   phoneNotch: string;
+  shadow: string;
   maxWidth: number;
 };
 
-const SHARED = {
+export const LANDING: LandingTokens = {
+  bg: '#FAF7F3',
+  bgSoft: '#F3ECE4',
+  surface: '#FFFFFF',
+  surfaceGlass: 'rgba(255, 255, 255, 0.72)',
+  text: '#2A1F24',
+  textMuted: 'rgba(42, 31, 36, 0.62)',
+  textFaint: 'rgba(42, 31, 36, 0.42)',
   coral: '#E07A5F',
-  coralDeep: '#C45D45',
+  coralSoft: 'rgba(224, 122, 95, 0.16)',
   plum: '#6B3A5C',
+  plumSoft: 'rgba(107, 58, 92, 0.12)',
+  border: 'rgba(42, 31, 36, 0.08)',
+  borderStrong: 'rgba(42, 31, 36, 0.14)',
+  phoneChrome: '#FFFFFF',
+  phoneNotch: 'rgba(42, 31, 36, 0.12)',
+  shadow: 'rgba(42, 31, 36, 0.1)',
   maxWidth: 1120,
-} as const;
-
-const DARK: LandingTokens = {
-  ...SHARED,
-  ink: '#2A1824',
-  inkSoft: '#3A2434',
-  cream: '#F7F0E8',
-  creamMuted: 'rgba(247, 240, 232, 0.62)',
-  creamFaint: 'rgba(247, 240, 232, 0.4)',
-  border: 'rgba(247, 240, 232, 0.12)',
-  surface: 'rgba(247, 240, 232, 0.06)',
-  phoneChrome: 'rgba(16, 12, 14, 0.85)',
-  phoneNotch: 'rgba(247, 240, 232, 0.18)',
 };
 
-const LIGHT: LandingTokens = {
-  ...SHARED,
-  ink: '#F7F0E8',
-  inkSoft: '#EDE4D8',
-  cream: '#2A1F24',
-  creamMuted: 'rgba(42, 31, 36, 0.62)',
-  creamFaint: 'rgba(42, 31, 36, 0.42)',
-  border: 'rgba(42, 31, 36, 0.12)',
-  surface: 'rgba(42, 31, 36, 0.04)',
-  phoneChrome: 'rgba(255, 252, 250, 0.95)',
-  phoneNotch: 'rgba(42, 31, 36, 0.14)',
-};
-
-/** @deprecated Préférer `useLandingTokens()` — conservé pour maxWidth / layouts non colorés. */
-export const LANDING = DARK;
-
-export function getLandingTokens(mode: ThemeMode): LandingTokens {
-  return mode === 'light' ? LIGHT : DARK;
-}
-
+/** Alias stable pour les imports existants. */
 export function useLandingTokens(): LandingTokens {
-  const { mode } = useAppTheme();
-  return useMemo(() => getLandingTokens(mode), [mode]);
+  return LANDING;
 }

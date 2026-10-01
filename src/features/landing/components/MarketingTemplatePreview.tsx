@@ -1,9 +1,9 @@
 /**
- * Miniature invitation marketing — vrai TemplateCover du registre.
+ * Miniature invitation — cadre blanc élevé (mockup type Edulex).
  */
 
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { CoverDiscoverHint, ScaledInvitationStage } from '@/features/invitation/InvitationCover';
 import { TemplateCover } from '@/features/invitation/TemplateCover';
@@ -12,7 +12,7 @@ import { normalizePhotoFrame } from '@/features/invitation/types';
 import { resolveTemplateTheme } from '@/features/templates/resolveTheme';
 import type { TemplateDefinition } from '@/features/templates/registry';
 import { fontFamilies } from '@/constants/theme';
-import { useLandingTokens } from '../landingTokens';
+import { LANDING } from '../landingTokens';
 
 export function MarketingTemplatePreview({
   template,
@@ -23,7 +23,6 @@ export function MarketingTemplatePreview({
   width?: number;
   showLabel?: boolean;
 }) {
-  const L = useLandingTokens();
   const [stageWidth, setStageWidth] = useState(0);
   const themed = resolveTemplateTheme(template, template.defaultThemeKey);
   const guest = DEMO_GUESTS[0];
@@ -37,13 +36,8 @@ export function MarketingTemplatePreview({
 
   return (
     <View style={[styles.wrap, { width }]}>
-      <View
-        style={[
-          styles.phone,
-          { width, borderColor: L.border, backgroundColor: L.phoneChrome },
-        ]}
-      >
-        <View style={[styles.notch, { backgroundColor: L.phoneNotch }]} />
+      <View style={[styles.phone, { width }, phoneShadow]}>
+        <View style={styles.notch} />
         <View
           style={[styles.screen, { width: screenW }]}
           onLayout={(event) => {
@@ -99,8 +93,8 @@ export function MarketingTemplatePreview({
       </View>
       {showLabel ? (
         <View style={styles.meta}>
-          <Text style={[styles.name, { color: L.cream }]}>{template.name}</Text>
-          <Text style={[styles.category, { color: L.creamFaint }]}>
+          <Text style={styles.name}>{template.name}</Text>
+          <Text style={styles.category}>
             {template.category === 'wedding'
               ? 'Mariage'
               : template.category === 'birthday'
@@ -113,36 +107,52 @@ export function MarketingTemplatePreview({
   );
 }
 
+const phoneShadow =
+  Platform.OS === 'web'
+    ? ({ boxShadow: '0 24px 60px rgba(42, 31, 36, 0.14)' } as const)
+    : ({
+        shadowColor: '#2A1F24',
+        shadowOpacity: 0.14,
+        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 14 },
+        elevation: 8,
+      } as const);
+
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center' },
   phone: {
-    borderRadius: 22,
+    borderRadius: 28,
     borderWidth: 1,
-    padding: 7,
-    paddingBottom: 10,
+    borderColor: LANDING.border,
+    backgroundColor: LANDING.phoneChrome,
+    padding: 8,
+    paddingBottom: 12,
   },
   notch: {
     alignSelf: 'center',
-    width: 40,
+    width: 42,
     height: 5,
     borderRadius: 3,
-    marginBottom: 6,
+    backgroundColor: LANDING.phoneNotch,
+    marginBottom: 7,
   },
   screen: {
-    borderRadius: 14,
+    borderRadius: 18,
     overflow: 'hidden',
     aspectRatio: 390 / 780,
     backgroundColor: '#111',
     alignSelf: 'center',
   },
   placeholder: { flex: 1 },
-  meta: { alignItems: 'center', marginTop: 12, gap: 2 },
+  meta: { alignItems: 'center', marginTop: 14, gap: 2 },
   name: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 14,
+    color: LANDING.text,
   },
   category: {
     fontFamily: fontFamilies.sans,
     fontSize: 12,
+    color: LANDING.textFaint,
   },
 });

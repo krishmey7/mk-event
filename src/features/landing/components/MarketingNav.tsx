@@ -1,29 +1,30 @@
 /**
- * Nav marketing minimale — logo, modèles, connexion, CTA.
+ * Nav marketing — glass claire façon Edulex, identité MK.
  */
 
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '@/components/ui/Logo';
-import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { fontFamilies } from '@/constants/theme';
-import { LANDING, useLandingTokens } from '../landingTokens';
+import { LANDING } from '../landingTokens';
 
 export function MarketingNav({ onJumpModels }: { onJumpModels: () => void }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDesktop } = useBreakpoint();
-  const { mode } = useAppTheme();
-  const L = useLandingTokens();
-  const logoVariant = mode === 'dark' ? 'light' : 'ink';
 
   return (
     <View style={[styles.bar, { paddingTop: Math.max(insets.top, 12) }]}>
-      <View style={styles.inner}>
-        <Logo size={isDesktop ? 'md' : 'sm'} variant={logoVariant} />
+      <View
+        style={[
+          styles.inner,
+          Platform.OS === 'web' ? styles.glassWeb : styles.glassNative,
+        ]}
+      >
+        <Logo size={isDesktop ? 'md' : 'sm'} variant="ink" />
 
         <View style={styles.actions}>
           {isDesktop ? (
@@ -32,7 +33,7 @@ export function MarketingNav({ onJumpModels }: { onJumpModels: () => void }) {
               hitSlop={8}
               style={({ pressed }) => pressed && styles.pressed}
             >
-              <Text style={[styles.link, { color: L.creamMuted }]}>Modèles</Text>
+              <Text style={styles.link}>Modèles</Text>
             </Pressable>
           ) : null}
           <Pressable
@@ -41,17 +42,13 @@ export function MarketingNav({ onJumpModels }: { onJumpModels: () => void }) {
             hitSlop={8}
             style={({ pressed }) => pressed && styles.pressed}
           >
-            <Text style={[styles.login, { color: L.cream }]}>Connexion</Text>
+            <Text style={styles.login}>Connexion</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Commencer"
             onPress={() => router.push('/onboarding')}
-            style={({ pressed }) => [
-              styles.cta,
-              { backgroundColor: L.coral },
-              pressed && styles.pressed,
-            ]}
+            style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
           >
             <Text style={styles.ctaLabel}>Commencer</Text>
           </Pressable>
@@ -64,8 +61,8 @@ export function MarketingNav({ onJumpModels }: { onJumpModels: () => void }) {
 const styles = StyleSheet.create({
   bar: {
     width: '100%',
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
     zIndex: 10,
   },
   inner: {
@@ -76,31 +73,62 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: LANDING.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: LANDING.surfaceGlass,
+  },
+  glassWeb: {
+    ...(Platform.OS === 'web'
+      ? ({
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          boxShadow: `0 8px 32px ${LANDING.shadow}`,
+        } as object)
+      : null),
+  },
+  glassNative: {
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    shadowColor: '#2A1F24',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
   },
   link: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 14,
+    color: LANDING.textMuted,
   },
   login: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 14,
+    color: LANDING.text,
   },
   cta: {
     minHeight: 40,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: LANDING.coral,
+    shadowColor: LANDING.coral,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   ctaLabel: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 13,
     color: '#FFFFFF',
   },
-  pressed: { opacity: 0.82 },
+  pressed: { opacity: 0.84 },
 });

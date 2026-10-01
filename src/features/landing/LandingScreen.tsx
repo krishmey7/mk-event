@@ -1,12 +1,13 @@
 /**
- * Landing — claire : marque, promesse, produit, parcours, modèles.
- * Pas de preuve sociale.
+ * Landing clair — design Edulex adapté à MK (orbes, glass, mockup, cartes soft).
+ * Toujours en mode clair. Pas de preuve sociale.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,7 +20,6 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '@/components/ui/Logo';
-import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { fontFamilies } from '@/constants/theme';
 import { getTemplate } from '@/features/templates/registry';
@@ -32,23 +32,20 @@ import {
   MarketingFooter,
   TemplatesShowcase,
 } from './components/MarketingSections';
-import { LANDING, useLandingTokens } from './landingTokens';
+import { LANDING } from './landingTokens';
 
 export function LandingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { mode } = useAppTheme();
-  const L = useLandingTokens();
   const { height: windowH } = useWindowDimensions();
   const { isTablet, isDesktop } = useBreakpoint();
   const scrollRef = useRef<ScrollView>(null);
   const [modelsY, setModelsY] = useState(0);
 
-  const titleSize = isDesktop ? 48 : isTablet ? 38 : 32;
-  const heroMin = Math.max(620, windowH - 8);
+  const titleSize = isDesktop ? 52 : isTablet ? 40 : 34;
+  const heroMin = Math.max(640, windowH - 8);
   const previewTemplate = getTemplate('aurore');
-  const logoVariant = mode === 'dark' ? 'light' : 'ink';
-  const previewW = isDesktop ? 300 : isTablet ? 260 : 236;
+  const previewW = isDesktop ? 310 : isTablet ? 268 : 242;
 
   const fade = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(18)).current;
@@ -60,25 +57,47 @@ export function LandingScreen() {
       .catch(() => undefined);
   }, []);
 
+  /** Forcer le chrome web en clair tant que le landing est monté. */
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const root = document.documentElement;
+    const prevBg = root.style.getPropertyValue('--mk-bg');
+    const prevHtml = root.style.backgroundColor;
+    const prevBody = document.body.style.backgroundColor;
+    root.style.setProperty('--mk-bg', LANDING.bg);
+    root.style.backgroundColor = LANDING.bg;
+    document.body.style.backgroundColor = LANDING.bg;
+    const rootEl = document.getElementById('root');
+    if (rootEl) rootEl.style.backgroundColor = LANDING.bg;
+    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
+      meta.setAttribute('content', LANDING.bg);
+    });
+    return () => {
+      root.style.setProperty('--mk-bg', prevBg || '');
+      root.style.backgroundColor = prevHtml;
+      document.body.style.backgroundColor = prevBody;
+    };
+  }, []);
+
   useEffect(() => {
     Animated.stagger(120, [
       Animated.parallel([
         Animated.timing(fade, {
           toValue: 1,
-          duration: 700,
+          duration: 720,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(rise, {
           toValue: 0,
-          duration: 700,
+          duration: 720,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
       ]),
       Animated.timing(visualRise, {
         toValue: 0,
-        duration: 760,
+        duration: 780,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
@@ -92,9 +111,9 @@ export function LandingScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: L.ink }]}>
-      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} translucent />
-      <LandingAtmosphere />
+    <View style={styles.root}>
+      <StatusBar style="dark" translucent />
+      <LandingAtmosphere tone="light" />
 
       <MarketingNav onJumpModels={jumpModels} />
 
@@ -104,7 +123,7 @@ export function LandingScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.hero, { minHeight: heroMin - insets.top - 52 }]}>
+        <View style={[styles.hero, { minHeight: heroMin - insets.top - 64 }]}>
           <View style={[styles.heroInner, isDesktop && styles.heroInnerDesktop]}>
             <Animated.View
               style={[
@@ -113,24 +132,18 @@ export function LandingScreen() {
                 { opacity: fade, transform: [{ translateY: rise }] },
               ]}
             >
-              <Logo size="xl" variant={logoVariant} />
+              <Logo size="xl" variant="ink" />
               <Text
                 style={[
                   styles.title,
-                  { fontSize: titleSize, lineHeight: titleSize + 8, color: L.cream },
+                  { fontSize: titleSize, lineHeight: titleSize + 8 },
                   isDesktop && styles.titleDesktop,
                 ]}
               >
                 Des invitations{'\n'}
-                <Text style={[styles.titleAccent, { color: L.coral }]}>numériques vivantes</Text>
+                <Text style={styles.titleAccent}>numériques vivantes</Text>
               </Text>
-              <Text
-                style={[
-                  styles.subtitle,
-                  { color: L.creamMuted },
-                  isDesktop && styles.subtitleDesktop,
-                ]}
-              >
+              <Text style={[styles.subtitle, isDesktop && styles.subtitleDesktop]}>
                 Créez, publiez, suivez les réponses — RSVP et pass QR inclus.
               </Text>
               <View style={[styles.heroActions, isDesktop && styles.heroActionsDesktop]}>
@@ -138,24 +151,16 @@ export function LandingScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Commencer"
                   onPress={() => router.push('/onboarding')}
-                  style={({ pressed }) => [
-                    styles.cta,
-                    { backgroundColor: L.coral },
-                    pressed && styles.pressed,
-                  ]}
+                  style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
                 >
                   <Text style={styles.ctaLabel}>Commencer</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
                   onPress={jumpModels}
-                  style={({ pressed }) => [
-                    styles.secondary,
-                    { borderColor: L.border },
-                    pressed && styles.pressed,
-                  ]}
+                  style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
                 >
-                  <Text style={[styles.secondaryLabel, { color: L.cream }]}>Voir les modèles</Text>
+                  <Text style={styles.secondaryLabel}>Voir les modèles</Text>
                 </Pressable>
               </View>
             </Animated.View>
@@ -166,14 +171,8 @@ export function LandingScreen() {
                 { opacity: fade, transform: [{ translateY: visualRise }] },
               ]}
             >
-              <View
-                style={[
-                  styles.previewGlow,
-                  {
-                    backgroundColor: mode === 'dark' ? 'rgba(224, 122, 95, 0.18)' : 'rgba(224, 122, 95, 0.14)',
-                  },
-                ]}
-              />
+              <View style={styles.previewOrbCoral} />
+              <View style={styles.previewOrbPlum} />
               <MarketingTemplatePreview
                 template={previewTemplate}
                 width={previewW}
@@ -202,6 +201,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     width: '100%',
+    backgroundColor: LANDING.bg,
   },
   scroll: {
     flex: 1,
@@ -210,14 +210,15 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 20,
     justifyContent: 'center',
-    paddingBottom: 40,
+    paddingBottom: 48,
+    paddingTop: 12,
   },
   heroInner: {
     maxWidth: LANDING.maxWidth,
     width: '100%',
     alignSelf: 'center',
     alignItems: 'center',
-    gap: 40,
+    gap: 44,
   },
   heroInnerDesktop: {
     flexDirection: 'row',
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     width: '100%',
-    maxWidth: 460,
+    maxWidth: 480,
   },
   heroCopyDesktop: {
     alignItems: 'flex-start',
@@ -238,14 +239,16 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fontFamilies.serifSemiBold,
     textAlign: 'center',
-    letterSpacing: -0.5,
-    marginTop: 2,
+    letterSpacing: -0.6,
+    color: LANDING.text,
+    marginTop: 4,
   },
   titleDesktop: {
     textAlign: 'left',
   },
   titleAccent: {
     fontFamily: fontFamilies.serifItalic,
+    color: LANDING.coral,
   },
   subtitle: {
     fontFamily: fontFamilies.sans,
@@ -253,6 +256,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'center',
     maxWidth: 380,
+    color: LANDING.textMuted,
   },
   subtitleDesktop: {
     textAlign: 'left',
@@ -268,12 +272,18 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   cta: {
-    minWidth: 160,
+    minWidth: 168,
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 22,
+    paddingHorizontal: 24,
+    backgroundColor: LANDING.coral,
+    shadowColor: LANDING.coral,
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
   ctaLabel: {
     fontFamily: fontFamilies.sansSemiBold,
@@ -282,26 +292,39 @@ const styles = StyleSheet.create({
   },
   secondary: {
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: 999,
     borderWidth: 1,
+    borderColor: LANDING.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
+    backgroundColor: LANDING.surfaceGlass,
   },
   secondaryLabel: {
     fontFamily: fontFamilies.sansMedium,
     fontSize: 14,
+    color: LANDING.text,
   },
   heroVisual: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  previewGlow: {
+  previewOrbCoral: {
     position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    opacity: 0.9,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(224, 122, 95, 0.22)',
+    top: '18%',
   },
-  pressed: { opacity: 0.84 },
+  previewOrbPlum: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(107, 58, 92, 0.12)',
+    bottom: '8%',
+    right: -20,
+  },
+  pressed: { opacity: 0.86 },
 });

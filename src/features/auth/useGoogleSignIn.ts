@@ -2,10 +2,10 @@
  * Connexion Google via expo-auth-session (activée si Client ID présent).
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 import { useRouter } from 'expo-router';
 
 import { useAuth } from '@/context/AuthContext';
@@ -14,32 +14,45 @@ import { GOOGLE_CLIENT_ID } from '@/constants/config';
 import { ApiError } from '@/services/apiClient';
 import { loginWithGoogle } from '@/services/authService';
 
-WebBrowser.maybeCompleteAuthSession();
-
 export const isGoogleAuthConfigured = Boolean(GOOGLE_CLIENT_ID);
+
+function extractIdToken(result: AuthSession.AuthSessionResult | null): string | null {
+  if (!result || result.type !== 'success') return null;
+  return (
+    result.params.id_token ??
+    (typeof result.authentication?.idToken === 'string' ? result.authentication.idToken : null)
+  );
+}
 
 export function useGoogleSignIn(onNotice: (message: string) => void) {
   const router = useRouter();
   const { signIn } = useAuth();
   const { syncFromServer } = useActiveEvent();
   const [loading, setLoading] = useState(false);
+  const handledTokenRef = useRef<string | null>(null);
 
-  const [request, , promptAsync] = Google.useIdTokenAuthRequest(
+  const redirectUri = AuthSession.makeRedirectUri();
+
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
     isGoogleAuthConfigured
       ? {
           clientId: GOOGLE_CLIENT_ID,
           webClientId: GOOGLE_CLIENT_ID,
+          redirectUri,
           ...(Platform.OS === 'ios' ? { iosClientId: GOOGLE_CLIENT_ID } : null),
           ...(Platform.OS === 'android' ? { androidClientId: GOOGLE_CLIENT_ID } : null),
         }
       : {
           clientId: 'missing.apps.googleusercontent.com',
           webClientId: 'missing.apps.googleusercontent.com',
+          redirectUri,
         },
   );
 
   const completeWithIdToken = useCallback(
     async (idToken: string) => {
+      if (handledTokenRef.current === idToken) return;
+      handledTokenRef.current = idToken;
       setLoading(true);
       try {
         const session = await loginWithGoogle(idToken);
@@ -47,6 +60,7 @@ export function useGoogleSignIn(onNotice: (message: string) => void) {
         const needsSetup = await syncFromServer();
         router.replace(homeAfterAuth(needsSetup));
       } catch (error) {
+        handledTokenRef.current = null;
         onNotice(
           error instanceof ApiError
             ? error.message
@@ -58,6 +72,13 @@ export function useGoogleSignIn(onNotice: (message: string) => void) {
     },
     [onNotice, router, signIn, syncFromServer],
   );
+
+  useEffect(() => {
+    const idToken = extractIdToken(response);
+    if (idToken) {
+      void completeWithIdToken(idToken);
+    }
+  }, [completeWithIdToken, response]);
 
   const signInWithGoogle = useCallback(async () => {
     if (!isGoogleAuthConfigured) {
@@ -79,11 +100,7 @@ export function useGoogleSignIn(onNotice: (message: string) => void) {
         }
         return;
       }
-      const idToken =
-        result.params.id_token ??
-        (typeof result.authentication?.idToken === 'string'
-          ? result.authentication.idToken
-          : null);
+      const idToken = extractIdToken(result);
       if (!idToken) {
         onNotice('Google n’a pas renvoyé de jeton. Réessayez.');
         return;

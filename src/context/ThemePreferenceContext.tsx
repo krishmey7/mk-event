@@ -11,7 +11,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Appearance, Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 import { getTheme, type AppTheme, type ThemeMode } from '@/constants/theme';
@@ -70,6 +70,16 @@ export function ThemePreferenceProvider({ children }: { children: ReactNode }) {
         ? 'dark'
         : 'light'
       : preference;
+
+  /* Aligne les contrôles natifs (TextInput Android) sur la préférence app. */
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    if (preference === 'system') {
+      Appearance.setColorScheme(null);
+      return;
+    }
+    Appearance.setColorScheme(preference);
+  }, [preference]);
 
   const theme = useMemo(() => getTheme(mode), [mode]);
 

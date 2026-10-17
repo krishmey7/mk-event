@@ -8,6 +8,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import { Logo } from '@/components/ui/Logo';
+import { formatDressCode } from '@/features/invitation/formatDressCode';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
 import { WinterCouplePhotoFrame } from './WinterCouplePhotoFrame';
@@ -59,6 +60,7 @@ export function WinterCover({
   const gold = colors.accent;
   const parts = splitCouple(couple);
   const photoSize = compact ? 132 : 152;
+  const dress = formatDressCode(dressCode);
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.bg }]}>
@@ -130,9 +132,7 @@ export function WinterCover({
               </Text>
             </View>
           ) : null}
-          {dressCode?.trim() && !compact ? (
-            <Text style={[styles.dress, { color: gold }]}>{dressCode.trim()}</Text>
-          ) : null}
+          {dress ? <Text style={[styles.dress, { color: gold }]}>{dress}</Text> : null}
         </View>
 
         {hint ? (
@@ -157,7 +157,7 @@ export function WinterCover({
 
 function formatSaveTheDate(title: string): string {
   const clean = title.replace(/\s+/g, ' ').trim() || 'Save the Date';
-  if (/save\s*the\s*date/i.test(clean) || clean.length > 18) return 'SAVE THE DATE';
+  if (/^save\s+the\s+date$/i.test(clean)) return 'SAVE THE DATE';
   return clean.toUpperCase();
 }
 

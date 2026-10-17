@@ -15,6 +15,7 @@ export interface InvitationCoverPayload {
   guestLine: string;
   kicker: string;
   photoUri: string;
+  timeLabel?: string;
 }
 
 export interface InvitationConfig {
@@ -132,6 +133,7 @@ export function getInvitationConfig(slug: string): InvitationConfig {
         couple: WEDDING.couple,
         guestLine: WEDDING.guestSentence,
         kicker: '',
+        timeLabel: '',
         photoUri: IMAGES.cover,
       },
       story: STORY,
@@ -167,6 +169,7 @@ export function buildCatalogPreviewConfig(
       dateLabel: string;
       couple: string;
       guestLine: string;
+      timeLabel?: string;
     };
     defaultThemeKey: string;
     defaultKicker?: string;
@@ -212,6 +215,7 @@ export function buildCatalogPreviewConfig(
       couple: template.defaultCover.couple,
       guestLine: template.defaultCover.guestLine,
       kicker: template.defaultKicker ?? '',
+      timeLabel: template.defaultCover.timeLabel ?? '',
       photoUri: template.coverImage,
     },
     story: template.story,

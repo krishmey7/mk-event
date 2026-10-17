@@ -37,6 +37,7 @@ import {
   type ConferenceSpeaker,
 } from '@/features/templates/conference/data';
 import { parseFrenchDateLabel, toRemoteImageUrl, type EditorSnapshot } from './snapshot';
+import { resolvePublishableAudio } from './resolvePublishableAudio';
 import { resolvePublishableImage } from './resolvePublishableImage';
 import { ensureGuestNameToken, lockGuestNameToken } from './guestNameToken';
 import { useActiveEvent } from '@/context/ActiveEventContext';
@@ -59,8 +60,10 @@ export interface CoverConfig {
   coupleFrame: PhotoFrameKey;
   /** Clé du thème actif DU modèle en cours d'édition. */
   themeKey: string;
-  /** Accroche (ex. « Cérémonie à 10h »). */
+  /** Accroche (ex. « Cérémonie à 10h » / « RÉSERVEZ LA DATE! »). */
   kicker: string;
+  /** Heure affichée sur la couverture (Pellicule, Néon…). */
+  timeLabel: string;
 }
 
 /* ── Styles de mise en page (appliqués en temps réel) ── */
@@ -101,6 +104,8 @@ interface EditorContextValue {
   /** Thèmes du modèle, dans l'ordre d'affichage. */
   themes: TemplateThemeDefinition[];
   updateCover: (patch: Partial<CoverConfig>) => void;
+  /** Change la palette du modèle (studio + événement actif). */
+  setThemeKey: (key: string) => void;
   /** Enregistre + publie (slug + sync invités / access_token Django). */
   saveToLibrary: () => Promise<number>;
   saving: boolean;
@@ -228,6 +233,7 @@ export function EditorProvider({
         ...snap.cover,
         coupleFrame: normalizePhotoFrame(snap.cover.coupleFrame, template.key),
         kicker: snap.cover.kicker ?? template.defaultKicker ?? '',
+        timeLabel: snap.cover.timeLabel ?? '',
         guestLine: ensureGuestNameToken(snap.cover.guestLine),
         themeKey: resolvedThemeKey,
       }
@@ -241,11 +247,12 @@ export function EditorProvider({
     coupleFrame: normalizePhotoFrame(template.couplePhoto?.frame, template.key),
     themeKey: resolvedThemeKey,
     kicker: template.defaultKicker ?? '',
+    timeLabel: template.defaultCover.timeLabel ?? '',
   });
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(snap ? Date.now() : null);
 
   const updateCover = useCallback((patch: Partial<CoverConfig>) => {
-    // Thème verrouillé : il se choisit dans le profil et le wizard.
+    // Thème verrouillé ici : utiliser setThemeKey (profil / Décor).
     // {{Nom}} reste verrouillé dans le message invité.
     setCover((prev) => {
       const next = { ...prev, ...patch, themeKey: prev.themeKey };
@@ -255,6 +262,25 @@ export function EditorProvider({
       return next;
     });
   }, []);
+
+  const setThemeKey = useCallback(
+    (key: string) => {
+      const next = resolveTemplateThemeKey(template, key);
+      setCover((prev) => {
+        if (prev.themeKey === next) return prev;
+        return { ...prev, themeKey: next };
+      });
+      if (activeEvent.themeKey !== next) {
+        activeEvent.setActiveEvent({
+          eventId: activeEvent.eventId,
+          type: activeEvent.type,
+          themeKey: next,
+          preferencesReady: true,
+        });
+      }
+    },
+    [template, activeEvent],
+  );
 
   const [story, setStory] = useState<StoryMilestone[]>(() => snap?.story ?? template.story);
   const [program, setProgram] = useState<ProgramStep[]>(() => snap?.program ?? template.program);
@@ -557,6 +583,15 @@ export function EditorProvider({
         template.countdownImage,
         uploadOpts,
       );
+      const publishedAmbient = await resolvePublishableAudio(voix.ambientUri, {
+        ...uploadOpts,
+        fileName: voix.ambientName,
+      });
+      const publishedVoix = {
+        ...voix,
+        ambientUri: publishedAmbient || null,
+        ambientName: publishedAmbient ? voix.ambientName : null,
+      };
 
       const extras = {
         cover_image_url: toRemoteImageUrl(publishedCoverPhoto),
@@ -580,13 +615,14 @@ export function EditorProvider({
           couple: cover.couple,
           guestLine: cover.guestLine,
           kicker: cover.kicker,
+          timeLabel: cover.timeLabel,
           photoUri: publishedCoverPhoto,
         },
         story: publishedStory,
         program,
         gallery: publishedGallery,
         countdownImage: publishedCountdown || template.countdownImage,
-        voix,
+        voix: publishedVoix,
         speakers,
         practical,
       };
@@ -597,6 +633,7 @@ export function EditorProvider({
         photoUri: publishedCoverPhoto || prev.photoUri,
         couplePhotoUri: publishedCouplePhoto || prev.couplePhotoUri,
       }));
+      setVoix(publishedVoix);
       setStory(publishedStory);
       if (gallery.length > 0) {
         setGallery(
@@ -699,6 +736,7 @@ export function EditorProvider({
         couple: cover.couple,
         guestLine: cover.guestLine,
         kicker: cover.kicker,
+        timeLabel: cover.timeLabel,
         photoUri: cover.photoUri,
       },
       story,
@@ -730,6 +768,7 @@ export function EditorProvider({
       theme,
       themes: template.themes,
       updateCover,
+      setThemeKey,
       saveToLibrary,
       saving,
       published,
@@ -782,6 +821,7 @@ export function EditorProvider({
       cover,
       theme,
       updateCover,
+      setThemeKey,
       saveToLibrary,
       saving,
       published,

@@ -13,7 +13,7 @@ mk-event/
 │   ├── index.tsx                 # ✅ Landing (Dark Luxury) — placeholder étape 1
 │   ├── onboarding.tsx            # Diaporama 3 étapes (maquettes 1→3)
 │   ├── (auth)/
-│   │   ├── login.tsx             # Connexion (email/téléphone + Google/Apple)
+│   │   ├── login.tsx             # Connexion (email/téléphone + Google)
 │   │   └── register.tsx          # Inscription
 │   ├── (app)/                    # Espace organisateur authentifié (groupe protégé)
 │   │   ├── _layout.tsx           # Tabs mobile (Accueil, Invitations, Modèles, Profil) / Sidebar desktop

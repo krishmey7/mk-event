@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import permissions, status
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .email import send_password_reset_email
@@ -22,6 +23,8 @@ User = get_user_model()
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -32,6 +35,8 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -48,6 +53,8 @@ class PasswordResetRequestView(APIView):
     """Toujours 200 — ne révèle pas si l’e-mail existe."""
 
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
 
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -78,6 +85,8 @@ class PasswordResetRequestView(APIView):
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
 
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
@@ -90,6 +99,8 @@ class PasswordResetConfirmView(APIView):
 
 class GoogleAuthView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
 
     def post(self, request):
         serializer = GoogleAuthSerializer(data=request.data)

@@ -16,6 +16,7 @@ import {
   type AppearancePreference,
 } from '@/context/ThemePreferenceContext';
 import { EventSwitchSheet } from '@/features/account/EventSwitchSheet';
+import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
 import {
   SETUP_EVENT_TYPES,
   SETUP_THEMES,
@@ -40,6 +41,7 @@ export function ProfileScreen() {
   const { eventId, type, themeKey, setActiveEvent } = useActiveEvent();
   const c = theme.colors;
   const [switchOpen, setSwitchOpen] = useState(false);
+  const [pendingTheme, setPendingTheme] = useState<{ key: string; label: string } | null>(null);
 
   const currentEventMeta =
     SETUP_EVENT_TYPES.find((item) => item.type === type) ?? SETUP_EVENT_TYPES[0];
@@ -68,6 +70,19 @@ export function ProfileScreen() {
         /* ignore — local state already updated */
       });
     }
+  };
+
+  const requestThemeChange = (nextThemeSelection: string) => {
+    if (toSetupThemeSelection(themeKey) === nextThemeSelection) return;
+    const label =
+      SETUP_THEMES.find((item) => item.key === nextThemeSelection)?.label ?? 'cette palette';
+    setPendingTheme({ key: nextThemeSelection, label });
+  };
+
+  const applyPendingTheme = () => {
+    if (!pendingTheme) return;
+    persistEvent(type, pendingTheme.key);
+    setPendingTheme(null);
   };
 
   const handleSignOut = () => {
@@ -158,7 +173,7 @@ export function ProfileScreen() {
                   key={item.key}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: on }}
-                  onPress={() => persistEvent(type, item.key)}
+                  onPress={() => requestThemeChange(item.key)}
                   style={[
                     styles.themeCard,
                     { borderColor: c.border, backgroundColor: c.surface },
@@ -240,6 +255,19 @@ export function ProfileScreen() {
         currentType={type}
         onClose={() => setSwitchOpen(false)}
         onConfirm={(nextType, themeSelection) => persistEvent(nextType, themeSelection)}
+      />
+
+      <ConfirmSheet
+        visible={pendingTheme != null}
+        title="Changer la palette ?"
+        message={
+          pendingTheme
+            ? `Appliquer « ${pendingTheme.label} » à vos miniatures et à l’invitation ? Vous pourrez revenir en arrière ici.`
+            : ''
+        }
+        confirmLabel="Appliquer"
+        onConfirm={applyPendingTheme}
+        onCancel={() => setPendingTheme(null)}
       />
     </View>
   );

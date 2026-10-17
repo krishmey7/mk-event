@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Logo } from '@/components/ui/Logo';
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import { CouplePhotoFrame } from './CouplePhotoFrame';
+import { formatDressCode } from './formatDressCode';
 import type { CouplePhoto, Guest } from './types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
 
@@ -24,6 +25,7 @@ export function InvitationCover({
   coverUri,
   couplePhoto,
   guest,
+  title,
   dateLabel,
   couple,
   phrase = 'Pour notre grand jour',
@@ -39,6 +41,8 @@ export function InvitationCover({
   coverUri: string;
   couplePhoto: CouplePhoto;
   guest: Guest;
+  /** Titre studio — remplace « SAVE THE DATE » s’il est renseigné. */
+  title?: string;
   dateLabel: string;
   couple: string;
   phrase?: string;
@@ -59,6 +63,8 @@ export function InvitationCover({
     rawPhrase && rawPhrase !== guestSentence.trim()
       ? fillGuestNameToken(rawPhrase, guest.firstName)
       : 'Pour notre grand jour';
+  const headline = formatSaveTheDate(title);
+  const dress = formatDressCode(dressCode);
 
   return (
     <View style={styles.fill}>
@@ -84,7 +90,7 @@ export function InvitationCover({
         </View>
 
         <View style={styles.hero}>
-          <Text style={[styles.save, { paddingLeft: 6 }]}>{"SAVE\nTHE DATE"}</Text>
+          <Text style={[styles.save, { paddingLeft: 6 }]}>{headline}</Text>
           <View style={styles.ruleRow}>
             <View style={styles.rule} />
             <Ionicons name="heart" size={11} color="#E9D9A8" />
@@ -93,9 +99,7 @@ export function InvitationCover({
           <Text style={[styles.date, { paddingLeft: 3 }]}>{dateLabel}</Text>
           <Text style={styles.names}>{couple}</Text>
           <Text style={styles.phrase}>{heroPhrase}</Text>
-          {dressCode?.trim() && !compact ? (
-            <Text style={styles.dress}>{dressCode.trim()}</Text>
-          ) : null}
+          {dress ? <Text style={styles.dress}>{dress}</Text> : null}
         </View>
 
         <View style={styles.spacer} />
@@ -131,6 +135,17 @@ export function InvitationCover({
       </View>
     </View>
   );
+}
+
+/** Titre studio — garde le stack SAVE / THE DATE par défaut. */
+function formatSaveTheDate(title?: string): string {
+  const clean = (title ?? '').replace(/\s+/g, ' ').trim();
+  if (!clean || /^save\s+the\s+date$/i.test(clean)) return 'SAVE\nTHE DATE';
+  const parts = clean.split(' ');
+  if (parts.length >= 2 && parts.length <= 3 && clean.length <= 22) {
+    return parts.map((part) => part.toUpperCase()).join('\n');
+  }
+  return clean.toUpperCase();
 }
 
 const styles = StyleSheet.create({

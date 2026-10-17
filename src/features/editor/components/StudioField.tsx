@@ -1,5 +1,5 @@
 /**
- * Bloc de studio — grisé et inactif quand le modèle ne l’utilise pas.
+ * Bloc de studio — masqué (défaut) ou grisé quand le modèle ne l’utilise pas.
  */
 
 import type { ReactNode } from 'react';
@@ -11,15 +11,19 @@ import { useAppTheme } from '@/context/ThemePreferenceContext';
 export function StudioField({
   enabled,
   note = 'Non utilisé sur ce modèle',
+  /** hide = retiré de l’UI ; dim = grisé visible (legacy). */
+  mode = 'hide',
   children,
 }: {
   enabled: boolean;
   note?: string;
+  mode?: 'hide' | 'dim';
   children: ReactNode;
 }) {
   const { theme } = useAppTheme();
 
   if (enabled) return <>{children}</>;
+  if (mode === 'hide') return null;
 
   return (
     <View pointerEvents="none" style={styles.off}>

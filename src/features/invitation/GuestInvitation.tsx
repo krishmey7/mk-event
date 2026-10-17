@@ -243,7 +243,11 @@ export function GuestInvitation({ slug, config, guest }: {
             headline="birthday"
             scriptLine={BIRTHDAY_DEMO.script}
             dateLabel={pageCover.dateLabel}
-            timePlace={config.dressCode || BIRTHDAY_DEMO.timePlace}
+            timePlace={
+              pageCover.timeLabel?.trim()
+              || config.dressCode?.trim()
+              || BIRTHDAY_DEMO.timePlace
+            }
             address={
               [config.venue.name, config.venue.street, config.venue.city].filter(Boolean).join(' · ')
               || BIRTHDAY_DEMO.address
@@ -309,11 +313,13 @@ export function GuestInvitation({ slug, config, guest }: {
             venue={config.venue}
             stripPhotos={galleryItems.map((photo) => photo.uri)}
             timeLabel={
-              pellicule
-                ? PELLICULE_WEDDING.timeLabel
-                : neon
-                  ? NEON_WEDDING.timeLabel
-                  : undefined
+              typeof pageCover.timeLabel === 'string'
+                ? pageCover.timeLabel.trim()
+                : pellicule
+                  ? PELLICULE_WEDDING.timeLabel
+                  : neon
+                    ? NEON_WEDDING.timeLabel
+                    : undefined
             }
             onScrollDown={scrollToStory}
           />

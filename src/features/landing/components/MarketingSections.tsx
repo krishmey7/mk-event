@@ -1,9 +1,10 @@
 /**
- * Sections landing clair — cartes soft, rythme espacé (inspiré Edulex).
+ * Sections landing clair — rythme éditorial MK Events.
  */
 
 import { type ReactNode, useRef, useState } from 'react';
 import {
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -15,11 +16,22 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { fontFamilies } from '@/constants/theme';
 import { landingFonts } from '../landingFonts';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { TEMPLATES } from '@/features/templates/registry';
 import { MarketingTemplatePreview } from './MarketingTemplatePreview';
+import { LandingReveal } from './LandingReveal';
+import { LandingCta } from './LandingCta';
+import { HowItWorksTrack } from './HowItWorksTrack';
 import { LANDING } from '../landingTokens';
+
+const PLATFORM_PHOTO = require('../../../../assets/landing/platform-moment.jpg');
+const AUDIENCE_PHOTOS = {
+  wedding: require('../../../../assets/landing/audience-mariage.jpg'),
+  birthday: require('../../../../assets/landing/audience-moment.jpg'),
+  professional: require('../../../../assets/landing/audience-professionnel.jpg'),
+} as const;
 
 function SectionShell({
   children,
@@ -37,6 +49,29 @@ function SectionShell({
   );
 }
 
+function SectionIntro({
+  kicker,
+  title,
+  lead,
+  center,
+}: {
+  kicker: string;
+  title: string;
+  lead?: string;
+  center?: boolean;
+}) {
+  // Un seul bloc motion (comme la colonne gauche Edulex plateforme).
+  return (
+    <LandingReveal y={20} duration={600}>
+      <View style={center ? styles.centerHead : undefined}>
+        <Text style={[styles.kicker, center && styles.centerText]}>{kicker}</Text>
+        <Text style={[styles.title, center && styles.centerText]}>{title}</Text>
+        {lead ? <Text style={[styles.lead, center && styles.centerText]}>{lead}</Text> : null}
+      </View>
+    </LandingReveal>
+  );
+}
+
 export function PlatformSection({ onLayout }: { onLayout?: (e: LayoutChangeEvent) => void }) {
   const { isDesktop } = useBreakpoint();
 
@@ -44,192 +79,324 @@ export function PlatformSection({ onLayout }: { onLayout?: (e: LayoutChangeEvent
     <SectionShell padTop={72} onLayout={onLayout}>
       <View style={[styles.platformGrid, isDesktop && styles.platformGridDesktop]}>
         <View style={styles.platformCopy}>
-          <Text style={styles.kicker}>La plateforme</Text>
-          <Text style={styles.title}>Tout votre événement, dans un seul parcours</Text>
-          <Text style={styles.lead}>
-            La création côté organisateur et l’expérience côté invité restent reliées,
-            du premier texte au contrôle des entrées.
-          </Text>
+          <SectionIntro
+            kicker="La plateforme"
+            title="Tout votre événement, dans un seul parcours"
+            lead="La création côté organisateur et l’expérience côté invité restent reliées, du premier texte au contrôle des entrées."
+          />
           <View style={styles.miniFeatureList}>
             {[
               ['sparkles-outline', 'Studio visuel en temps réel'],
               ['people-outline', 'Invités, RSVP et tables'],
               ['qr-code-outline', 'Pass personnels et check-in'],
-            ].map(([icon, label]) => (
-              <View key={label} style={styles.miniFeature}>
-                <View style={styles.miniFeatureIcon}>
-                  <Ionicons
-                    name={icon as keyof typeof Ionicons.glyphMap}
-                    size={17}
-                    color={LANDING.coral}
-                  />
+            ].map(([icon, label], index) => (
+              <LandingReveal
+                key={label}
+                x={-20}
+                y={0}
+                delay={index * 100}
+                duration={500}
+              >
+                <View style={styles.miniFeature}>
+                  <View style={styles.miniFeatureIcon}>
+                    <Ionicons
+                      name={icon as keyof typeof Ionicons.glyphMap}
+                      size={17}
+                      color={LANDING.coral}
+                    />
+                  </View>
+                  <Text style={styles.miniFeatureLabel}>{label}</Text>
                 </View>
-                <Text style={styles.miniFeatureLabel}>{label}</Text>
-              </View>
+              </LandingReveal>
             ))}
           </View>
         </View>
 
-        <View style={styles.productCanvas}>
-          <View style={styles.productGlow} />
-          <View style={[styles.productWindow, cardShadow]}>
-            <View style={styles.productWindowTop}>
-              <View style={styles.windowDots}>
-                <View style={styles.windowDot} />
-                <View style={styles.windowDot} />
-                <View style={styles.windowDot} />
-              </View>
-              <Text style={styles.windowTitle}>Tableau de bord</Text>
-              <View style={styles.livePill}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveLabel}>Publié</Text>
-              </View>
-            </View>
-            <View style={styles.statsRow}>
-              {[
-                ['Invités', '84'],
-                ['Confirmés', '61'],
-                ['En attente', '18'],
-              ].map(([label, value], index) => (
-                <View key={label} style={[styles.stat, index === 1 && styles.statAccent]}>
-                  <Text style={styles.statValue}>{value}</Text>
-                  <Text style={styles.statLabel}>{label}</Text>
-                </View>
-              ))}
-            </View>
-            <View style={styles.productBody}>
-              <View style={styles.responseCard}>
-                <View style={styles.responseAvatar}>
-                  <Text style={styles.responseAvatarLabel}>AM</Text>
-                </View>
-                <View style={styles.responseCopy}>
-                  <Text style={styles.responseName}>Alice & Marc</Text>
-                  <Text style={styles.responseMeta}>2 places · Table Jardin</Text>
-                </View>
-                <View style={styles.responseStatus}>
-                  <Ionicons name="checkmark" size={13} color="#47723B" />
-                  <Text style={styles.responseStatusLabel}>Confirmé</Text>
-                </View>
-              </View>
-              <View style={styles.timelineCard}>
-                <View style={styles.timelineHead}>
-                  <Text style={styles.timelineTitle}>Progression</Text>
-                  <Text style={styles.timelineValue}>3 / 4</Text>
-                </View>
-                <View style={styles.timelineTrack}>
-                  <View style={styles.timelineFill} />
-                </View>
-                <View style={styles.timelineLabels}>
-                  <Text style={styles.timelineLabel}>Invitation</Text>
-                  <Text style={styles.timelineLabel}>Invités</Text>
-                  <Text style={styles.timelineLabel}>Jour J</Text>
-                </View>
-              </View>
+        <LandingReveal y={20} duration={600} style={isDesktop ? { flex: 1 } : undefined}>
+          <View style={[styles.photoStage, isDesktop && styles.photoStageDesktop]}>
+            <View style={styles.photoOffset} />
+            <View style={[styles.photoFrame, cardShadow]}>
+              <Image
+                source={PLATFORM_PHOTO}
+                style={styles.photoImage}
+                resizeMode="cover"
+                accessibilityLabel="Couple célébrant son mariage, pétales de roses en l’air"
+              />
             </View>
           </View>
-        </View>
+        </LandingReveal>
       </View>
     </SectionShell>
   );
 }
+
+const HOW_STEPS = [
+  {
+    key: 'types',
+    title: 'Choisissez un modèle',
+    text: 'Une identité visuelle prête pour votre événement.',
+    icon: 'color-palette-outline' as const,
+  },
+  {
+    key: 'studio',
+    title: 'Personnalisez',
+    text: 'Textes, photos, programme et RSVP dans le même studio.',
+    icon: 'create-outline' as const,
+  },
+  {
+    key: 'invite',
+    title: 'Publiez & invitez',
+    text: 'Chaque invité reçoit son lien personnel et son pass QR.',
+    icon: 'send-outline' as const,
+  },
+  {
+    key: 'day',
+    title: 'Accueillez',
+    text: 'Check-in, galerie et livre d’or le jour J — tout reste lié.',
+    icon: 'qr-code-outline' as const,
+  },
+] as const;
 
 export function HowItWorksSection({ onLayout }: { onLayout?: (e: LayoutChangeEvent) => void }) {
   const { isDesktop } = useBreakpoint();
-  const steps = [
-    {
-      n: '01',
-      title: 'Choisissez un modèle',
-      text: 'Une identité visuelle prête pour votre événement.',
-    },
-    {
-      n: '02',
-      title: 'Personnalisez',
-      text: 'Textes, photos, programme et RSVP en temps réel.',
-    },
-    {
-      n: '03',
-      title: 'Publiez',
-      text: 'Chaque invité reçoit son lien, son pass QR et répond.',
-    },
-  ];
 
   return (
-    <SectionShell onLayout={onLayout}>
-      <Text style={styles.kicker}>Parcours</Text>
-      <Text style={styles.title}>Comment ça marche</Text>
-      <Text style={styles.lead}>Trois étapes. Rien de superflu.</Text>
+    <SectionShell onLayout={onLayout} padTop={80}>
+      <LandingReveal y={20} duration={600}>
+        <View style={styles.howHead}>
+          <Text style={styles.howKicker}>Comment ça marche</Text>
+          <Text style={styles.howTitle}>De l’idée au jour J, en un seul parcours</Text>
+          <Text style={styles.howLead}>
+            Du modèle choisi à l’accueil des invités — sans fichier à télécharger.
+          </Text>
+        </View>
+      </LandingReveal>
 
-      <View style={[styles.stepGrid, isDesktop && styles.stepGridDesktop]}>
-        {steps.map((step) => (
-          <View key={step.n} style={[styles.stepCard, isDesktop && styles.stepCardDesktop]}>
-            <Text style={styles.stepN}>{step.n}</Text>
-            <Text style={styles.stepTitle}>{step.title}</Text>
-            <Text style={styles.stepText}>{step.text}</Text>
-          </View>
-        ))}
-      </View>
+      <HowItWorksTrack steps={HOW_STEPS} isDesktop={!!isDesktop} />
+
+      <LandingReveal y={16} duration={600} delay={140}>
+        <View style={styles.howQuote}>
+          <View style={styles.howQuoteRule} />
+          <Text style={styles.howQuoteText}>
+            Nous ne remplaçons pas votre événement. Nous le rendons plus simple à partager.
+          </Text>
+        </View>
+      </LandingReveal>
     </SectionShell>
   );
 }
 
+const COMPARISON_ROWS = [
+  {
+    without: 'PDFs figés envoyés par mail',
+    with: 'Invitation vivante, toujours à jour',
+  },
+  {
+    without: 'Réponses éparpillées sur WhatsApp',
+    with: 'RSVP structuré, centralisé',
+  },
+  {
+    without: 'Tableurs Excel pour les tables',
+    with: 'Plan de tables lié aux invités',
+  },
+  {
+    without: 'Pas de contrôle à l’entrée',
+    with: 'Pass QR et check-in en direct',
+  },
+  {
+    without: 'Fichier statique, oublié après',
+    with: 'Galerie et livre d’or partagés',
+  },
+] as const;
+
+const CAPABILITIES = [
+  {
+    icon: 'create-outline' as const,
+    title: 'Studio guidé',
+    text: 'Modifiez l’invitation sans toucher à sa cohérence visuelle. Textes, photos et rythme restent alignés.',
+  },
+  {
+    icon: 'calendar-outline' as const,
+    title: 'Programme vivant',
+    text: 'Horaires, lieux, récit et compte à rebours dans la même page — visibles dès la publication.',
+  },
+  {
+    icon: 'mail-open-outline' as const,
+    title: 'RSVP structuré',
+    text: 'Présence, accompagnants, boissons et régimes collectés proprement, sans tableur ni fils de messages.',
+  },
+  {
+    icon: 'grid-outline' as const,
+    title: 'Plan de tables',
+    text: 'Organisez et assignez les invités depuis leur fiche. Le placement suit les réponses en temps réel.',
+  },
+  {
+    icon: 'images-outline' as const,
+    title: 'Galerie & livre d’or',
+    text: 'Prolongez l’expérience avant et après l’événement avec photos et messages des proches.',
+  },
+  {
+    icon: 'scan-outline' as const,
+    title: 'Entrée QR',
+    text: 'Scannez les pass personnels et visualisez les arrivées en direct le jour J.',
+  },
+] as const;
+
 export function CapabilitiesSection() {
   const { isDesktop } = useBreakpoint();
-  const capabilities = [
-    {
-      icon: 'create-outline' as const,
-      title: 'Studio guidé',
-      text: 'Modifiez l’invitation sans toucher à sa cohérence visuelle.',
-    },
-    {
-      icon: 'calendar-outline' as const,
-      title: 'Programme vivant',
-      text: 'Horaires, lieux, récit et compte à rebours dans la même page.',
-    },
-    {
-      icon: 'mail-open-outline' as const,
-      title: 'RSVP structuré',
-      text: 'Présence, accompagnants, boissons et régimes sans tableur.',
-    },
-    {
-      icon: 'grid-outline' as const,
-      title: 'Plan de tables',
-      text: 'Organisez et assignez les invités depuis leur fiche.',
-    },
-    {
-      icon: 'images-outline' as const,
-      title: 'Galerie & livre d’or',
-      text: 'Prolongez l’expérience avant et après l’événement.',
-    },
-    {
-      icon: 'scan-outline' as const,
-      title: 'Entrée QR',
-      text: 'Scannez les pass et visualisez les arrivées en direct.',
-    },
-  ];
+  const [compareMode, setCompareMode] = useState<'sans' | 'avec'>('avec');
+  const [activeCap, setActiveCap] = useState(0);
+  const selected = CAPABILITIES[activeCap];
 
   return (
     <SectionShell padTop={80}>
-      <View style={styles.centerHead}>
-        <Text style={styles.kicker}>Fonctionnalités</Text>
-        <Text style={[styles.title, styles.centerText]}>Simple à créer. Complet à gérer.</Text>
-        <Text style={[styles.lead, styles.centerText]}>
-          Des outils utiles avant, pendant et après votre événement.
-        </Text>
-      </View>
-      <View style={[styles.capabilityGrid, isDesktop && styles.capabilityGridDesktop]}>
-        {capabilities.map((item) => (
-          <View
-            key={item.title}
-            style={[styles.capabilityCard, isDesktop && styles.capabilityCardDesktop]}
-          >
-            <View style={styles.capabilityIcon}>
-              <Ionicons name={item.icon} size={21} color={LANDING.coral} />
+      <SectionIntro
+        center
+        kicker="Fonctionnalités"
+        title="Transformez l’expérience de vos invités"
+        lead="Découvrez comment MK Events remplace les fichiers et les tableurs par un parcours vivant."
+      />
+
+      <LandingReveal y={20} duration={600}>
+        <View style={styles.compareBlock}>
+          {!isDesktop ? (
+            <View style={styles.compareToggle}>
+              {([
+                ['sans', 'Sans MK'],
+                ['avec', 'Avec MK'],
+              ] as const).map(([key, label]) => {
+                const active = compareMode === key;
+                return (
+                  <Pressable
+                    key={key}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    onPress={() => setCompareMode(key)}
+                    style={[
+                      styles.comparePill,
+                      active && (key === 'avec' ? styles.comparePillAvec : styles.comparePillSans),
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.comparePillLabel,
+                        active &&
+                          (key === 'avec'
+                            ? styles.comparePillLabelAvec
+                            : styles.comparePillLabelSans),
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
-            <Text style={styles.capabilityTitle}>{item.title}</Text>
-            <Text style={styles.capabilityText}>{item.text}</Text>
+          ) : null}
+
+          {isDesktop ? (
+            <View style={styles.compareColumns}>
+              <View style={[styles.compareCol, styles.compareColSans]}>
+                <Text style={styles.compareColHeadSans}>Sans MK</Text>
+                {COMPARISON_ROWS.map((row) => (
+                  <View key={row.without} style={styles.compareRow}>
+                    <Ionicons name="close-outline" size={18} color={LANDING.textFaint} />
+                    <Text style={styles.compareTextSans}>{row.without}</Text>
+                  </View>
+                ))}
+              </View>
+              <View style={[styles.compareCol, styles.compareColAvec]}>
+                <Text style={styles.compareColHeadAvec}>Avec MK</Text>
+                {COMPARISON_ROWS.map((row) => (
+                  <View key={row.with} style={styles.compareRow}>
+                    <Ionicons name="checkmark-outline" size={18} color={LANDING.coral} />
+                    <Text style={styles.compareTextAvec}>{row.with}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : (
+            <View
+              style={[
+                styles.compareCol,
+                compareMode === 'avec' ? styles.compareColAvec : styles.compareColSans,
+              ]}
+            >
+              <Text
+                style={
+                  compareMode === 'avec' ? styles.compareColHeadAvec : styles.compareColHeadSans
+                }
+              >
+                {compareMode === 'avec' ? 'Avec MK' : 'Sans MK'}
+              </Text>
+              {COMPARISON_ROWS.map((row) => (
+                <View key={row.without} style={styles.compareRow}>
+                  <Ionicons
+                    name={compareMode === 'avec' ? 'checkmark-outline' : 'close-outline'}
+                    size={18}
+                    color={compareMode === 'avec' ? LANDING.coral : LANDING.textFaint}
+                  />
+                  <Text
+                    style={
+                      compareMode === 'avec' ? styles.compareTextAvec : styles.compareTextSans
+                    }
+                  >
+                    {compareMode === 'avec' ? row.with : row.without}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </LandingReveal>
+
+      <LandingReveal y={20} duration={600} delay={120}>
+        <View style={[styles.capExplorer, isDesktop && styles.capExplorerDesktop]}>
+          <View style={[styles.capList, isDesktop && styles.capListDesktop]}>
+            {CAPABILITIES.map((item, index) => {
+              const active = activeCap === index;
+              const num = String(index + 1).padStart(2, '0');
+              return (
+                <Pressable
+                  key={item.title}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  onPress={() => setActiveCap(index)}
+                  style={[styles.capRow, active && styles.capRowActive]}
+                >
+                  <View style={styles.capRowHead}>
+                    <Text style={[styles.capNum, active && styles.capNumActive]}>{num}</Text>
+                    <Text style={[styles.capTitle, active && styles.capTitleActive]}>
+                      {item.title}
+                    </Text>
+                  </View>
+                  {!isDesktop && active ? (
+                    <View style={styles.capExpand}>
+                      <View style={styles.capExpandIcon}>
+                        <Ionicons name={item.icon} size={20} color={LANDING.coral} />
+                      </View>
+                      <Text style={styles.capExpandText}>{item.text}</Text>
+                    </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
           </View>
-        ))}
-      </View>
+
+          {isDesktop ? (
+            <View style={styles.capDetail}>
+              <View style={styles.capDetailIcon}>
+                <Ionicons name={selected.icon} size={28} color={LANDING.coral} />
+              </View>
+              <Text style={styles.capDetailNum}>
+                {String(activeCap + 1).padStart(2, '0')}
+              </Text>
+              <Text style={styles.capDetailTitle}>{selected.title}</Text>
+              <Text style={styles.capDetailText}>{selected.text}</Text>
+            </View>
+          ) : null}
+        </View>
+      </LandingReveal>
     </SectionShell>
   );
 }
@@ -242,97 +409,162 @@ export function TemplatesShowcase({ onLayout }: { onLayout?: (e: LayoutChangeEve
 
   return (
     <SectionShell onLayout={onLayout} padTop={48}>
-      <Text style={styles.kicker}>Collection</Text>
-      <Text style={styles.title}>Les modèles</Text>
-      <Text style={styles.lead}>
-        Chaque univers garde sa mise en page. Vous personnalisez le contenu.
-      </Text>
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.galleryTrack}
-        decelerationRate="fast"
-        snapToInterval={252}
-      >
-        {showcases.map((template) => (
-          <View key={template.key} style={styles.galleryItem}>
-            <MarketingTemplatePreview template={template} width={232} />
-          </View>
-        ))}
-      </ScrollView>
+      <SectionIntro
+        kicker="Collection"
+        title="Les modèles"
+        lead="Chaque univers garde sa mise en page. Vous personnalisez le contenu."
+      />
+      <LandingReveal y={20} duration={600}>
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.galleryTrack}
+          decelerationRate="fast"
+          snapToInterval={252}
+        >
+          {showcases.map((template) => (
+            <View key={template.key} style={styles.galleryItem}>
+              <MarketingTemplatePreview template={template} width={232} />
+            </View>
+          ))}
+        </ScrollView>
+      </LandingReveal>
     </SectionShell>
   );
 }
 
 const AUDIENCES = [
   {
-    key: 'wedding',
-    label: 'Mariage',
+    key: 'wedding' as const,
+    label: 'Mariages',
     title: 'Une expérience à la hauteur du grand jour',
-    text: 'Invitation, récit, programme, RSVP, tables, galerie et livre d’or.',
-    icon: 'heart-outline' as const,
+    text: 'Invitez vos proches avec une page soignée : récit, programme, RSVP et book du jour J.',
+    points: [
+      'Invitation, histoire et programme réunis',
+      'RSVP, tables et régimes sans tableur',
+      'Pass QR pour accueillir sereinement',
+    ],
+    photoLabel: 'Couple enlacé avec bouquet de fleurs',
   },
   {
-    key: 'birthday',
-    label: 'Célébration',
+    key: 'birthday' as const,
+    label: 'Célébrations',
     title: 'Réunir simplement, célébrer pleinement',
-    text: 'Une page expressive pour inviter, informer et recueillir les réponses.',
-    icon: 'sparkles-outline' as const,
+    text: 'Une page expressive pour annoncer, informer et recueillir les réponses — sans fichier à renvoyer.',
+    points: [
+      'Design prêt à personnaliser en quelques minutes',
+      'Confirmations et détails pratiques centralisés',
+      'Galerie et livre d’or pour prolonger le moment',
+    ],
+    photoLabel: 'Couple célébrant, gâteau et ballons',
   },
   {
-    key: 'professional',
+    key: 'professional' as const,
     label: 'Professionnel',
     title: 'Des inscriptions jusqu’au contrôle d’accès',
-    text: 'Informations, confirmations et pass QR réunis dans un parcours fluide.',
-    icon: 'briefcase-outline' as const,
+    text: 'Conférences et événements pro : infos claires, confirmations structurées, entrée fluide.',
+    points: [
+      'Programme et infos mises à jour en direct',
+      'Inscriptions et RSVP suivis au même endroit',
+      'Check-in QR le jour de l’événement',
+    ],
+    photoLabel: 'Participants attentifs en formation professionnelle',
   },
 ] as const;
 
 export function AudienceSection() {
+  const { isDesktop } = useBreakpoint();
   const [active, setActive] = useState(0);
   const selected = AUDIENCES[active];
+  const go = (dir: -1 | 1) => {
+    setActive((current) => (current + dir + AUDIENCES.length) % AUDIENCES.length);
+  };
 
   return (
-    <SectionShell padTop={76}>
-      <View style={styles.audienceCard}>
-        <View style={styles.audienceTabs}>
-          {AUDIENCES.map((item, index) => (
-            <Pressable
-              key={item.key}
-              onPress={() => setActive(index)}
-              style={[styles.audienceTab, index === active && styles.audienceTabActive]}
-            >
-              <Text
-                style={[
-                  styles.audienceTabLabel,
-                  index === active && styles.audienceTabLabelActive,
-                ]}
-              >
-                {item.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <View style={styles.audienceBody}>
-          <View style={styles.audienceIcon}>
-            <Ionicons name={selected.icon} size={28} color={LANDING.coral} />
+    <SectionShell padTop={88}>
+      <LandingReveal y={20} duration={600}>
+        <View style={styles.whoHead}>
+          <View style={styles.whoBadge}>
+            <Text style={styles.whoBadgeLabel}>Pour qui ?</Text>
           </View>
-          <Text style={styles.audienceTitle}>{selected.title}</Text>
-          <Text style={styles.audienceText}>{selected.text}</Text>
-          <View style={styles.audienceProgress}>
-            {AUDIENCES.map((item, index) => (
-              <View
-                key={item.key}
-                style={[
-                  styles.audienceProgressItem,
-                  index === active && styles.audienceProgressItemActive,
-                ]}
+          <Text style={styles.whoTitle}>À qui s’adresse MK Events ?</Text>
+          <Text style={styles.whoLead}>
+            Des parcours adaptés à chaque type d’événement.
+          </Text>
+        </View>
+      </LandingReveal>
+
+      <LandingReveal y={24} duration={650} delay={80}>
+        <View style={[styles.whoGrid, isDesktop && styles.whoGridDesktop]}>
+          <View style={[styles.whoPhotoStage, isDesktop && styles.whoPhotoStageDesktop]}>
+            <View style={styles.whoPhotoGlow} />
+            <View style={styles.whoPhotoFrame}>
+              <Image
+                key={selected.key}
+                source={AUDIENCE_PHOTOS[selected.key]}
+                style={styles.whoPhotoImage}
+                resizeMode="cover"
+                accessibilityLabel={selected.photoLabel}
               />
-            ))}
+            </View>
+          </View>
+
+          <View style={styles.whoCopy}>
+            <View style={styles.whoTabs}>
+              {AUDIENCES.map((item, index) => {
+                const on = index === active;
+                return (
+                  <Pressable
+                    key={item.key}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    onPress={() => setActive(index)}
+                    style={[styles.whoTab, on && styles.whoTabActive]}
+                  >
+                    <Text style={[styles.whoTabLabel, on && styles.whoTabLabelActive]}>
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.whoFeatureTitle}>{selected.title}</Text>
+            <Text style={styles.whoFeatureText}>{selected.text}</Text>
+
+            <View style={styles.whoPoints}>
+              {selected.points.map((point) => (
+                <View key={point} style={styles.whoPoint}>
+                  <View style={styles.whoCheck}>
+                    <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                  </View>
+                  <Text style={styles.whoPointText}>{point}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.whoNav}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Profil précédent"
+                onPress={() => go(-1)}
+                style={({ pressed }) => [styles.whoNavBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="chevron-back" size={18} color={LANDING.text} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Profil suivant"
+                onPress={() => go(1)}
+                style={({ pressed }) => [styles.whoNavBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="chevron-forward" size={18} color={LANDING.text} />
+              </Pressable>
+            </View>
           </View>
         </View>
-      </View>
+      </LandingReveal>
     </SectionShell>
   );
 }
@@ -361,27 +593,30 @@ export function FaqSection({ onLayout }: { onLayout?: (e: LayoutChangeEvent) => 
 
   return (
     <SectionShell padTop={76} onLayout={onLayout}>
-      <Text style={styles.kicker}>Questions fréquentes</Text>
-      <Text style={styles.title}>L’essentiel, avant de commencer</Text>
+      <SectionIntro
+        kicker="Questions fréquentes"
+        title="L’essentiel, avant de commencer"
+      />
       <View style={styles.faqList}>
         {FAQS.map((item, index) => {
           const expanded = open === index;
           return (
-            <Pressable
-              key={item.q}
-              accessibilityRole="button"
-              accessibilityState={{ expanded }}
-              onPress={() => setOpen(expanded ? null : index)}
-              style={styles.faqItem}
-            >
-              <View style={styles.faqQuestionRow}>
-                <Text style={styles.faqQuestion}>{item.q}</Text>
-                <View style={[styles.faqPlus, expanded && styles.faqPlusOpen]}>
-                  <Ionicons name={expanded ? 'remove' : 'add'} size={18} color={LANDING.text} />
+            <LandingReveal key={item.q} x={-20} y={0} delay={index * 100} duration={500}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded }}
+                onPress={() => setOpen(expanded ? null : index)}
+                style={styles.faqItem}
+              >
+                <View style={styles.faqQuestionRow}>
+                  <Text style={styles.faqQuestion}>{item.q}</Text>
+                  <View style={[styles.faqPlus, expanded && styles.faqPlusOpen]}>
+                    <Ionicons name={expanded ? 'remove' : 'add'} size={18} color={LANDING.text} />
+                  </View>
                 </View>
-              </View>
-              {expanded ? <Text style={styles.faqAnswer}>{item.a}</Text> : null}
-            </Pressable>
+                {expanded ? <Text style={styles.faqAnswer}>{item.a}</Text> : null}
+              </Pressable>
+            </LandingReveal>
           );
         })}
       </View>
@@ -394,17 +629,13 @@ export function FinalCtaSection() {
 
   return (
     <SectionShell padTop={48}>
-      <View style={styles.finalCard}>
-        <Text style={styles.finalTitle}>Créez votre invitation</Text>
-        <Text style={styles.finalText}>Publiez quand vous êtes prêt.</Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push('/onboarding')}
-          style={({ pressed }) => [styles.finalCta, pressed && { opacity: 0.88 }]}
-        >
-          <Text style={styles.finalCtaLabel}>Commencer</Text>
-        </Pressable>
-      </View>
+      <LandingReveal y={20} duration={600}>
+        <View style={styles.finalCard}>
+          <Text style={styles.finalTitle}>Créez votre invitation</Text>
+          <Text style={styles.finalText}>Publiez quand vous êtes prêt.</Text>
+          <LandingCta label="Commencer" onPress={() => router.push('/onboarding')} />
+        </View>
+      </LandingReveal>
     </SectionShell>
   );
 }
@@ -417,6 +648,12 @@ export function MarketingFooter() {
       <View style={styles.footerInner}>
         <Text style={styles.footerBrand}>MK Events</Text>
         <View style={styles.footerLinks}>
+          <Pressable onPress={() => router.push('/cgu')} hitSlop={8}>
+            <Text style={styles.footerLink}>CGU</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push('/confidentialite')} hitSlop={8}>
+            <Text style={styles.footerLink}>Confidentialité</Text>
+          </Pressable>
           <Pressable onPress={() => router.push('/login')} hitSlop={8}>
             <Text style={styles.footerLink}>Connexion</Text>
           </Pressable>
@@ -509,235 +746,91 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: LANDING.text,
   },
-  productCanvas: {
+  photoStage: {
     width: '100%',
-    maxWidth: 540,
-    position: 'relative',
-    paddingVertical: 20,
-  },
-  productGlow: {
-    position: 'absolute',
-    width: '82%',
-    aspectRatio: 1,
-    borderRadius: 999,
-    backgroundColor: LANDING.plumSoft,
+    maxWidth: 460,
     alignSelf: 'center',
-    top: -20,
+    position: 'relative',
+    paddingTop: 12,
+    paddingRight: 12,
+    paddingBottom: 8,
   },
-  productWindow: {
-    width: '100%',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: LANDING.border,
-    backgroundColor: LANDING.surface,
-    overflow: 'hidden',
+  photoStageDesktop: {
+    maxWidth: 520,
+    alignSelf: 'stretch',
   },
-  productWindowTop: {
-    minHeight: 58,
-    paddingHorizontal: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: LANDING.border,
-  },
-  windowDots: {
-    flexDirection: 'row',
-    gap: 5,
-  },
-  windowDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: 'rgba(42, 31, 36, 0.16)',
-  },
-  windowTitle: {
-    flex: 1,
-    textAlign: 'center',
-    ...landingFonts.semibold,
-    fontSize: 12,
-    color: LANDING.textMuted,
-  },
-  livePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(92, 122, 74, 0.12)',
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#5C7A4A',
-  },
-  liveLabel: {
-    ...landingFonts.semibold,
-    fontSize: 10,
-    color: '#47723B',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    padding: 14,
-  },
-  stat: {
-    flex: 1,
-    minHeight: 78,
-    borderRadius: 16,
-    backgroundColor: LANDING.bgSoft,
-    padding: 13,
-    justifyContent: 'center',
-  },
-  statAccent: {
+  photoOffset: {
+    position: 'absolute',
+    top: 28,
+    left: 18,
+    right: 0,
+    bottom: 0,
+    borderRadius: 28,
     backgroundColor: LANDING.coralSoft,
+    transform: [{ rotate: '3deg' }],
   },
-  statValue: {
-    ...landingFonts.bold,
-    fontSize: 24,
-    color: LANDING.text,
-  },
-  statLabel: {
-    ...landingFonts.regular,
-    fontSize: 10,
-    color: LANDING.textMuted,
-  },
-  productBody: {
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    gap: 10,
-  },
-  responseCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: LANDING.border,
-    padding: 12,
-  },
-  responseAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: LANDING.plum,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  responseAvatarLabel: {
-    ...landingFonts.semibold,
-    fontSize: 10,
-    color: '#FFFFFF',
-  },
-  responseCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  responseName: {
-    ...landingFonts.semibold,
-    fontSize: 12,
-    color: LANDING.text,
-  },
-  responseMeta: {
-    ...landingFonts.regular,
-    fontSize: 10,
-    color: LANDING.textMuted,
-  },
-  responseStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    backgroundColor: 'rgba(92, 122, 74, 0.12)',
-  },
-  responseStatusLabel: {
-    ...landingFonts.semibold,
-    fontSize: 9,
-    color: '#47723B',
-  },
-  timelineCard: {
-    borderRadius: 16,
-    backgroundColor: LANDING.bgSoft,
-    padding: 14,
-  },
-  timelineHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  timelineTitle: {
-    ...landingFonts.semibold,
-    fontSize: 11,
-    color: LANDING.text,
-  },
-  timelineValue: {
-    ...landingFonts.semibold,
-    fontSize: 10,
-    color: LANDING.coral,
-  },
-  timelineTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(42, 31, 36, 0.08)',
+  photoFrame: {
+    width: '100%',
+    aspectRatio: 0.82,
+    borderRadius: 28,
     overflow: 'hidden',
-  },
-  timelineFill: {
-    width: '74%',
-    height: '100%',
-    borderRadius: 3,
-    backgroundColor: LANDING.coral,
-  },
-  timelineLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  timelineLabel: {
-    ...landingFonts.regular,
-    fontSize: 9,
-    color: LANDING.textFaint,
-  },
-  stepGrid: {
-    gap: 12,
-  },
-  stepGridDesktop: {
-    flexDirection: 'row',
-  },
-  stepCard: {
     backgroundColor: LANDING.surface,
-    borderRadius: 22,
     borderWidth: 1,
     borderColor: LANDING.border,
-    paddingVertical: 22,
-    paddingHorizontal: 22,
-    gap: 8,
-    ...cardShadow,
   },
-  stepCardDesktop: {
-    flex: 1,
-    minHeight: 190,
+  photoImage: {
+    width: '100%',
+    height: '100%',
   },
-  stepN: {
-    ...landingFonts.semibold,
-    fontSize: 12,
-    letterSpacing: 1.6,
+  howHead: {
+    alignItems: 'flex-start',
+    marginBottom: 48,
+    maxWidth: 640,
+  },
+  howKicker: {
+    ...landingFonts.medium,
+    fontSize: 13,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
     color: LANDING.coral,
+    marginBottom: 14,
   },
-  stepTitle: {
-    ...landingFonts.semibold,
-    fontSize: 22,
-    lineHeight: 28,
+  howTitle: {
+    fontFamily: fontFamilies.serifSemiBold,
+    fontSize: 40,
+    lineHeight: 46,
+    letterSpacing: -0.8,
     color: LANDING.text,
+    marginBottom: 14,
   },
-  stepText: {
+  howLead: {
     ...landingFonts.regular,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 17,
+    lineHeight: 26,
     color: LANDING.textMuted,
-    maxWidth: 440,
+    maxWidth: 480,
+  },
+  howQuote: {
+    marginTop: 56,
+    paddingTop: 28,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  howQuoteRule: {
+    width: 48,
+    height: 2,
+    backgroundColor: LANDING.coral,
+    marginBottom: 22,
+    alignSelf: 'center',
+  },
+  howQuoteText: {
+    fontFamily: fontFamilies.serifItalic,
+    fontSize: 24,
+    lineHeight: 34,
+    letterSpacing: -0.3,
+    color: LANDING.text,
+    textAlign: 'center',
   },
   centerHead: {
     alignItems: 'center',
@@ -746,43 +839,213 @@ const styles = StyleSheet.create({
   centerText: {
     textAlign: 'center',
   },
-  capabilityGrid: {
-    gap: 12,
+  compareBlock: {
+    marginTop: 8,
+    marginBottom: 48,
+    gap: 16,
   },
-  capabilityGridDesktop: {
+  compareToggle: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  capabilityCard: {
-    borderRadius: 22,
+    alignSelf: 'center',
+    gap: 6,
+    padding: 5,
+    borderRadius: 999,
+    backgroundColor: LANDING.bgSoft,
     borderWidth: 1,
     borderColor: LANDING.border,
-    backgroundColor: LANDING.surfaceGlass,
-    padding: 22,
   },
-  capabilityCardDesktop: {
-    width: '31.8%',
-    flexGrow: 1,
+  comparePill: {
+    minHeight: 40,
+    paddingHorizontal: 18,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  capabilityIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 15,
+  comparePillSans: {
+    backgroundColor: LANDING.surface,
+  },
+  comparePillAvec: {
+    backgroundColor: LANDING.coral,
+  },
+  comparePillLabel: {
+    ...landingFonts.medium,
+    fontSize: 13,
+    color: LANDING.textFaint,
+  },
+  comparePillLabelSans: {
+    ...landingFonts.semibold,
+    color: LANDING.text,
+  },
+  comparePillLabelAvec: {
+    ...landingFonts.semibold,
+    color: '#FFFFFF',
+  },
+  compareColumns: {
+    flexDirection: 'row',
+    gap: 16,
+    alignItems: 'stretch',
+  },
+  compareCol: {
+    flex: 1,
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    gap: 18,
+  },
+  compareColSans: {
+    backgroundColor: LANDING.bgSoft,
+    borderWidth: 1,
+    borderColor: LANDING.border,
+  },
+  compareColAvec: {
+    backgroundColor: LANDING.coralSoft,
+    borderWidth: 1,
+    borderColor: 'rgba(224, 122, 95, 0.28)',
+  },
+  compareColHeadSans: {
+    ...landingFonts.semibold,
+    fontSize: 13,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: LANDING.textFaint,
+    marginBottom: 4,
+  },
+  compareColHeadAvec: {
+    ...landingFonts.semibold,
+    fontSize: 13,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: LANDING.coral,
+    marginBottom: 4,
+  },
+  compareRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  compareTextSans: {
+    flex: 1,
+    ...landingFonts.regular,
+    fontSize: 15,
+    lineHeight: 22,
+    color: LANDING.textMuted,
+  },
+  compareTextAvec: {
+    flex: 1,
+    ...landingFonts.medium,
+    fontSize: 15,
+    lineHeight: 22,
+    color: LANDING.text,
+  },
+  capExplorer: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: LANDING.border,
+  },
+  capExplorerDesktop: {
+    flexDirection: 'row',
+    gap: 48,
+    alignItems: 'flex-start',
+    paddingTop: 8,
+  },
+  capList: {
+    width: '100%',
+  },
+  capListDesktop: {
+    flex: 1.15,
+    maxWidth: 520,
+  },
+  capRow: {
+    paddingVertical: 22,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: LANDING.border,
+  },
+  capRowActive: {
+    borderBottomColor: 'rgba(224, 122, 95, 0.35)',
+  },
+  capRowHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 16,
+  },
+  capNum: {
+    ...landingFonts.semibold,
+    fontSize: 13,
+    letterSpacing: 1.2,
+    color: LANDING.textFaint,
+    minWidth: 28,
+  },
+  capNumActive: {
+    color: LANDING.coral,
+  },
+  capTitle: {
+    flex: 1,
+    ...landingFonts.bold,
+    fontSize: 26,
+    lineHeight: 32,
+    letterSpacing: -0.4,
+    color: LANDING.textFaint,
+  },
+  capTitleActive: {
+    color: LANDING.text,
+  },
+  capExpand: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    marginTop: 14,
+    paddingLeft: 44,
+    paddingRight: 4,
+  },
+  capExpandIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     backgroundColor: LANDING.coralSoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 15,
+    marginTop: 2,
   },
-  capabilityTitle: {
-    ...landingFonts.semibold,
-    fontSize: 19,
-    color: LANDING.text,
-    marginBottom: 6,
-  },
-  capabilityText: {
+  capExpandText: {
+    flex: 1,
     ...landingFonts.regular,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 22,
+    color: LANDING.textMuted,
+  },
+  capDetail: {
+    flex: 1,
+    paddingTop: 28,
+    paddingLeft: 8,
+    maxWidth: 420,
+  },
+  capDetailIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: LANDING.coralSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 22,
+  },
+  capDetailNum: {
+    ...landingFonts.semibold,
+    fontSize: 12,
+    letterSpacing: 1.8,
+    color: LANDING.coral,
+    marginBottom: 10,
+  },
+  capDetailTitle: {
+    ...landingFonts.bold,
+    fontSize: 36,
+    lineHeight: 42,
+    letterSpacing: -0.6,
+    color: LANDING.text,
+    marginBottom: 14,
+  },
+  capDetailText: {
+    ...landingFonts.regular,
+    fontSize: 16,
+    lineHeight: 26,
     color: LANDING.textMuted,
   },
   galleryTrack: {
@@ -793,91 +1056,176 @@ const styles = StyleSheet.create({
   galleryItem: {
     marginRight: 4,
   },
-  audienceCard: {
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: LANDING.border,
-    backgroundColor: LANDING.surface,
-    overflow: 'hidden',
-    ...cardShadow,
-  },
-  audienceTabs: {
-    flexDirection: 'row',
-    padding: 8,
-    gap: 6,
-    backgroundColor: LANDING.bgSoft,
-  },
-  audienceTab: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 14,
+  whoHead: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
+    marginBottom: 36,
   },
-  audienceTabActive: {
-    backgroundColor: LANDING.surface,
-    shadowColor: '#2A1F24',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  audienceTabLabel: {
-    ...landingFonts.medium,
-    fontSize: 12,
-    color: LANDING.textFaint,
-  },
-  audienceTabLabelActive: {
-    ...landingFonts.semibold,
-    color: LANDING.text,
-  },
-  audienceBody: {
-    alignItems: 'center',
-    paddingVertical: 42,
-    paddingHorizontal: 24,
-  },
-  audienceIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
+  whoBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
     backgroundColor: LANDING.coralSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 18,
+    marginBottom: 16,
   },
-  audienceTitle: {
+  whoBadgeLabel: {
+    ...landingFonts.semibold,
+    fontSize: 12,
+    letterSpacing: 0.2,
+    color: LANDING.coral,
+  },
+  whoTitle: {
     ...landingFonts.bold,
-    fontSize: 26,
-    lineHeight: 32,
-    textAlign: 'center',
+    fontSize: 32,
+    lineHeight: 38,
+    letterSpacing: -0.5,
     color: LANDING.text,
-    maxWidth: 560,
+    textAlign: 'center',
     marginBottom: 10,
   },
-  audienceText: {
+  whoLead: {
+    ...landingFonts.regular,
+    fontSize: 15,
+    lineHeight: 22,
+    color: LANDING.textMuted,
+    textAlign: 'center',
+    maxWidth: 420,
+  },
+  whoGrid: {
+    gap: 28,
+    alignItems: 'stretch',
+  },
+  whoGridDesktop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 48,
+  },
+  whoPhotoStage: {
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+    position: 'relative',
+  },
+  whoPhotoStageDesktop: {
+    flex: 1.05,
+    maxWidth: 520,
+    alignSelf: 'stretch',
+  },
+  whoPhotoGlow: {
+    position: 'absolute',
+    top: 18,
+    left: -10,
+    right: 24,
+    bottom: 10,
+    borderRadius: 32,
+    backgroundColor: LANDING.coralSoft,
+    ...(Platform.OS === 'web'
+      ? ({ filter: 'blur(28px)', opacity: 0.9 } as object)
+      : { opacity: 0.7 }),
+  },
+  whoPhotoFrame: {
+    width: '100%',
+    aspectRatio: 0.92,
+    borderRadius: 28,
+    overflow: 'hidden',
+    backgroundColor: LANDING.surface,
+    borderWidth: 1,
+    borderColor: LANDING.border,
+    zIndex: 1,
+  },
+  whoPhotoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  whoCopy: {
+    flex: 1,
+    maxWidth: 480,
+    gap: 14,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  whoTabs: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 6,
+  },
+  whoTab: {
+    minHeight: 40,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: LANDING.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  whoTabActive: {
+    backgroundColor: LANDING.coral,
+    borderColor: LANDING.coral,
+  },
+  whoTabLabel: {
+    ...landingFonts.medium,
+    fontSize: 13,
+    color: LANDING.textMuted,
+  },
+  whoTabLabelActive: {
+    ...landingFonts.semibold,
+    color: '#FFFFFF',
+  },
+  whoFeatureTitle: {
+    ...landingFonts.bold,
+    fontSize: 24,
+    lineHeight: 30,
+    letterSpacing: -0.3,
+    color: LANDING.text,
+  },
+  whoFeatureText: {
+    ...landingFonts.regular,
+    fontSize: 15,
+    lineHeight: 23,
+    color: LANDING.textMuted,
+  },
+  whoPoints: {
+    gap: 12,
+    marginTop: 4,
+  },
+  whoPoint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  whoCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: LANDING.coral,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  whoPointText: {
+    flex: 1,
     ...landingFonts.regular,
     fontSize: 14,
-    lineHeight: 22,
-    textAlign: 'center',
-    color: LANDING.textMuted,
-    maxWidth: 520,
+    lineHeight: 21,
+    color: LANDING.text,
   },
-  audienceProgress: {
+  whoNav: {
     flexDirection: 'row',
-    gap: 6,
-    marginTop: 26,
+    gap: 10,
+    marginTop: 10,
   },
-  audienceProgressItem: {
-    width: 24,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: LANDING.borderStrong,
+  whoNavBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: LANDING.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: LANDING.surface,
   },
-  audienceProgressItemActive: {
-    width: 48,
-    backgroundColor: LANDING.coral,
-  },
+  pressed: { opacity: 0.82 },
   faqList: {
     borderTopWidth: 1,
     borderTopColor: LANDING.border,

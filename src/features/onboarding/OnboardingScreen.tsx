@@ -1,5 +1,5 @@
 /**
- * Onboarding premium — héro photo, vague, médaillon, typo événementielle.
+ * Onboarding premium — héro photo, médaillon, typo événementielle.
  * Composition fixe cream / plum / or / coral (hors thème app).
  */
 
@@ -8,7 +8,6 @@ import {
   Animated,
   Easing,
   FlatList,
-  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -27,9 +26,9 @@ import { fontFamilies, spacing } from '@/constants/theme';
 import {
   BotanicalLeaf,
   OnboardingMedallion,
-  OnboardingWave,
   type MedallionKind,
 } from './components/OnboardingDecor';
+import { OnboardingHeroPhoto } from './components/OnboardingHeroPhoto';
 import {
   ONBOARDING_HERO_ANNIVERSAIRE,
   ONBOARDING_HERO_CONFERENCE,
@@ -87,7 +86,7 @@ export function OnboardingScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const isLast = activeIndex === SLIDES.length - 1;
 
-  const heroH = Math.min(Math.max(height * 0.44, 260), 400);
+  const heroH = Math.round(Math.min(Math.max(height * 0.44, 260), 400));
   const footerH = 120 + insets.bottom;
 
   const contentFade = useRef(new Animated.Value(1)).current;
@@ -168,11 +167,7 @@ export function OnboardingScreen() {
           const isActive = index === activeIndex;
           return (
             <View style={{ width }}>
-              <View style={[styles.hero, { height: heroH }]}>
-                <Image source={item.image} style={styles.heroImage} resizeMode="cover" />
-                <View style={styles.heroScrim} />
-                <OnboardingWave width={width} height={62} />
-              </View>
+              <OnboardingHeroPhoto width={width} height={heroH} source={item.image} />
 
               <View style={styles.panel}>
                 <Animated.View
@@ -286,19 +281,6 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     color: 'rgba(247, 240, 232, 0.95)',
   },
-  hero: {
-    width: '100%',
-    overflow: 'hidden',
-    backgroundColor: INK,
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  heroScrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(42, 24, 36, 0.2)',
-  },
   panel: {
     flexGrow: 1,
     backgroundColor: PAPER,
@@ -306,9 +288,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 280,
     paddingBottom: spacing.lg,
+    // Jointure nette (pas de vague / mask) — le médaillon chevauche la couture.
+    marginTop: 0,
   },
   medallionWrap: {
-    marginTop: -42,
+    marginTop: -36,
     zIndex: 3,
     marginBottom: spacing.md,
   },

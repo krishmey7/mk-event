@@ -11,15 +11,19 @@ import { normalizePhotoFrame } from '@/features/invitation/types';
 import { useEditor } from '../EditorContext';
 
 export function EditorCoverPreview({ embedded = false }: { embedded?: boolean }) {
-  const { cover, theme, dressCode, template, venue, guests } = useEditor();
+  const { cover, theme, dressCode, template, venue, guests, gallery } = useEditor();
   const insets = useSafeAreaInsets();
   /** Premier invité de la liste — sinon échantillon (pas le compte organisateur). */
   const guest = guests[0] ?? STUDIO_PREVIEW_GUEST;
+  const stripPhotos =
+    template.coverLayout === 'filmStrip'
+      ? gallery.map((item) => item.uri).filter(Boolean)
+      : undefined;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <TemplateCover
-        key={`cover-${cover.coupleFrame}-${cover.couplePhotoUri}-${cover.photoUri}-${cover.title}-${cover.dateLabel}-${cover.couple}`}
+        key={`cover-${cover.coupleFrame}-${cover.couplePhotoUri}-${cover.photoUri}-${cover.title}-${cover.kicker}-${cover.dateLabel}-${cover.couple}-${cover.timeLabel}-${stripPhotos?.join('|') ?? ''}`}
         layout={template.coverLayout}
         ornaments={template.ornaments}
         colors={theme.colors}
@@ -37,6 +41,8 @@ export function EditorCoverPreview({ embedded = false }: { embedded?: boolean })
         venueStreet={venue.street}
         venueCity={venue.city}
         dressCode={dressCode}
+        timePlace={cover.timeLabel}
+        stripPhotos={stripPhotos}
         compact={embedded}
         paddingTop={embedded ? 14 : insets.top + 12}
         paddingBottom={embedded ? 10 : insets.bottom + 12}

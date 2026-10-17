@@ -6,6 +6,7 @@ import { type ReactNode, useMemo } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
+import { formatDressCode } from '@/features/invitation/formatDressCode';
 import type { Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
 import { PelliculeFlourish, pelliculeAtmosphere } from './chrome';
@@ -23,22 +24,27 @@ export function PelliculeCover({
   colors,
   guest,
   title,
+  kicker,
   dateLabel,
   timeLabel,
   couple,
   guestSentence,
   venueName,
+  dressCode,
   stripPhotos,
   hint,
 }: {
   colors: TemplateColors;
   guest: Guest;
   title: string;
+  /** Accroche studio — prioritaire sur title pour l’en-tête. */
+  kicker?: string;
   dateLabel: string;
   timeLabel?: string;
   couple: string;
   guestSentence: string;
   venueName?: string;
+  dressCode?: string;
   stripPhotos?: string[];
   hint?: ReactNode;
 }) {
@@ -48,18 +54,19 @@ export function PelliculeCover({
   const muted = colors.textMuted;
   const names = splitCouple(couple);
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
-  const kicker = (title || 'RÉSERVEZ LA DATE!').trim().toUpperCase();
+  const headline = (kicker?.trim() || title || 'RÉSERVEZ LA DATE!').trim().toUpperCase();
   const time = (timeLabel || '').trim();
   const meta = [dateLabel.trim(), time].filter(Boolean).join('  |  ');
+  const dress = formatDressCode(dressCode);
 
   const strip = useMemo(() => {
-    const source = [
-      ...(stripPhotos ?? []),
-      ...PELLICULE_IMAGES.strip,
-    ].filter(Boolean);
-    const unique = Array.from(new Set(source));
-    while (unique.length < 4) unique.push(PELLICULE_IMAGES.strip[unique.length % 4]);
-    return unique.slice(0, 4);
+    const custom = (stripPhotos ?? []).map((uri) => uri.trim()).filter(Boolean);
+    if (custom.length > 0) {
+      const unique = Array.from(new Set(custom));
+      while (unique.length < 4) unique.push(unique[unique.length % Math.max(1, custom.length)]);
+      return unique.slice(0, 4);
+    }
+    return [...PELLICULE_IMAGES.strip];
   }, [stripPhotos]);
 
   return (
@@ -82,7 +89,7 @@ export function PelliculeCover({
         <View style={[styles.copy, { paddingBottom: hint ? 72 : 20 }]}>
           <PelliculeFlourish color={ink} width={200} />
 
-          <Text style={[styles.kicker, { color: ink }]}>{kicker}</Text>
+          <Text style={[styles.kicker, { color: ink }]}>{headline}</Text>
 
           {names ? (
             <View style={styles.namesBlock}>
@@ -97,6 +104,10 @@ export function PelliculeCover({
           {meta ? <Text style={[styles.meta, { color: ink }]}>{meta}</Text> : null}
           {venueName?.trim() ? (
             <Text style={[styles.venue, { color: ink }]}>{venueName.trim().toUpperCase()}</Text>
+          ) : null}
+
+          {dress ? (
+            <Text style={[styles.dress, { color: muted }]}>{dress}</Text>
           ) : null}
 
           {welcome ? (
@@ -168,6 +179,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 2.8,
     textAlign: 'center',
+  },
+  dress: {
+    fontFamily: 'CormorantGaramond_400Regular_Italic',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: 2,
   },
   welcome: {
     fontFamily: 'CormorantGaramond_400Regular_Italic',

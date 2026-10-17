@@ -10,6 +10,13 @@ const root = path.resolve(__dirname, '..');
 const dist = path.join(root, 'dist');
 const out = path.join(root, `deploy-web-${Date.now()}`);
 
+/* Charge .env pour EXPO_PUBLIC_* (Google OAuth, API URL, etc.). */
+try {
+  require('dotenv').config({ path: path.join(root, '.env') });
+} catch {
+  /* dotenv optionnel si déjà injecté dans l’environnement */
+}
+
 function rimraf(p) {
   try {
     fs.rmSync(p, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });

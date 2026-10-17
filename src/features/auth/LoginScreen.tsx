@@ -1,5 +1,5 @@
 /**
- * Connexion — charte Coral + Plum + Cream.
+ * Connexion — Dark Luxury raffiné.
  */
 
 import { useState } from 'react';
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { ApiError } from '@/services/apiClient';
 import { login } from '@/services/authService';
 import { isValidIdentifier, isValidPassword } from '@/utils/validation';
-import { fontFamilies, radii, shadows, spacing } from '@/constants/theme';
+import { fontFamilies, radii, spacing } from '@/constants/theme';
 
 interface LoginFieldErrors {
   identifier?: string;
@@ -22,7 +22,7 @@ interface LoginFieldErrors {
 }
 
 const ACCENT = '#E07A5F';
-const INK = '#2A1F24';
+const ON_ACCENT = '#2A1218';
 
 export function LoginScreen() {
   const router = useRouter();
@@ -30,8 +30,8 @@ export function LoginScreen() {
   return (
     <AuthShell
       tone="dark"
-      title="Connexion"
-      subtitle="Accédez à votre studio pour créer et gérer vos invitations."
+      title="Bon retour"
+      subtitle="Entrez dans votre studio pour créer, peaufiner et suivre vos invitations."
       footer={
         <View style={styles.switchRow}>
           <Text style={styles.switchText}>Pas encore de compte ?</Text>
@@ -41,7 +41,7 @@ export function LoginScreen() {
             hitSlop={8}
             style={({ pressed }) => [pressed && styles.pressed]}
           >
-            <Text style={styles.switchLink}>Inscrivez-vous</Text>
+            <Text style={styles.switchLink}>Créer un compte</Text>
           </Pressable>
         </View>
       }
@@ -108,7 +108,7 @@ function LoginForm() {
       ) : null}
 
       <Input
-        label="Email ou numéro de téléphone"
+        label="Email ou téléphone"
         leftIcon="mail-outline"
         value={identifier}
         onChangeText={(value) => {
@@ -156,7 +156,7 @@ function LoginForm() {
         style={({ pressed }) => [styles.cta, (pressed || loading) && styles.pressed]}
       >
         {loading ? (
-          <ActivityIndicator color={INK} />
+          <ActivityIndicator color={ON_ACCENT} />
         ) : (
           <Text style={styles.ctaLabel}>Se connecter</Text>
         )}
@@ -184,32 +184,33 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: '#F06570',
   },
-  forgot: { alignSelf: 'flex-end', paddingVertical: 2 },
+  forgot: { alignSelf: 'flex-end', paddingVertical: 2, marginTop: -4 },
   forgotText: {
-    fontFamily: fontFamilies.sans,
+    fontFamily: fontFamilies.sansMedium,
     fontSize: 13,
     lineHeight: 18,
-    color: 'rgba(242, 244, 247, 0.55)',
+    color: 'rgba(247, 240, 232, 0.52)',
   },
   cta: {
-    minHeight: 52,
+    minHeight: 54,
     borderRadius: 14,
     backgroundColor: ACCENT,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.sm,
+    marginTop: spacing.xs,
   },
   ctaLabel: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 15,
-    color: INK,
+    letterSpacing: 0.3,
+    color: ON_ACCENT,
   },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', gap: 6 },
   switchText: {
     fontFamily: fontFamilies.sans,
     fontSize: 14,
     lineHeight: 19,
-    color: 'rgba(242, 244, 247, 0.55)',
+    color: 'rgba(247, 240, 232, 0.52)',
   },
   switchLink: {
     fontFamily: fontFamilies.sansSemiBold,

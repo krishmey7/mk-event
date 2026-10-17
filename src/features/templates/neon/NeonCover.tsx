@@ -7,6 +7,7 @@ import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
+import { formatDressCode } from '@/features/invitation/formatDressCode';
 import type { Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
 import { NEON_WEDDING } from './data';
@@ -136,6 +137,7 @@ export function NeonCover({
   inviteLine,
   venueStreet,
   venueCity,
+  dressCode,
   hint,
 }: {
   colors: TemplateColors;
@@ -149,6 +151,7 @@ export function NeonCover({
   inviteLine?: string;
   venueStreet?: string;
   venueCity?: string;
+  dressCode?: string;
   hint?: ReactNode;
 }) {
   const gold = colors.accent;
@@ -157,8 +160,9 @@ export function NeonCover({
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const invite = (inviteLine || NEON_WEDDING.inviteLine).trim();
   const date = useMemo(() => parseFrenchDate(dateLabel), [dateLabel]);
-  const time = (timeLabel || NEON_WEDDING.timeLabel).trim();
+  const time = (timeLabel || '').trim();
   const address = [venueStreet, venueCity].filter(Boolean).join(', ').toUpperCase();
+  const dress = formatDressCode(dressCode);
 
   return (
     <View style={styles.fill}>
@@ -208,12 +212,13 @@ export function NeonCover({
           <View style={styles.dateCenter}>
             <Text style={styles.weekday}>{date.weekday.toUpperCase()}</Text>
             <Text style={styles.day}>{date.day}</Text>
-            <Text style={[styles.at, { color: gold }]}>À {time}</Text>
+            {time ? <Text style={[styles.at, { color: gold }]}>À {time}</Text> : null}
           </View>
           <Text style={styles.year}>{date.year}</Text>
         </View>
 
         {address ? <Text style={styles.address}>{address}</Text> : null}
+        {dress ? <Text style={[styles.dress, { color: gold }]}>{dress}</Text> : null}
       </View>
 
       {hint ? <View style={styles.hint}>{hint}</View> : null}
@@ -360,6 +365,14 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.78)',
     textAlign: 'center',
     marginTop: 8,
+  },
+  dress: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textAlign: 'center',
+    marginTop: 6,
+    textTransform: 'uppercase',
   },
   hint: {
     position: 'absolute',

@@ -2,7 +2,7 @@
  * Décor (anniversaire) / Lieu & pratiques (conférence).
  */
 
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { EditorInput } from '@/features/editor/components/EditorInput';
 import { EditorHint } from '@/features/editor/components/EditorHint';
@@ -18,11 +18,13 @@ export default function ThemeTabScreen() {
     dressCode,
     setDressCode,
     theme,
-    template,
+    themes,
+    setThemeKey,
     practical,
     updatePractical,
     venue,
     updateVenue,
+    template,
   } = useEditor();
   const { type: activeType } = useActiveEvent();
   const eventType = activeType || template.category;
@@ -39,8 +41,30 @@ export default function ThemeTabScreen() {
       >
         {hint ? <EditorHint>{hint}</EditorHint> : null}
         <Text style={[styles.heading, { color: c.textPrimary }]}>Palette</Text>
-        <Text style={[styles.lead, { color: c.textMuted }]}>{theme.label}</Text>
-        <View style={[styles.swatch, { backgroundColor: theme.swatch || c.accent }]} />
+        <Text style={[styles.lead, { color: c.textMuted }]}>
+          Choisissez les couleurs de l’affiche. Aperçu immédiat via Voir.
+        </Text>
+        <View style={styles.themeGrid}>
+          {themes.map((item) => {
+            const on = theme.key === item.key;
+            return (
+              <Pressable
+                key={item.key}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: on }}
+                onPress={() => setThemeKey(item.key)}
+                style={[
+                  styles.themeCard,
+                  { borderColor: c.border, backgroundColor: c.surface },
+                  on && { borderColor: c.accent, backgroundColor: c.accentMuted },
+                ]}
+              >
+                <View style={[styles.swatch, { backgroundColor: item.swatch }]} />
+                <Text style={[styles.themeLabel, { color: c.textPrimary }]}>{item.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </ScrollView>
     );
   }
@@ -101,5 +125,15 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 36 },
   heading: { fontFamily: fontFamilies.sansSemiBold, fontSize: 16, marginTop: 8, marginBottom: 6 },
   lead: { fontFamily: fontFamilies.sans, fontSize: 13.5, lineHeight: 19, marginBottom: 10 },
-  swatch: { width: 48, height: 48, borderRadius: 24, marginTop: 8 },
+  themeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  themeCard: {
+    width: '31%',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 10,
+    gap: 6,
+    alignItems: 'flex-start',
+  },
+  swatch: { width: 22, height: 22, borderRadius: 11 },
+  themeLabel: { fontFamily: fontFamilies.sansSemiBold, fontSize: 12 },
 });

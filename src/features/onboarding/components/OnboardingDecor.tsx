@@ -12,24 +12,25 @@ const PAPER = '#F7F0E8';
 
 /** Vague asymétrique en bas du héro photo. */
 export function OnboardingWave({ width, height = 58 }: { width: number; height?: number }) {
+  // Chevauchement bas renforcé : sur Android le clip SVG laisse parfois 1px d’image.
   const path = [
-    `M0 ${height * 0.38}`,
+    `M0 ${height * 0.34}`,
     `C ${width * 0.2} ${height * 1.02}`,
     `${width * 0.36} ${height * 1.08}`,
-    `${width * 0.5} ${height * 0.7}`,
-    `C ${width * 0.64} ${height * 0.32}`,
-    `${width * 0.8} ${height * 0.22}`,
-    `${width} ${height * 0.52}`,
-    `L ${width} ${height + 2}`,
-    `L 0 ${height + 2}`,
+    `${width * 0.5} ${height * 0.66}`,
+    `C ${width * 0.64} ${height * 0.28}`,
+    `${width * 0.8} ${height * 0.18}`,
+    `${width} ${height * 0.48}`,
+    `L ${width} ${height + 8}`,
+    `L 0 ${height + 8}`,
     'Z',
   ].join(' ');
 
   return (
     <Svg
       width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
+      height={height + 8}
+      viewBox={`0 0 ${width} ${height + 8}`}
       style={styles.wave}
       pointerEvents="none"
     >
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
   wave: {
     position: 'absolute',
     left: 0,
-    bottom: -1,
+    bottom: -4,
   },
   medallion: {
     width: 84,

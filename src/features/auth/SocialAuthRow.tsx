@@ -1,5 +1,5 @@
 /**
- * Rangée sociale Google / Apple pour AuthShell.
+ * Connexion Google — bouton pleine largeur, sous le formulaire e-mail.
  */
 
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -17,50 +17,46 @@ interface SocialAuthRowProps {
 export function SocialAuthRow({ isDark, muted, onNotice }: SocialAuthRowProps) {
   const { signInWithGoogle, googleLoading, googleConfigured } = useGoogleSignIn(onNotice);
 
-  const handleApple = () => {
-    onNotice(
-      'Connexion Apple bientôt disponible — un compte Apple Developer est requis. Utilisez votre e-mail en attendant.',
-    );
-  };
-
   return (
-    <>
-      <View style={[styles.dividerRow, { maxWidth: layout.formMaxWidth }]}>
-        <View
-          style={[
-            styles.divider,
-            { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E8D9CE' },
-          ]}
-        />
-        <Text style={[styles.dividerText, { color: muted }]}>ou</Text>
-        <View
-          style={[
-            styles.divider,
-            { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E8D9CE' },
-          ]}
-        />
-      </View>
+    <View style={[styles.wrap, { maxWidth: layout.formMaxWidth }]}>
+      {googleConfigured ? (
+        <View style={styles.dividerRow}>
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E8D9CE' },
+            ]}
+          />
+          <Text style={[styles.dividerText, { color: muted }]}>ou</Text>
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E8D9CE' },
+            ]}
+          />
+        </View>
+      ) : null}
 
-      <View style={[styles.socialRow, { maxWidth: layout.formMaxWidth }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={googleConfigured ? 'Continuer avec Google' : 'Google bientôt disponible'}
-          accessibilityState={{ disabled: googleLoading || !googleConfigured }}
-          disabled={googleLoading}
-          onPress={() => void signInWithGoogle()}
-          style={({ pressed }) => [
-            styles.socialCircle,
-            isDark ? styles.socialCircleDark : styles.socialCircleLight,
-            !googleConfigured && styles.socialDisabled,
-            pressed && googleConfigured && styles.pressed,
-          ]}
-        >
-          {googleLoading ? (
-            <ActivityIndicator color={isDark ? '#F7F0E8' : '#2A1F24'} />
-          ) : (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={googleConfigured ? 'Continuer avec Google' : 'Google bientôt disponible'}
+        accessibilityState={{ disabled: googleLoading || !googleConfigured }}
+        disabled={googleLoading || !googleConfigured}
+        onPress={() => void signInWithGoogle()}
+        style={({ pressed }) => [
+          styles.googleBtn,
+          isDark ? styles.googleBtnDark : styles.googleBtnLight,
+          !googleConfigured && styles.disabled,
+          pressed && googleConfigured && styles.pressed,
+        ]}
+      >
+        {googleLoading ? (
+          <ActivityIndicator color={isDark ? '#F7F0E8' : '#2A1F24'} />
+        ) : (
+          <>
             <Ionicons
               name="logo-google"
-              size={22}
+              size={18}
               color={
                 googleConfigured
                   ? isDark
@@ -71,45 +67,72 @@ export function SocialAuthRow({ isDark, muted, onNotice }: SocialAuthRowProps) {
                     : 'rgba(42,31,36,0.35)'
               }
             />
-          )}
-        </Pressable>
+            <Text
+              style={[
+                styles.googleLabel,
+                {
+                  color: googleConfigured
+                    ? isDark
+                      ? '#F7F0E8'
+                      : '#2A1F24'
+                    : isDark
+                      ? 'rgba(247,240,232,0.4)'
+                      : 'rgba(42,31,36,0.4)',
+                },
+              ]}
+            >
+              Continuer avec Google
+            </Text>
+          </>
+        )}
+      </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Apple bientôt disponible"
-          accessibilityState={{ disabled: true }}
-          onPress={handleApple}
-          style={({ pressed }) => [
-            styles.socialCircle,
-            isDark ? styles.socialCircleDark : styles.socialCircleLight,
-            styles.socialDisabled,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Ionicons
-            name="logo-apple"
-            size={24}
-            color={isDark ? 'rgba(247,240,232,0.35)' : 'rgba(42,31,36,0.35)'}
-          />
-        </Pressable>
-      </View>
-
-      <Text style={[styles.socialHint, { color: muted, maxWidth: layout.formMaxWidth }]}>
-        {googleConfigured
-          ? 'Apple arrive bientôt (compte Developer requis).'
-          : 'Google et Apple seront activés dès la configuration OAuth. En attendant, connectez-vous par e-mail.'}
-      </Text>
-    </>
+      {!googleConfigured ? (
+        <Text style={[styles.hint, { color: muted }]}>
+          Google sera activé dès la configuration OAuth. En attendant, connectez-vous par e-mail.
+        </Text>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  pressed: { opacity: 0.75 },
+  wrap: {
+    width: '100%',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  googleBtn: {
+    minHeight: 52,
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  googleBtnDark: {
+    backgroundColor: 'rgba(247, 240, 232, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(247, 240, 232, 0.16)',
+  },
+  googleBtnLight: {
+    backgroundColor: '#FFFCFA',
+    borderWidth: 1,
+    borderColor: '#E8D9CE',
+  },
+  googleLabel: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 15,
+    lineHeight: 20,
+    letterSpacing: 0.1,
+  },
+  disabled: { opacity: 0.7 },
+  pressed: { opacity: 0.78 },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginTop: spacing.lg,
   },
   divider: { flex: 1, height: StyleSheet.hairlineWidth },
   dividerText: {
@@ -117,40 +140,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     marginHorizontal: spacing.md,
+    letterSpacing: 0.2,
   },
-  socialRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.md,
-    width: '100%',
-    marginTop: spacing.md,
-  },
-  socialCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  socialCircleDark: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  socialCircleLight: {
-    backgroundColor: '#FFFCFA',
-    borderWidth: 1,
-    borderColor: '#E8D9CE',
-  },
-  socialDisabled: {
-    opacity: 0.72,
-  },
-  socialHint: {
+  hint: {
     fontFamily: fontFamilies.sans,
     fontSize: 12,
     lineHeight: 17,
     textAlign: 'center',
-    marginTop: spacing.sm,
     width: '100%',
   },
 });

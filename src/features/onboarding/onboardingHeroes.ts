@@ -1,12 +1,12 @@
 /**
- * Héros onboarding — WebP légers + préchargement sûr (web + natif).
+ * Héros onboarding — JPEG (plus stable qu’WebP sur Android) + préchargement.
  */
 
 import { Image, type ImageSourcePropType } from 'react-native';
 
-export const ONBOARDING_HERO_MARIAGE = require('../../../assets/onboarding/hero-mariage.webp');
-export const ONBOARDING_HERO_ANNIVERSAIRE = require('../../../assets/onboarding/hero-anniversaire.webp');
-export const ONBOARDING_HERO_CONFERENCE = require('../../../assets/onboarding/hero-conference.webp');
+export const ONBOARDING_HERO_MARIAGE = require('../../../assets/onboarding/hero-mariage-v2.jpg');
+export const ONBOARDING_HERO_ANNIVERSAIRE = require('../../../assets/onboarding/hero-anniversaire-v2.jpg');
+export const ONBOARDING_HERO_CONFERENCE = require('../../../assets/onboarding/hero-conference-v2.jpg');
 
 export const ONBOARDING_HERO_SOURCES: ImageSourcePropType[] = [
   ONBOARDING_HERO_MARIAGE,
@@ -25,7 +25,6 @@ function uriFromSource(source: ImageSourcePropType): string | null {
       const resolved = resolve(source as number);
       if (resolved?.uri) return resolved.uri;
     }
-    // Expo web : parfois le module est déjà une URL string
     if (typeof source === 'string') return source;
   } catch {
     return null;

@@ -78,9 +78,9 @@ export default function EditorTabsLayout() {
         <Tabs.Screen name="programme" options={{ title: 'Agenda', href: hrefFor('programme') }} />
         <Tabs.Screen name="histoire" options={{ title: 'Speakers', href: hrefFor('histoire') }} />
         <Tabs.Screen name="theme" options={{ title: 'Décor', href: hrefFor('theme') }} />
-        <Tabs.Screen name="plus" options={{ title: 'RSVP', href: hrefFor('plus') }} />
+        <Tabs.Screen name="plus" options={{ title: 'Boissons', href: hrefFor('plus') }} />
         <Tabs.Screen name="publier" options={{ title: 'Publier', href: hrefFor('publier') }} />
-        <Tabs.Screen name="voix" options={{ title: 'Voix', href: null }} />
+        <Tabs.Screen name="voix" options={{ title: 'Ambiance', href: hrefFor('voix') }} />
         <Tabs.Screen name="compteur" options={{ href: null }} />
       </Tabs>
 

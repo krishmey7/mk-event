@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
+import { formatDressCode } from '@/features/invitation/formatDressCode';
 import type { CouplePhoto, Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '@/features/templates/elegance/themes';
 import { GoldText, AuroreAtmosphere } from './chrome';
@@ -139,7 +140,7 @@ export function AuroraCover({
   const stacked = splitTitle(title);
   const welcome = fillGuestNameToken(guestSentence, guest.firstName).trim();
   const place = [venueStreet?.trim(), venueCity?.trim()].filter(Boolean);
-  const dress = (dressCode ?? '').trim();
+  const dress = formatDressCode(dressCode);
   const onWeb = Platform.OS === 'web';
   const fadeW = useMemo(() => Math.max(40, Math.round(photoBox.w * 0.4)), [photoBox.w]);
 

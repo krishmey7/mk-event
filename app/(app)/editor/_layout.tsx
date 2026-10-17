@@ -42,6 +42,8 @@ export default function EditorLayout() {
     themeKey?: string;
     eventId?: string;
   } | null>(null);
+  /** Une seule hydratation API par session (évite wipe en ouvrant « Voir »). */
+  const hydratedRef = useRef(false);
 
   if (!sessionRef.current) {
     sessionRef.current = {
@@ -57,6 +59,7 @@ export default function EditorLayout() {
     // pour ça : la photo choisie (souvent un blob local) serait perdue.
     if (templateChanged) {
       session.themeKey = themeFromUrl ?? resolvedTheme ?? session.themeKey;
+      hydratedRef.current = false;
     } else if (!session.themeKey && resolvedTheme) {
       session.themeKey = resolvedTheme;
     }
@@ -67,20 +70,22 @@ export default function EditorLayout() {
   const needsHydrate = Number.isFinite(numericEventId) && !SIMULATE_BACKEND;
 
   const [bootSnap, setBootSnap] = useState<EditorSnapshot | null | undefined>(
-    needsHydrate ? undefined : null,
+    needsHydrate && !hydratedRef.current ? undefined : null,
   );
   const [hydrateKey, setHydrateKey] = useState(0);
 
   useEffect(() => {
     if (!needsHydrate) {
-      setBootSnap(null);
+      setBootSnap((prev) => (prev === undefined ? null : prev));
       return;
     }
+    if (hydratedRef.current) return;
+
     let alive = true;
-    setBootSnap(undefined);
     void (async () => {
       const snap = await resolveEditorBootSnapshot(numericEventId);
       if (!alive) return;
+      hydratedRef.current = true;
       setBootSnap(snap);
       setHydrateKey((k) => k + 1);
     })();

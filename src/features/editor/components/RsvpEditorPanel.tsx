@@ -25,7 +25,10 @@ export function RsvpEditorPanel() {
 
   return (
     <>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Boissons proposées</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Liste des boissons</Text>
+      <Text style={[styles.sectionLead, { color: colors.textMuted }]}>
+        Ces options apparaissent quand l’invité confirme sa présence.
+      </Text>
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         {drinks.map((drink, index) => (
           <View key={drink}>
@@ -127,7 +130,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: fontFamilies.sansSemiBold,
     fontSize: 14,
-    marginBottom: 10,
+    marginBottom: 6,
+  },
+  sectionLead: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginBottom: 12,
   },
   card: {
     borderWidth: 1,

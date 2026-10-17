@@ -10,6 +10,7 @@ import { EditorHint } from '@/features/editor/components/EditorHint';
 import { useEditor } from '@/features/editor/EditorContext';
 import { pickLibraryImages } from '@/features/editor/imagePicker';
 import { studioStepHint } from '@/features/editor/studioSteps';
+import { templateStudio } from '@/features/templates/studioCapabilities';
 import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { fontFamilies, spacing } from '@/constants/theme';
@@ -21,7 +22,10 @@ export default function PhotosTabScreen() {
   const { theme } = useAppTheme();
   const c = theme.colors;
   const [importing, setImporting] = useState(false);
-  const hint = studioStepHint('photos', eventType);
+  const studio = templateStudio(template.coverLayout);
+  const hint = studio.galleryFeedsCover
+    ? 'Ces 4 photos forment la bande de couverture.'
+    : studioStepHint('photos', eventType);
 
   const handleImport = async () => {
     if (importing) return;
@@ -54,9 +58,16 @@ export default function PhotosTabScreen() {
       </Pressable>
 
       <View style={styles.grid}>
-        {gallery.map((item) => (
+        {gallery.map((item, index) => (
           <View key={item.id} style={styles.cell}>
             <Image source={{ uri: item.uri }} style={styles.thumb} />
+            {studio.galleryFeedsCover && index < 4 ? (
+              <View style={[styles.coverBadge, { backgroundColor: c.accent }]}>
+                <Text style={[styles.coverBadgeLabel, { color: c.onAccent }]}>
+                  Couv. {index + 1}
+                </Text>
+              </View>
+            ) : null}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Supprimer"
@@ -71,7 +82,9 @@ export default function PhotosTabScreen() {
 
       {gallery.length === 0 ? (
         <Text style={[styles.empty, { color: c.textMuted }]}>
-          Aucune photo pour l’instant.
+          {studio.galleryFeedsCover
+            ? 'Aucune photo — la couverture affiche encore les images d’exemple.'
+            : 'Aucune photo pour l’instant.'}
         </Text>
       ) : null}
     </ScrollView>
@@ -85,23 +98,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    minHeight: 48,
-    borderRadius: 12,
+    borderRadius: 14,
+    paddingVertical: 14,
   },
   importLabel: { fontFamily: fontFamilies.sansSemiBold, fontSize: 14 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  cell: { width: '31%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  cell: {
+    width: '31%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#1E1B18',
+  },
   thumb: { width: '100%', height: '100%' },
+  coverBadge: {
+    position: 'absolute',
+    left: 6,
+    bottom: 6,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  coverBadgeLabel: {
+    fontFamily: fontFamilies.sansSemiBold,
+    fontSize: 10,
+  },
   remove: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  empty: { fontFamily: fontFamilies.sans, fontSize: 13, marginTop: 8 },
+  empty: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 12,
+  },
 });

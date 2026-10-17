@@ -41,19 +41,35 @@ import {
   SpaceGrotesk_700Bold,
 } from '@expo-google-fonts/space-grotesk';
 import * as SplashScreen from 'expo-splash-screen';
+import * as WebBrowser from 'expo-web-browser';
 
 import { AuthProvider } from '@/context/AuthContext';
 import { ActiveEventProvider } from '@/context/ActiveEventContext';
 import { ThemePreferenceProvider, useAppTheme } from '@/context/ThemePreferenceContext';
 import { PwaInstallPrompt } from '@/features/pwa/PwaInstallPrompt';
 
+/**
+ * Doit tourner dès le chargement du bundle — y compris dans la popup OAuth
+ * qui retombe sur `/` (landing). Sinon la fenêtre reste ouverte sur l’accueil.
+ */
+if (typeof window !== 'undefined') {
+  const completed = WebBrowser.maybeCompleteAuthSession();
+  if (
+    completed.type === 'failed' &&
+    window.opener &&
+    /(?:^|[?#&])(?:state|id_token|access_token)=/.test(window.location.href)
+  ) {
+    WebBrowser.maybeCompleteAuthSession({ skipRedirectCheck: true });
+  }
+}
+
 /* Le splash reste affiché tant que les polices ne sont pas prêtes. */
 void SplashScreen.preventAutoHideAsync().catch(() => {
   // Déjà masqué (fast-refresh) — ignorer.
 });
 
-/** Contour / autofill navigateur — alignés sur le chrome MK Events. */
-function useWebInputChromeFix(mode: 'light' | 'dark') {
+/** Contour / autofill navigateur — respectent le tone du champ (clair ≠ sombre). */
+function useWebInputChromeFix() {
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
     const id = 'mk-event-input-chrome-fix';
@@ -63,30 +79,45 @@ function useWebInputChromeFix(mode: 'light' | 'dark') {
       style.id = id;
       document.head.appendChild(style);
     }
-    const fill = mode === 'dark' ? '#2A1824' : '#F7F0E8';
-    const text = mode === 'dark' ? '#F7F0E8' : '#2A1F24';
     style.textContent = `
       input, textarea, select, [contenteditable="true"] {
         outline: none !important;
         -webkit-tap-highlight-color: transparent;
       }
-      input:-webkit-autofill,
-      input:-webkit-autofill:hover,
-      input:-webkit-autofill:focus,
-      input:-webkit-autofill:active,
-      textarea:-webkit-autofill,
-      textarea:-webkit-autofill:hover,
-      textarea:-webkit-autofill:focus {
-        -webkit-box-shadow: 0 0 0 1000px ${fill} inset !important;
-        box-shadow: 0 0 0 1000px ${fill} inset !important;
-        -webkit-text-fill-color: ${text} !important;
-        caret-color: ${text} !important;
-        background-color: ${fill} !important;
+      /* Champs clairs (inscription, etc.) — jamais le fill dark du mode système. */
+      input[data-mk-tone="light"]:-webkit-autofill,
+      input[data-mk-tone="light"]:-webkit-autofill:hover,
+      input[data-mk-tone="light"]:-webkit-autofill:focus,
+      input[data-mk-tone="light"]:-webkit-autofill:active,
+      textarea[data-mk-tone="light"]:-webkit-autofill,
+      textarea[data-mk-tone="light"]:-webkit-autofill:hover,
+      textarea[data-mk-tone="light"]:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+        box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+        -webkit-text-fill-color: #2A1F24 !important;
+        caret-color: #2A1F24 !important;
+        background-color: #FFFFFF !important;
+        background-clip: content-box !important;
+        transition: background-color 99999s ease-out 0s !important;
+      }
+      /* Champs dark luxury (connexion). */
+      input[data-mk-tone="dark"]:-webkit-autofill,
+      input[data-mk-tone="dark"]:-webkit-autofill:hover,
+      input[data-mk-tone="dark"]:-webkit-autofill:focus,
+      input[data-mk-tone="dark"]:-webkit-autofill:active,
+      textarea[data-mk-tone="dark"]:-webkit-autofill,
+      textarea[data-mk-tone="dark"]:-webkit-autofill:hover,
+      textarea[data-mk-tone="dark"]:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0 1000px #3A2434 inset !important;
+        box-shadow: 0 0 0 1000px #3A2434 inset !important;
+        -webkit-text-fill-color: #F7F0E8 !important;
+        caret-color: #F7F0E8 !important;
+        background-color: #3A2434 !important;
         background-clip: content-box !important;
         transition: background-color 99999s ease-out 0s !important;
       }
     `;
-  }, [mode]);
+  }, []);
 }
 
 export default function RootLayout() {
@@ -145,6 +176,7 @@ function useWebFullscreenShell(background: string, mode: 'light' | 'dark') {
     const root = document.documentElement;
     const applyChrome = () => {
       root.style.setProperty('--mk-bg', background);
+      root.style.colorScheme = mode;
       root.style.backgroundColor = background;
       document.body.style.backgroundColor = background;
       const rootEl = document.getElementById('root');
@@ -191,7 +223,7 @@ function useWebFullscreenShell(background: string, mode: 'light' | 'dark') {
 
 function RootChrome() {
   const { theme, mode } = useAppTheme();
-  useWebInputChromeFix(mode);
+  useWebInputChromeFix();
   useWebFullscreenShell(theme.colors.background, mode);
 
   return (

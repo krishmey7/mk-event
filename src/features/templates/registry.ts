@@ -73,6 +73,8 @@ export interface TemplateDefaultCover {
   dateLabel: string;
   couple: string;
   guestLine: string;
+  /** Heure couverture (Pellicule / Néon). */
+  timeLabel?: string;
 }
 
 export type CoverLayout =
@@ -290,6 +292,7 @@ export const TEMPLATES: TemplateDefinition[] = [
       dateLabel: PELLICULE_WEDDING.dateLabel,
       couple: PELLICULE_WEDDING.couple,
       guestLine: PELLICULE_WEDDING.guestLine,
+      timeLabel: PELLICULE_WEDDING.timeLabel,
     },
     defaultThemeKey: 'ivoire',
     coverLayout: 'filmStrip',
@@ -317,6 +320,7 @@ export const TEMPLATES: TemplateDefinition[] = [
       dateLabel: NEON_WEDDING.dateLabel,
       couple: NEON_WEDDING.couple,
       guestLine: NEON_WEDDING.guestLine,
+      timeLabel: NEON_WEDDING.timeLabel,
     },
     defaultThemeKey: 'noirOr',
     coverLayout: 'neonScript',
@@ -344,6 +348,7 @@ export const TEMPLATES: TemplateDefinition[] = [
       dateLabel: BIRTHDAY_DEMO.dateLabel,
       couple: BIRTHDAY_DEMO.celebrant,
       guestLine: 'Pour {{Nom}}',
+      timeLabel: 'À 21h',
     },
     defaultThemeKey: 'orCreme',
     coverLayout: 'birthdayPoster',

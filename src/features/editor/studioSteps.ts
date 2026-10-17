@@ -47,9 +47,15 @@ const WEDDING_STEPS: StudioStepDef[] = [
   },
   {
     route: 'plus',
-    title: 'RSVP',
-    headerTitle: 'RSVP',
-    hint: 'Choix proposés aux invités pour leur réponse.',
+    title: 'Boissons',
+    headerTitle: 'Boissons',
+    hint: 'Proposez les boissons que les invités choisiront en confirmant.',
+  },
+  {
+    route: 'voix',
+    title: 'Ambiance',
+    headerTitle: 'Musique & accueil',
+    hint: 'Musique de fond et message vocal d’accueil (optionnel).',
   },
   {
     route: 'publier',
@@ -67,16 +73,22 @@ const BIRTHDAY_STEPS: StudioStepDef[] = [
     hint: 'Textes, date, heure et lieu de la fête.',
   },
   {
+    route: 'photos',
+    title: 'Photos',
+    headerTitle: 'Photos',
+    hint: 'Ajoutez les photos de la fête (galerie invité).',
+  },
+  {
     route: 'theme',
     title: 'Décor',
     headerTitle: 'Décor',
-    hint: 'Palette de couleurs de l’affiche.',
+    hint: 'Choisissez la palette de couleurs de l’affiche.',
   },
   {
     route: 'plus',
-    title: 'RSVP',
-    headerTitle: 'RSVP',
-    hint: 'Choix proposés aux invités pour leur réponse.',
+    title: 'Boissons',
+    headerTitle: 'Boissons',
+    hint: 'Proposez les boissons que les invités choisiront en confirmant.',
   },
   {
     route: 'publier',
@@ -91,7 +103,7 @@ const CONFERENCE_STEPS: StudioStepDef[] = [
     route: 'index',
     title: 'Infos',
     headerTitle: 'Infos événement',
-    hint: 'Nom, dates et accroche.',
+    hint: 'Nom, dates et sous-titre.',
   },
   {
     route: 'programme',

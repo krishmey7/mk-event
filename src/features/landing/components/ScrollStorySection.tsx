@@ -1,5 +1,6 @@
 /**
- * Récit scroll-driven — rail sticky inspiré d’Edulex, contenu MK.
+ * Récit scroll-driven façon Edulex :
+ * sticky orb par étape, titre inline mobile, progress continu.
  */
 
 import { Platform, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
@@ -8,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { landingFonts } from '../landingFonts';
 import { LANDING } from '../landingTokens';
+import { LandingReveal } from './LandingReveal';
 
 const STEPS = [
   {
@@ -42,94 +44,137 @@ const STEPS = [
 
 export const SCROLL_STORY_STEP_COUNT = STEPS.length;
 
+/** Interpolation soft 0→1 pour l’entrée d’une étape dans le progress global. */
+function stepPresence(progress: number, index: number, count: number) {
+  const start = index / count;
+  const peak = (index + 0.45) / count;
+  const fade = (index + 1.05) / count;
+  if (progress <= start) return 0;
+  if (progress >= fade) return 1;
+  if (progress <= peak) return (progress - start) / Math.max(0.001, peak - start);
+  return 1;
+}
+
 export function ScrollStorySection({
   activeStep,
+  progress,
   onLayout,
 }: {
   activeStep: number;
+  /** Progression continue 0→1 dans la section. */
+  progress: number;
   onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   const { isDesktop } = useBreakpoint();
   const safeActive = Math.max(0, Math.min(STEPS.length - 1, activeStep));
+  const clamped = Math.max(0, Math.min(1, progress));
 
   return (
     <View style={styles.section} onLayout={onLayout}>
       <View style={styles.inner}>
         <View style={styles.heading}>
-          <Text style={styles.kicker}>De l’idée au jour J</Text>
-          <Text style={styles.title}>Une invitation qui avance avec vous</Text>
-          <Text style={styles.lead}>
-            Suivez le parcours : chaque étape active révèle ce que MK Events prend en charge.
-          </Text>
+          <LandingReveal y={20} duration={600}>
+            <Text style={styles.kicker}>Parcours</Text>
+            <Text style={styles.title}>De l’idée au jour J, sans rupture</Text>
+            <Text style={styles.lead}>
+              Créer, inviter, répondre, accueillir — chaque étape s’illumine au fil du scroll.
+            </Text>
+          </LandingReveal>
         </View>
 
-        <View style={[styles.story, isDesktop && styles.storyDesktop]}>
-          <View style={[styles.rail, isDesktop && styles.railDesktop]}>
-            <View style={styles.track}>
-              <View
-                style={[
-                  styles.trackFill,
-                  { height: `${((safeActive + 1) / STEPS.length) * 100}%` },
-                ]}
-              />
-            </View>
-            {STEPS.map((step, index) => {
-              const active = index === safeActive;
-              const complete = index < safeActive;
-              return (
-                <View key={step.label} style={styles.railItem}>
-                  <View
-                    style={[
-                      styles.dot,
-                      (active || complete) && styles.dotReached,
-                      active && styles.dotActive,
-                    ]}
-                  >
-                    {complete ? <Ionicons name="checkmark" size={10} color="#FFFFFF" /> : null}
-                  </View>
-                  <Text
-                    style={[
-                      styles.railLabel,
-                      (active || complete) && styles.railLabelReached,
-                      active && styles.railLabelActive,
-                    ]}
-                  >
-                    {step.label}
-                  </Text>
-                </View>
-              );
-            })}
+        <View style={styles.timeline}>
+          {/* Trait de progression continu (colonne gauche) */}
+          <View style={[styles.progressTrack, isDesktop && styles.progressTrackDesktop]} pointerEvents="none">
+            <View style={[styles.progressFill, { height: `${clamped * 100}%` }]} />
           </View>
 
-          <View style={styles.cards}>
-            {STEPS.map((step, index) => {
-              const active = index === safeActive;
-              return (
-                <View
-                  key={step.title}
-                  style={[
-                    styles.card,
-                    isDesktop && styles.cardDesktop,
-                    active ? styles.cardActive : styles.cardIdle,
-                  ]}
-                >
-                  <View style={[styles.iconShell, active && styles.iconShellActive]}>
-                    <Ionicons
-                      name={step.icon}
-                      size={24}
-                      color={active ? LANDING.coral : LANDING.textFaint}
+          {STEPS.map((step, index) => {
+            const active = index === safeActive;
+            const complete = index < safeActive;
+            const presence = stepPresence(clamped, index, STEPS.length);
+            const lift = Math.round((1 - presence) * (isDesktop ? 36 : 22));
+            const cardOpacity = 0.42 + presence * 0.58;
+
+            return (
+              <View
+                key={step.label}
+                style={[styles.row, isDesktop && styles.rowDesktop, index === 0 && styles.rowFirst]}
+              >
+                {/* Sticky : orb (+ label desktop) */}
+                <View style={[styles.stickyCol, isDesktop && styles.stickyColDesktop]}>
+                  <View
+                    style={[
+                      styles.orbShell,
+                      (active || complete) && styles.orbShellReached,
+                      active && styles.orbShellActive,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.orbCore,
+                        (active || complete) && styles.orbCoreReached,
+                        active && styles.orbCoreActive,
+                      ]}
                     />
                   </View>
-                  <Text style={[styles.cardTag, active && styles.cardTagActive]}>{step.tag}</Text>
-                  <Text style={[styles.cardTitle, !active && styles.cardTextIdle]}>{step.title}</Text>
-                  <Text style={[styles.cardText, !active && styles.cardTextIdle]}>{step.text}</Text>
-                  <View style={styles.cardIndex}>
-                    <Text style={styles.cardIndexText}>0{index + 1}</Text>
+                  {isDesktop ? (
+                    <Text
+                      style={[
+                        styles.stickyLabel,
+                        (active || complete) && styles.stickyLabelReached,
+                        active && styles.stickyLabelActive,
+                      ]}
+                    >
+                      {step.label}
+                    </Text>
+                  ) : null}
+                </View>
+
+                {/* Contenu : titre mobile inline + carte */}
+                <View
+                  style={[
+                    styles.content,
+                    {
+                      opacity: cardOpacity,
+                      transform: [{ translateY: lift }],
+                    },
+                  ]}
+                >
+                  {!isDesktop ? (
+                    <Text
+                      style={[
+                        styles.mobileTitle,
+                        (active || complete) && styles.mobileTitleReached,
+                        active && styles.mobileTitleActive,
+                      ]}
+                    >
+                      {step.label}
+                    </Text>
+                  ) : null}
+
+                  <View style={[styles.card, active ? styles.cardActive : styles.cardIdle]}>
+                    <View style={[styles.iconShell, active && styles.iconShellActive]}>
+                      <Ionicons
+                        name={step.icon}
+                        size={24}
+                        color={active ? LANDING.coral : 'rgba(255,249,245,0.45)'}
+                      />
+                    </View>
+                    <Text style={[styles.cardTag, active && styles.cardTagActive]}>{step.tag}</Text>
+                    <Text style={[styles.cardTitle, !active && styles.cardTextIdle]}>
+                      {step.title}
+                    </Text>
+                    <Text style={[styles.cardText, !active && styles.cardTextIdle]}>{step.text}</Text>
+                    <View style={styles.cardIndex}>
+                      <Text style={[styles.cardIndexText, active && styles.cardIndexTextActive]}>
+                        0{index + 1}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              );
-            })}
-          </View>
+              </View>
+            );
+          })}
         </View>
       </View>
     </View>
@@ -140,8 +185,10 @@ const stickyWeb =
   Platform.OS === 'web'
     ? ({
         position: 'sticky',
-        top: 132,
+        // Nav hors ScrollView → coller près du haut du viewport de scroll.
+        top: 24,
         alignSelf: 'flex-start',
+        zIndex: 6,
       } as object)
     : null;
 
@@ -149,9 +196,9 @@ const styles = StyleSheet.create({
   section: {
     width: '100%',
     paddingHorizontal: 20,
-    paddingTop: 88,
-    paddingBottom: 36,
-    backgroundColor: LANDING.plum,
+    paddingTop: 72,
+    paddingBottom: 64,
+    backgroundColor: '#3D2434',
     overflow: Platform.OS === 'web' ? 'visible' : 'hidden',
   },
   inner: {
@@ -161,10 +208,10 @@ const styles = StyleSheet.create({
   },
   heading: {
     maxWidth: 620,
-    marginBottom: 52,
+    marginBottom: 40,
   },
   kicker: {
-    ...landingFonts.semibold,
+    ...landingFonts.medium,
     fontSize: 12,
     letterSpacing: 2.2,
     textTransform: 'uppercase',
@@ -186,102 +233,142 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 249, 245, 0.66)',
     maxWidth: 520,
   },
-  story: {
-    gap: 28,
-  },
-  storyDesktop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 60,
-  },
-  rail: {
+  timeline: {
     position: 'relative',
-    paddingLeft: 4,
-    gap: 18,
-    marginBottom: 8,
+    paddingBottom: 12,
   },
-  railDesktop: {
-    width: 210,
-    paddingVertical: 6,
-    gap: 38,
-    ...stickyWeb,
-  },
-  track: {
+  progressTrack: {
     position: 'absolute',
-    left: 10,
-    top: 11,
-    bottom: 11,
+    left: 19,
+    top: 14,
+    bottom: 40,
     width: 2,
     borderRadius: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     overflow: 'hidden',
+    zIndex: 0,
   },
-  trackFill: {
+  progressTrackDesktop: {
+    left: 19,
+  },
+  progressFill: {
     width: '100%',
     borderRadius: 1,
     backgroundColor: LANDING.coral,
   },
-  railItem: {
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+    paddingTop: 28,
+    minHeight: 300,
+  },
+  rowFirst: {
+    paddingTop: 8,
+  },
+  rowDesktop: {
+    gap: 36,
+    paddingTop: 56,
+    minHeight: 420,
+  },
+  stickyCol: {
+    width: 40,
+    alignItems: 'center',
+    paddingTop: 4,
+    ...stickyWeb,
+  },
+  stickyColDesktop: {
+    width: 200,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    minHeight: 24,
+    gap: 16,
+    paddingTop: 8,
   },
-  dot: {
+  orbShell: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    zIndex: 2,
+    ...(Platform.OS === 'web'
+      ? ({
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        } as object)
+      : null),
+  },
+  orbShellReached: {
+    borderColor: 'rgba(224, 122, 95, 0.45)',
+  },
+  orbShellActive: {
+    backgroundColor: 'rgba(224, 122, 95, 0.18)',
+  },
+  orbCore: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 249, 245, 0.35)',
+  },
+  orbCoreReached: {
+    backgroundColor: LANDING.coral,
+  },
+  orbCoreActive: {
     width: 14,
     height: 14,
     borderRadius: 7,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.24)',
-    backgroundColor: LANDING.plum,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  dotReached: {
-    borderColor: LANDING.coral,
-    backgroundColor: LANDING.coral,
-  },
-  dotActive: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    marginLeft: -2,
     shadowColor: LANDING.coral,
-    shadowOpacity: 0.7,
-    shadowRadius: 12,
+    shadowOpacity: 0.75,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 5,
+    elevation: 4,
   },
-  railLabel: {
+  stickyLabel: {
+    ...landingFonts.regular,
+    fontSize: 22,
+    lineHeight: 28,
+    color: 'rgba(255, 249, 245, 0.32)',
+    flexShrink: 1,
+  },
+  stickyLabelReached: {
+    color: 'rgba(255, 249, 245, 0.62)',
+  },
+  stickyLabelActive: {
     ...landingFonts.medium,
-    fontSize: 15,
-    color: 'rgba(255, 249, 245, 0.36)',
-  },
-  railLabelReached: {
-    color: 'rgba(255, 249, 245, 0.7)',
-  },
-  railLabelActive: {
-    ...landingFonts.semibold,
-    fontSize: 18,
+    fontSize: 28,
+    lineHeight: 34,
     color: '#FFFFFF',
   },
-  cards: {
+  content: {
     flex: 1,
-    gap: 24,
+    paddingBottom: 8,
+  },
+  mobileTitle: {
+    ...landingFonts.regular,
+    fontSize: 26,
+    lineHeight: 32,
+    color: 'rgba(255, 249, 245, 0.38)',
+    marginBottom: 14,
+    marginTop: 2,
+  },
+  mobileTitleReached: {
+    color: 'rgba(255, 249, 245, 0.7)',
+  },
+  mobileTitleActive: {
+    ...landingFonts.medium,
+    color: '#FFFFFF',
   },
   card: {
     position: 'relative',
-    minHeight: 250,
+    minHeight: 260,
     borderRadius: 26,
     padding: 26,
     borderWidth: 1,
     overflow: 'hidden',
-  },
-  cardDesktop: {
-    minHeight: 310,
     justifyContent: 'center',
-    padding: 36,
   },
   cardActive: {
     backgroundColor: '#FFFCFA',
@@ -293,9 +380,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   cardIdle: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.07)',
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    opacity: 0.48,
   },
   iconShell: {
     width: 48,
@@ -304,7 +390,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    marginBottom: 20,
+    marginBottom: 18,
   },
   iconShellActive: {
     backgroundColor: LANDING.coralSoft,
@@ -314,7 +400,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(255, 255, 255, 0.48)',
     marginBottom: 8,
   },
   cardTagActive: {
@@ -322,8 +408,8 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     ...landingFonts.bold,
-    fontSize: 25,
-    lineHeight: 31,
+    fontSize: 26,
+    lineHeight: 32,
     letterSpacing: -0.3,
     color: LANDING.text,
     marginBottom: 10,
@@ -332,7 +418,7 @@ const styles = StyleSheet.create({
   cardText: {
     ...landingFonts.regular,
     fontSize: 15,
-    lineHeight: 23,
+    lineHeight: 24,
     color: LANDING.textMuted,
     maxWidth: 520,
   },
@@ -341,12 +427,15 @@ const styles = StyleSheet.create({
   },
   cardIndex: {
     position: 'absolute',
-    right: 24,
-    top: 22,
+    right: 22,
+    top: 18,
   },
   cardIndexText: {
     ...landingFonts.bold,
-    fontSize: 42,
-    color: 'rgba(224, 122, 95, 0.1)',
+    fontSize: 44,
+    color: 'rgba(255, 249, 245, 0.08)',
+  },
+  cardIndexTextActive: {
+    color: 'rgba(224, 122, 95, 0.12)',
   },
 });

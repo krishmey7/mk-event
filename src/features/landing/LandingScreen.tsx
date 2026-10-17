@@ -1,6 +1,5 @@
 /**
- * Landing clair — design Edulex adapté à MK (orbes, glass, mockup, cartes soft).
- * Toujours en mode clair. Pas de preuve sociale.
+ * Landing MK — hero sombre façon Edulex (2 colonnes + marquee), reste clair.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -8,7 +7,6 @@ import {
   Animated,
   Easing,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,16 +16,14 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Logo } from '@/components/ui/Logo';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import { getTemplate } from '@/features/templates/registry';
 import { LandingAtmosphere } from './LandingAtmosphere';
 import { MarketingNav } from './components/MarketingNav';
-import { MarketingTemplatePreview } from './components/MarketingTemplatePreview';
+import { HeroMarquee } from './components/HeroMarquee';
+import { LandingCta } from './components/LandingCta';
 import {
   FinalCtaSection,
   AudienceSection,
@@ -46,6 +42,7 @@ import {
   SCROLL_STORY_STEP_COUNT,
   ScrollStorySection,
 } from './components/ScrollStorySection';
+import { LandingScrollProvider } from './components/LandingReveal';
 import { LANDING } from './landingTokens';
 import { ensureLandingFontsLoaded, landingFonts } from './landingFonts';
 
@@ -61,20 +58,25 @@ export function LandingScreen() {
     models: 0,
     faq: 0,
   });
-  const [storyY, setStoryY] = useState(0);
-  const [storyHeight, setStoryHeight] = useState(1);
   const [storyStep, setStoryStep] = useState(0);
+  const [storyProgress, setStoryProgress] = useState(0);
+  const storyYRef = useRef(0);
+  const storyHeightRef = useRef(1);
+  const windowHRef = useRef(windowH);
+  const scrollOffsetRef = useRef(0);
+  windowHRef.current = windowH;
   const [maxScroll, setMaxScroll] = useState(1);
   const [scrollPosition, setScrollPosition] = useState(0);
 
-  const titleSize = isDesktop ? 52 : isTablet ? 40 : 34;
-  const heroMin = Math.max(640, windowH - 8);
-  const previewTemplate = getTemplate('aurore');
-  const previewW = isDesktop ? 310 : isTablet ? 268 : 242;
+  const titleSize = isDesktop ? 64 : isTablet ? 46 : 36;
+  const heroMin = Math.max(windowH, 640);
 
   const fade = useRef(new Animated.Value(0)).current;
-  const rise = useRef(new Animated.Value(18)).current;
-  const visualRise = useRef(new Animated.Value(28)).current;
+  const rise = useRef(new Animated.Value(20)).current;
+  const visualFade = useRef(new Animated.Value(0)).current;
+  const visualRise = useRef(new Animated.Value(20)).current;
+  const cueFade = useRef(new Animated.Value(0)).current;
+  const cueRise = useRef(new Animated.Value(20)).current;
   const scrollY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -85,7 +87,6 @@ export function LandingScreen() {
 
   useEffect(() => ensureLandingFontsLoaded(), []);
 
-  /** Forcer le chrome web en clair tant que le landing est monté. */
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
     const root = document.documentElement;
@@ -98,7 +99,7 @@ export function LandingScreen() {
     const rootEl = document.getElementById('root');
     if (rootEl) rootEl.style.backgroundColor = LANDING.bg;
     document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => {
-      meta.setAttribute('content', LANDING.bg);
+      meta.setAttribute('content', '#1A0F16');
     });
     return () => {
       root.style.setProperty('--mk-bg', prevBg || '');
@@ -108,29 +109,50 @@ export function LandingScreen() {
   }, []);
 
   useEffect(() => {
-    Animated.stagger(120, [
-      Animated.parallel([
-        Animated.timing(fade, {
-          toValue: 1,
-          duration: 720,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(rise, {
-          toValue: 0,
-          duration: 720,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]),
+    const ease = Easing.out(Easing.cubic);
+    Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: 600,
+        easing: ease,
+        useNativeDriver: true,
+      }),
+      Animated.timing(rise, {
+        toValue: 0,
+        duration: 600,
+        easing: ease,
+        useNativeDriver: true,
+      }),
+      Animated.timing(visualFade, {
+        toValue: 1,
+        duration: 600,
+        delay: 200,
+        easing: ease,
+        useNativeDriver: true,
+      }),
       Animated.timing(visualRise, {
         toValue: 0,
-        duration: 780,
-        easing: Easing.out(Easing.cubic),
+        duration: 600,
+        delay: 200,
+        easing: ease,
+        useNativeDriver: true,
+      }),
+      Animated.timing(cueFade, {
+        toValue: 1,
+        duration: 600,
+        delay: 400,
+        easing: ease,
+        useNativeDriver: true,
+      }),
+      Animated.timing(cueRise, {
+        toValue: 0,
+        duration: 600,
+        delay: 400,
+        easing: ease,
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fade, rise, visualRise]);
+  }, [cueFade, cueRise, fade, rise, visualFade, visualRise]);
 
   const jump = (anchor: keyof typeof anchors) => {
     const y = anchors[anchor];
@@ -160,158 +182,164 @@ export function LandingScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="dark" translucent />
+      <StatusBar style="light" translucent />
       <LandingAtmosphere tone="light" />
 
-      <MarketingNav onJump={jump} />
+      <MarketingNav onJump={jump} scrolled={scrollPosition > 100} />
       <LandingScrollProgress
         active={activeSection}
         progress={scrollPosition / Math.max(1, maxScroll)}
         onSelect={selectSection}
       />
 
-      <Animated.ScrollView
-        ref={scrollRef}
-        style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onContentSizeChange={(_, contentHeight) => {
-          setMaxScroll(Math.max(1, contentHeight - windowH));
-        }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          {
-            useNativeDriver: false,
-            listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-              const y = event.nativeEvent.contentOffset.y;
-              setScrollPosition(y);
-              if (storyY <= 0 || storyHeight <= 1) return;
-              const storyContentTop = storyY + 230;
-              const usableHeight = Math.max(1, storyHeight - 300);
-              const local = y + windowH * 0.42 - storyContentTop;
-              const next = Math.max(
-                0,
-                Math.min(
-                  SCROLL_STORY_STEP_COUNT - 1,
-                  Math.floor((local / usableHeight) * SCROLL_STORY_STEP_COUNT),
-                ),
-              );
-              setStoryStep((current) => (current === next ? current : next));
-            },
-          },
-        )}
+      <LandingScrollProvider
+        scrollY={scrollY}
+        viewportH={windowH}
+        getOffset={() => scrollOffsetRef.current}
       >
-        <View style={[styles.hero, { minHeight: heroMin - insets.top - 64 }]}>
-          <View style={[styles.heroInner, isDesktop && styles.heroInnerDesktop]}>
-            <Animated.View
+        <Animated.ScrollView
+          ref={scrollRef}
+          style={styles.scroll}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onContentSizeChange={(_, contentHeight) => {
+            setMaxScroll(Math.max(1, contentHeight - windowH));
+          }}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            {
+              useNativeDriver: false,
+              listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+                const y = event.nativeEvent.contentOffset.y;
+                scrollOffsetRef.current = y;
+                setScrollPosition(y);
+                const sectionY = storyYRef.current;
+                const sectionH = storyHeightRef.current;
+                const vh = windowHRef.current;
+                if (sectionY <= 0 || sectionH <= 1) return;
+                const start = sectionY - vh * 0.1;
+                const end = sectionY + sectionH - vh * 0.5;
+                const span = Math.max(1, end - start);
+                const nextProgress = Math.max(0, Math.min(1, (y - start) / span));
+                const nextStep = Math.min(
+                  SCROLL_STORY_STEP_COUNT - 1,
+                  Math.floor(nextProgress * SCROLL_STORY_STEP_COUNT),
+                );
+                setStoryProgress((current) =>
+                  Math.abs(current - nextProgress) < 0.004 ? current : nextProgress,
+                );
+                setStoryStep((current) => (current === nextStep ? current : nextStep));
+              },
+            },
+          )}
+        >
+          <View style={[styles.hero, styles.heroLit, { minHeight: heroMin }]}>
+            <View
               style={[
-                styles.heroCopy,
-                isDesktop && styles.heroCopyDesktop,
-                { opacity: fade, transform: [{ translateY: rise }] },
+                styles.heroBody,
+                { paddingTop: Math.max(insets.top, 12) + 88 },
               ]}
             >
-              <Logo size="xl" variant="ink" />
-              <Text
+              <View
                 style={[
-                  styles.title,
-                  { fontSize: titleSize, lineHeight: titleSize + 8 },
-                  isDesktop && styles.titleDesktop,
+                  styles.heroInner,
+                  isDesktop && styles.heroInnerDesktop,
                 ]}
               >
-                Des invitations{'\n'}
-                <Text style={styles.titleAccent}>numériques vivantes</Text>
-              </Text>
-              <Text style={[styles.subtitle, isDesktop && styles.subtitleDesktop]}>
-                Créez, publiez, suivez les réponses — RSVP et pass QR inclus.
-              </Text>
-              <View style={[styles.heroActions, isDesktop && styles.heroActionsDesktop]}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Commencer"
-                  onPress={() => router.push('/onboarding')}
-                  style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
+                <Animated.View
+                  style={[
+                    styles.heroTitleCol,
+                    { opacity: fade, transform: [{ translateY: rise }] },
+                  ]}
                 >
-                  <Text style={styles.ctaLabel}>Commencer</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => jump('models')}
-                  style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+                  <Text
+                    style={[
+                      styles.title,
+                      {
+                        fontSize: titleSize,
+                        lineHeight: Math.round(titleSize * 1.08),
+                      },
+                    ]}
+                  >
+                    {isDesktop
+                      ? 'Des invitations\nnumériques vivantes'
+                      : 'Des invitations numériques vivantes'}
+                  </Text>
+                </Animated.View>
+
+                <Animated.View
+                  style={[
+                    styles.heroSideCol,
+                    { opacity: visualFade, transform: [{ translateY: visualRise }] },
+                  ]}
                 >
-                  <Text style={styles.secondaryLabel}>Voir les modèles</Text>
-                </Pressable>
+                  <Text style={styles.subtitle}>
+                    Créez, publiez et suivez les réponses — RSVP et pass QR inclus, sans fichier à
+                    télécharger.
+                  </Text>
+                  <View style={styles.heroCtaRow}>
+                  <LandingCta
+                    label="Rejoindre"
+                    withArrow
+                    onPress={() => router.push('/onboarding')}
+                  />
+                </View>
+                </Animated.View>
               </View>
-            </Animated.View>
+            </View>
 
             <Animated.View
               style={[
-                styles.heroVisual,
-                { opacity: fade, transform: [{ translateY: visualRise }] },
+                styles.heroMarqueeWrap,
+                { opacity: cueFade, transform: [{ translateY: cueRise }] },
               ]}
             >
-              <View style={styles.previewOrbCoral} />
-              <View style={styles.previewOrbPlum} />
-              <MarketingTemplatePreview
-                template={previewTemplate}
-                width={previewW}
-                showLabel={false}
-              />
+              <HeroMarquee />
             </Animated.View>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Découvrir la plateforme"
-            onPress={() => jump('platform')}
-            style={({ pressed }) => [styles.scrollCue, pressed && styles.pressed]}
-          >
-            <Text style={styles.scrollCueLabel}>Découvrir</Text>
-            <View style={styles.scrollCueLine}>
-              <View style={styles.scrollCueFill} />
-            </View>
-            <Ionicons name="chevron-down" size={14} color={LANDING.coral} />
-          </Pressable>
-        </View>
 
-        <PlatformSection
-          onLayout={(event) => {
-            const y = event.nativeEvent.layout.y;
-            setAnchors((current) =>
-              current.platform === y ? current : { ...current, platform: y },
-            );
-          }}
-        />
-        <ScrollStorySection
-          activeStep={storyStep}
-          onLayout={(event) => {
-            const { y, height } = event.nativeEvent.layout;
-            setStoryY((current) => (current === y ? current : y));
-            setStoryHeight((current) => (current === height ? current : height));
-            setAnchors((current) =>
-              current.journey === y ? current : { ...current, journey: y },
-            );
-          }}
-        />
-        <HowItWorksSection />
-        <CapabilitiesSection />
-        <TemplatesShowcase
-          onLayout={(event) => {
-            const y = event.nativeEvent.layout.y;
-            setAnchors((current) =>
-              current.models === y ? current : { ...current, models: y },
-            );
-          }}
-        />
-        <AudienceSection />
-        <FaqSection
-          onLayout={(event) => {
-            const y = event.nativeEvent.layout.y;
-            setAnchors((current) => (current.faq === y ? current : { ...current, faq: y }));
-          }}
-        />
-        <FinalCtaSection />
-        <MarketingFooter />
-      </Animated.ScrollView>
+          <PlatformSection
+            onLayout={(event) => {
+              const y = event.nativeEvent.layout.y;
+              setAnchors((current) =>
+                current.platform === y ? current : { ...current, platform: y },
+              );
+            }}
+          />
+          <ScrollStorySection
+            activeStep={storyStep}
+            progress={storyProgress}
+            onLayout={(event) => {
+              const { y, height } = event.nativeEvent.layout;
+              storyYRef.current = y;
+              storyHeightRef.current = Math.max(1, height);
+              setAnchors((current) =>
+                current.journey === y ? current : { ...current, journey: y },
+              );
+            }}
+          />
+          <HowItWorksSection />
+          <CapabilitiesSection />
+          <TemplatesShowcase
+            onLayout={(event) => {
+              const y = event.nativeEvent.layout.y;
+              setAnchors((current) =>
+                current.models === y ? current : { ...current, models: y },
+              );
+            }}
+          />
+          <AudienceSection />
+          <FaqSection
+            onLayout={(event) => {
+              const y = event.nativeEvent.layout.y;
+              setAnchors((current) => (current.faq === y ? current : { ...current, faq: y }));
+            }}
+          />
+          <FinalCtaSection />
+          <MarketingFooter />
+        </Animated.ScrollView>
+      </LandingScrollProvider>
     </View>
   );
 }
@@ -328,151 +356,73 @@ const styles = StyleSheet.create({
   },
   hero: {
     width: '100%',
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-    paddingBottom: 48,
-    paddingTop: 12,
+    paddingHorizontal: 40,
+    paddingBottom: 32,
     position: 'relative',
+    overflow: 'hidden',
+    justifyContent: 'space-between',
+    backgroundColor: '#1A0F16',
+  },
+  /** Illumination ambiante (pas de forme) — radial soft comme Edulex, teintes MK. */
+  heroLit: Platform.OS === 'web'
+    ? ({
+        backgroundImage: [
+          'radial-gradient(ellipse 80% 70% at 50% 38%, rgba(107, 58, 92, 0.55) 0%, transparent 68%)',
+          'radial-gradient(ellipse 55% 50% at 62% 32%, rgba(224, 122, 95, 0.18) 0%, transparent 58%)',
+          'radial-gradient(ellipse 100% 90% at 50% 50%, transparent 40%, rgba(12, 7, 12, 0.65) 100%)',
+          'linear-gradient(180deg, #1A0F16 0%, #20141C 45%, #1A0F16 100%)',
+        ].join(', '),
+      } as object)
+    : {},
+  heroBody: {
+    flex: 1,
+    justifyContent: 'center',
+    zIndex: 1,
+    minHeight: 280,
   },
   heroInner: {
-    maxWidth: LANDING.maxWidth,
+    maxWidth: 1080,
     width: '100%',
     alignSelf: 'center',
-    alignItems: 'center',
-    gap: 44,
+    gap: 28,
   },
   heroInnerDesktop: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 56,
-  },
-  heroCopy: {
-    alignItems: 'center',
-    gap: 14,
-    width: '100%',
-    maxWidth: 480,
-  },
-  heroCopyDesktop: {
     alignItems: 'flex-start',
-    flex: 1,
+    justifyContent: 'space-between',
+    gap: 48,
+  },
+  heroTitleCol: {
+    flex: 1.15,
+    maxWidth: 560,
+  },
+  heroSideCol: {
+    flex: 0.85,
+    maxWidth: 360,
+    gap: 22,
+    paddingTop: 10,
   },
   title: {
     ...landingFonts.bold,
-    textAlign: 'center',
-    letterSpacing: -0.6,
-    color: LANDING.text,
-    marginTop: 4,
-  },
-  titleDesktop: {
-    textAlign: 'left',
-  },
-  titleAccent: {
-    ...landingFonts.medium,
-    color: LANDING.coral,
+    letterSpacing: -1.2,
+    color: '#FFF9F5',
   },
   subtitle: {
     ...landingFonts.regular,
     fontSize: 16,
-    lineHeight: 24,
-    textAlign: 'center',
-    maxWidth: 380,
-    color: LANDING.textMuted,
+    lineHeight: 26,
+    color: 'rgba(255, 249, 245, 0.72)',
   },
-  subtitleDesktop: {
-    textAlign: 'left',
-  },
-  heroActions: {
+  heroCtaRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 10,
-    justifyContent: 'center',
-  },
-  heroActionsDesktop: {
-    justifyContent: 'flex-start',
-  },
-  cta: {
-    minWidth: 168,
-    minHeight: 52,
-    borderRadius: 999,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    backgroundColor: LANDING.coral,
-    shadowColor: LANDING.coral,
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
+    gap: 14,
   },
-  ctaLabel: {
-    ...landingFonts.semibold,
-    fontSize: 15,
-    color: '#FFFFFF',
-  },
-  secondary: {
-    minHeight: 52,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: LANDING.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    backgroundColor: LANDING.surfaceGlass,
-  },
-  secondaryLabel: {
-    ...landingFonts.medium,
-    fontSize: 14,
-    color: LANDING.text,
-  },
-  heroVisual: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewOrbCoral: {
-    position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(224, 122, 95, 0.22)',
-    top: '18%',
-  },
-  previewOrbPlum: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(107, 58, 92, 0.12)',
-    bottom: '8%',
-    right: -20,
-  },
-  scrollCue: {
-    position: 'absolute',
-    bottom: 12,
-    alignSelf: 'center',
-    alignItems: 'center',
-    gap: 5,
-  },
-  scrollCueLabel: {
-    ...landingFonts.semibold,
-    fontSize: 9,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    color: LANDING.textFaint,
-  },
-  scrollCueLine: {
-    width: 2,
-    height: 24,
-    borderRadius: 2,
-    overflow: 'hidden',
-    backgroundColor: LANDING.borderStrong,
-  },
-  scrollCueFill: {
+  heroMarqueeWrap: {
+    maxWidth: 1080,
     width: '100%',
-    height: '55%',
-    borderRadius: 2,
-    backgroundColor: LANDING.coral,
+    alignSelf: 'center',
+    zIndex: 1,
+    paddingBottom: 4,
   },
-  pressed: { opacity: 0.86 },
 });

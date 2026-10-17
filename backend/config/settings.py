@@ -179,6 +179,22 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": (
         "rest_framework.renderers.JSONRenderer",
     ),
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        # Filet global
+        "anon": "180/min",
+        "user": "600/min",
+        # Surfaces publiques (jour J / spam)
+        "public_invite": "90/min",
+        "public_rsvp": "30/min",
+        "public_guestbook_read": "60/min",
+        "public_guestbook_write": "10/min",
+        # Auth ouverte
+        "auth": "20/min",
+    },
 }
 
 SIMPLE_JWT = {

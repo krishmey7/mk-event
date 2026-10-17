@@ -7,7 +7,7 @@ from django.utils import timezone
 from PIL import Image
 from rest_framework.test import APIClient
 
-from events.media_upload import MediaUploadError, save_event_image
+from events.media_upload import MediaUploadError, save_event_audio, save_event_image
 from events.models import Event, GuestbookEntry
 
 
@@ -20,6 +20,16 @@ def _jpeg_file(name="photo.jpg", size=(80, 60)):
     buffer.seek(0)
     buffer.name = name
     buffer.content_type = "image/jpeg"
+    return buffer
+
+
+def _mp3_file(name="ambiance.mp3"):
+    # En-tête ID3 minimale + payload factice — suffisant pour l’upload.
+    payload = b"ID3" + b"\x00" * 32 + b"\xff\xfb\x90\x00" + b"\x00" * 200
+    buffer = BytesIO(payload)
+    buffer.seek(0)
+    buffer.name = name
+    buffer.content_type = "audio/mpeg"
     return buffer
 
 
@@ -40,6 +50,11 @@ class MediaUploadHelperTests(TestCase):
         relative = save_event_image(self.event.id, _jpeg_file())
         self.assertTrue(relative.startswith(f"events/{self.event.id}/"))
         self.assertTrue(relative.endswith(".jpg"))
+
+    def test_save_event_audio_writes_mp3(self):
+        relative = save_event_audio(self.event.id, _mp3_file())
+        self.assertTrue(relative.startswith(f"events/{self.event.id}/audio/"))
+        self.assertTrue(relative.endswith(".mp3"))
 
     def test_save_rejects_missing_file(self):
         with self.assertRaises(MediaUploadError):
@@ -73,6 +88,17 @@ class MediaUploadApiTests(TestCase):
         self.assertTrue(url.startswith("https://api.example.test/media/events/"))
         self.assertTrue(url.endswith(".jpg"))
 
+    def test_upload_audio_returns_absolute_url(self):
+        response = self.client.post(
+            f"/api/events/{self.event.id}/media/",
+            {"file": _mp3_file()},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, 201)
+        url = response.data["url"]
+        self.assertTrue(url.startswith("https://api.example.test/media/events/"))
+        self.assertIn("/audio/", url)
+        self.assertTrue(url.endswith(".mp3"))
 
 class GuestbookApiTests(TestCase):
     def setUp(self):
@@ -119,3 +145,25 @@ class GuestbookApiTests(TestCase):
         )
         self.assertEqual(deleted.status_code, 204)
         self.assertFalse(GuestbookEntry.objects.filter(pk=entry.id).exists())
+
+    def test_public_guestbook_write_is_throttled(self):
+        from django.core.cache import cache
+        from rest_framework.throttling import SimpleRateThrottle
+
+        cache.clear()
+        previous = SimpleRateThrottle.THROTTLE_RATES
+        SimpleRateThrottle.THROTTLE_RATES = {
+            **previous,
+            "public_guestbook_write": "2/min",
+        }
+        try:
+            url = "/api/inv/gb-event/guestbook/"
+            first = self.client.post(url, {"message": "Un"}, format="json")
+            second = self.client.post(url, {"message": "Deux"}, format="json")
+            third = self.client.post(url, {"message": "Trop"}, format="json")
+            self.assertEqual(first.status_code, 201)
+            self.assertEqual(second.status_code, 201)
+            self.assertEqual(third.status_code, 429)
+        finally:
+            SimpleRateThrottle.THROTTLE_RATES = previous
+            cache.clear()

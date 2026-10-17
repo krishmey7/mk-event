@@ -23,6 +23,7 @@ export interface EditorSnapshot {
     coupleFrame: PhotoFrameKey;
     themeKey: string;
     kicker: string;
+    timeLabel: string;
   };
   story: StoryMilestone[];
   program: ProgramStep[];
@@ -252,6 +253,7 @@ export function editorSnapshotFromStudioConfig(
       coupleFrame: normalizePhotoFrame(asString(couplePhotoRow?.frame, 'circle')),
       themeKey: asString(root.themeKey, asString(coverRow.themeKey, 'champagne')),
       kicker: asString(coverRow.kicker),
+      timeLabel: asString(coverRow.timeLabel),
     },
     story,
     program,

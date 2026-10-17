@@ -28,7 +28,7 @@ export function EditorHeader({
 }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { dirty, boundEventId, template, cover } = useEditor();
+  const { dirty, boundEventId, template, cover, saveToLibrary } = useEditor();
   const { theme } = useAppTheme();
   const c = theme.colors;
   const status = !boundEventId
@@ -37,9 +37,17 @@ export function EditorHeader({
       ? 'Modifications non enregistrées'
       : 'Enregistré dans Mes événements';
 
-  const openPreview = () => {
+  const openPreview = async () => {
     rememberEditorTemplate(template.key);
     rememberEditorTheme(cover.themeKey);
+    // Flush avant « Voir » : évite la perte si un remount réhydrate l’API.
+    if (dirty) {
+      try {
+        await saveToLibrary();
+      } catch {
+        // On ouvre quand même : la preview lit l’état live du contexte.
+      }
+    }
     router.push({
       pathname: '/editor/previsualisation',
       params: {

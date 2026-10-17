@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 
 NOMINATIM_SEARCH = "https://nominatim.openstreetmap.org/search"
 NOMINATIM_REVERSE = "https://nominatim.openstreetmap.org/reverse"
-USER_AGENT = "MK-Event/1.0 (https://mk-event-five.vercel.app; contact@mkevent.app)"
+USER_AGENT = "MK-Event/1.0 (https://mk-event-five.vercel.app; mkeventscopyright@gmail.com)"
 CACHE_TTL = 60 * 60  # 1 h
 MIN_INTERVAL_S = 1.0
 

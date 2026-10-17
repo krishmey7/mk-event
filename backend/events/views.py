@@ -5,9 +5,10 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from .media_upload import MediaUploadError, absolute_media_url, save_event_image
+from .media_upload import MediaUploadError, absolute_media_url, save_event_media
 from .models import Event, Guest, GuestbookEntry, RSVPResponse, Table
 from .serializers import (
     EventDraftSerializer,
@@ -166,11 +167,11 @@ class EventViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="media")
     def upload_media(self, request, pk=None):
-        """POST multipart — enregistre une image sur le volume MEDIA_ROOT."""
+        """POST multipart — image ou audio sur le volume MEDIA_ROOT."""
         event = self.get_object()
         uploaded = request.FILES.get("file")
         try:
-            relative = save_event_image(event.id, uploaded)
+            relative = save_event_media(event.id, uploaded)
         except MediaUploadError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -249,6 +250,8 @@ class TableViewSet(EventNestedMixin, viewsets.ModelViewSet):
 
 class PublicInvitationView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "public_invite"
 
     def get(self, request, slug: str):
         event = get_object_or_404(
@@ -274,6 +277,8 @@ class PublicInvitationView(APIView):
 
 class PublicRSVPView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "public_rsvp"
 
     def post(self, request, slug: str):
         event = get_object_or_404(Event, slug=slug, status=Event.Status.PUBLISHED)
@@ -341,6 +346,15 @@ class PublicGuestbookView(APIView):
     """GET/POST livre d’or public — invitation publiée uniquement."""
 
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+
+    def get_throttles(self):
+        self.throttle_scope = (
+            "public_guestbook_write"
+            if self.request.method == "POST"
+            else "public_guestbook_read"
+        )
+        return [ScopedRateThrottle()]
 
     def get(self, request, slug: str):
         event = get_object_or_404(Event, slug=slug, status=Event.Status.PUBLISHED)

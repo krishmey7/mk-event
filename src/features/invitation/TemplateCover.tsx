@@ -106,11 +106,13 @@ export function TemplateCover({
           colors={colors}
           guest={guest}
           title={title || PELLICULE_WEDDING.kicker}
+          kicker={kicker || phrase}
           dateLabel={dateLabel}
-          timeLabel={timePlace || PELLICULE_WEDDING.timeLabel}
+          timeLabel={timePlace?.trim() || undefined}
           couple={couple}
           guestSentence={guestSentence}
           venueName={venueName}
+          dressCode={dressCode}
           stripPhotos={stripPhotos}
           hint={hint}
         />
@@ -127,12 +129,13 @@ export function TemplateCover({
           coverUri={coverUri}
           title={title || NEON_WEDDING.heroScript}
           dateLabel={dateLabel}
-          timeLabel={timePlace || NEON_WEDDING.timeLabel}
+          timeLabel={timePlace?.trim() || undefined}
           couple={couple}
           guestSentence={guestSentence}
           inviteLine={kicker || phrase || NEON_WEDDING.inviteLine}
           venueStreet={venueStreet}
           venueCity={venueCity}
+          dressCode={dressCode}
           hint={hint}
         />
       </View>
@@ -168,6 +171,7 @@ export function TemplateCover({
           coverUri={coverUri}
           couplePhoto={couplePhoto}
           guest={guest}
+          title={title}
           dateLabel={dateLabel}
           couple={couple}
           phrase={phrase}
@@ -211,6 +215,7 @@ export function TemplateCover({
         coverUri={coverUri}
         couplePhoto={couplePhoto}
         guest={guest}
+        title={title}
         dateLabel={dateLabel}
         couple={couple}
         phrase={phrase}

@@ -1,5 +1,5 @@
 /**
- * Onglet RSVP — choix proposés aux invités (mariage / anniversaire).
+ * Onglet Boissons — choix proposés aux invités (mariage / anniversaire).
  */
 
 import { ScrollView, StyleSheet, Text } from 'react-native';
@@ -28,7 +28,7 @@ export default function PlusTabScreen() {
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={[styles.title, { color: c.textPrimary }]}>Réponses</Text>
+      <Text style={[styles.title, { color: c.textPrimary }]}>Boissons</Text>
       {hint ? <EditorHint>{hint}</EditorHint> : null}
       <RsvpEditorPanel />
     </ScrollView>

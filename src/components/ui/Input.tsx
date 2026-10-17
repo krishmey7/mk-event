@@ -6,9 +6,8 @@
  *  action à droite (toggle œil intégré pour les mots de passe),
  *  message d'aide et affichage des erreurs.
  *
- *  `tone='dark'`  → univers Dark Luxury (connexion, inscription) ;
- *  `tone='light'` → univers Clean & Editorial (futurs formulaires
- *  du dashboard organisateur).
+ *  `tone='dark'`  → univers Dark Luxury (connexion) ;
+ *  `tone='light'` → univers clair (inscription, studio).
  *
  *  Règle n°2 : les anneaux de focus / erreur sont isolés via
  *  Platform.select (boxShadow web · shadow + elevation natif).
@@ -123,6 +122,25 @@ export function Input({
       ? colors.accent
       : colors.border;
 
+  /* Fond opaque, aligné sur la palette (studio sombre ≠ blanc + texte ivoire). */
+  const fieldBackground = palette
+    ? colors.surface
+    : tone === 'light'
+      ? '#FFFFFF'
+      : colors.surface;
+
+  const webAutofillStyle =
+    Platform.OS === 'web'
+      ? ({
+          outlineStyle: 'none',
+          outlineWidth: 0,
+          boxShadow: `0 0 0 1000px ${fieldBackground} inset`,
+          WebkitBoxShadow: `0 0 0 1000px ${fieldBackground} inset`,
+          WebkitTextFillColor: colors.textPrimary,
+          caretColor: colors.textPrimary,
+        } as object)
+      : null;
+
   return (
     <View style={[styles.container, containerStyle]}>
       {label ? (
@@ -134,7 +152,8 @@ export function Input({
           styles.field,
           {
             borderColor,
-            backgroundColor: tone === 'dark' ? 'rgba(255, 255, 255, 0.045)' : colors.surface,
+            backgroundColor: fieldBackground,
+            overflow: 'hidden',
           },
           isFocused && !hasError && focusRing,
           hasError && isFocused && errorRing,
@@ -150,14 +169,27 @@ export function Input({
 
         <TextInput
           {...textInputProps}
+          {...(Platform.OS === 'web'
+            ? ({ dataSet: { mkTone: tone } } as object)
+            : {
+                importantForAutofill: 'yes' as const,
+              })}
           secureTextEntry={isSecure && !isPasswordVisible}
+          underlineColorAndroid="transparent"
           style={[
             styles.input,
-            { color: colors.textPrimary, fontFamily: theme.fontFamilies.sans },
+            {
+              color: colors.textPrimary,
+              fontFamily: theme.fontFamilies.sans,
+              backgroundColor: fieldBackground,
+            },
+            webAutofillStyle,
             style as StyleProp<TextStyle>,
           ]}
           placeholderTextColor={colors.textMuted}
           selectionColor={colors.accent}
+          cursorColor={colors.accent}
+          keyboardAppearance={tone === 'dark' ? 'dark' : 'light'}
           onFocus={(event) => {
             setIsFocused(true);
             onFocus?.(event);
@@ -213,15 +245,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     paddingVertical: 14,
-    backgroundColor: 'transparent',
-    ...(Platform.OS === 'web'
-      ? ({
-          outlineStyle: 'none',
-          outlineWidth: 0,
-          // Autofill Chrome : évite le rectangle blanc tant que le CSS global charge.
-          boxShadow: '0 0 0 1000px transparent inset',
-        } as object)
-      : null),
   },
   toggle: { padding: 4 },
   pressed: { opacity: 0.7 },

@@ -9,6 +9,7 @@ import * as Speech from 'expo-speech';
 
 import { EditorHint } from '@/features/editor/components/EditorHint';
 import { useEditor, VOICE_MUSICS, VOICE_PERSONAS } from '@/features/editor/EditorContext';
+import { studioStepHint } from '@/features/editor/studioSteps';
 import { pickLibraryAudio } from '@/features/editor/audioPicker';
 import {
   AMBIENT_VOLUME,
@@ -17,11 +18,15 @@ import {
 } from '@/features/invitation/audioCatalog';
 import { previewRemoteAudio, previewWelcomeSpeech } from '@/features/invitation/useInvitationAudio';
 import { STUDIO_PREVIEW_GUEST } from '@/features/invitation/guestRegistry';
+import { useActiveEvent } from '@/context/ActiveEventContext';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { fontFamilies } from '@/constants/theme';
 
 export function VoixEditorPanel({ showHint = false }: { showHint?: boolean }) {
-  const { voix, updateVoix, cover, guests } = useEditor();
+  const { voix, updateVoix, cover, guests, template } = useEditor();
+  const { type: activeType } = useActiveEvent();
+  const eventType = activeType || template.category;
+  const stepHint = studioStepHint('voix', eventType);
   const { theme } = useAppTheme();
   const colors = {
     bg: theme.colors.background,
@@ -96,11 +101,7 @@ export function VoixEditorPanel({ showHint = false }: { showHint?: boolean }) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {showHint ? (
-        <EditorHint>
-          Accueil vocal et musique sont adaptés automatiquement au type d’événement.
-        </EditorHint>
-      ) : null}
+      {showHint && stepHint ? <EditorHint>{stepHint}</EditorHint> : null}
 
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Accueil</Text>
       <View style={[styles.optionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -191,6 +192,11 @@ export function VoixEditorPanel({ showHint = false }: { showHint?: boolean }) {
           <Text style={[styles.musicLabel, { color: colors.text }]}>
             {hasUpload ? (voix.ambientName || 'Fichier importé') : 'Remplacer par un son perso'}
           </Text>
+          {hasUpload ? (
+            <Text style={[styles.autoHint, { color: colors.textMuted, marginTop: 4 }]}>
+              Publiez l’invitation pour que les invités entendent ce son.
+            </Text>
+          ) : null}
         </View>
         <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
       </Pressable>

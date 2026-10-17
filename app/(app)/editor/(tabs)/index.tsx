@@ -13,7 +13,7 @@ import { EditorInput } from '@/features/editor/components/EditorInput';
 import { FieldWithCounter } from '@/features/editor/components/FieldWithCounter';
 import { StudioField } from '@/features/editor/components/StudioField';
 import { useEditor } from '@/features/editor/EditorContext';
-import { templateStudio } from '@/features/templates/studioCapabilities';
+import { templateStudio, studioFieldLabels } from '@/features/templates/studioCapabilities';
 import { pickLibraryImage } from '@/features/editor/imagePicker';
 import { studioStepHint } from '@/features/editor/studioSteps';
 import { VenuePlaceEditor } from '@/features/venue/VenuePlaceEditor';
@@ -41,8 +41,11 @@ export default function EditorInfosScreen() {
   const birthday = eventType === 'birthday';
   const conference = eventType === 'corporate';
   const wedding = !birthday && !conference;
-  const hint = studioStepHint('index', eventType);
   const studio = templateStudio(template.coverLayout);
+  const labels = studioFieldLabels(template.coverLayout);
+  const film = template.coverLayout === 'filmStrip';
+  const neon = studio.neonScript;
+  const hint = studioStepHint('index', eventType);
 
   const importCouplePhoto = async () => {
     const uri = await pickLibraryImage();
@@ -63,10 +66,7 @@ export default function EditorInfosScreen() {
           <>
             <Text style={[styles.heading, { color: c.textPrimary }]}>Couverture</Text>
 
-            <StudioField
-              enabled={studio.backgroundPhoto}
-              note="Ce modèle n’utilise pas la photo de fond."
-            >
+            <StudioField enabled={studio.backgroundPhoto}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Changer la photo de fond"
@@ -86,14 +86,45 @@ export default function EditorInfosScreen() {
               </Pressable>
             </StudioField>
 
-            <FieldWithCounter label="Titre principal" value={cover.title} maxLength={40}>
-              <EditorInput
-                value={cover.title}
-                onChangeText={(value) => updateCover({ title: value })}
-                placeholder="Save the Date"
-                maxLength={40}
-              />
-            </FieldWithCounter>
+            {neon ? (
+              <>
+                <FieldWithCounter label={labels.title} value={cover.title} maxLength={40}>
+                  <EditorInput
+                    value={cover.title}
+                    onChangeText={(value) => updateCover({ title: value })}
+                    placeholder={labels.titlePlaceholder}
+                    maxLength={40}
+                  />
+                </FieldWithCounter>
+                <View style={styles.gap} />
+                <FieldWithCounter label={labels.accroche} value={cover.kicker} maxLength={80}>
+                  <EditorInput
+                    value={cover.kicker}
+                    onChangeText={(value) => updateCover({ kicker: value })}
+                    placeholder={labels.accrochePlaceholder}
+                    maxLength={80}
+                  />
+                </FieldWithCounter>
+              </>
+            ) : film ? (
+              <FieldWithCounter label={labels.title} value={cover.kicker || cover.title} maxLength={40}>
+                <EditorInput
+                  value={cover.kicker || cover.title}
+                  onChangeText={(value) => updateCover({ kicker: value, title: value })}
+                  placeholder={labels.titlePlaceholder}
+                  maxLength={40}
+                />
+              </FieldWithCounter>
+            ) : (
+              <FieldWithCounter label={labels.title} value={cover.title} maxLength={40}>
+                <EditorInput
+                  value={cover.title}
+                  onChangeText={(value) => updateCover({ title: value })}
+                  placeholder={labels.titlePlaceholder}
+                  maxLength={40}
+                />
+              </FieldWithCounter>
+            )}
 
             <View style={styles.gap} />
             <Text style={[styles.fieldLabel, { color: c.textMuted }]}>Date</Text>
@@ -104,15 +135,29 @@ export default function EditorInfosScreen() {
               rightElement={<Ionicons name="calendar-outline" size={19} color={c.textMuted} />}
             />
 
-            <View style={styles.gap} />
-            <FieldWithCounter label="Accroche" value={cover.kicker} maxLength={40}>
-              <EditorInput
-                value={cover.kicker}
-                onChangeText={(value) => updateCover({ kicker: value })}
-                placeholder="Cérémonie à 10h"
-                maxLength={40}
-              />
-            </FieldWithCounter>
+            {studio.heure ? (
+              <>
+                <View style={styles.gap} />
+                <Text style={[styles.fieldLabel, { color: c.textMuted }]}>Heure</Text>
+                <EditorInput
+                  value={cover.timeLabel}
+                  onChangeText={(value) => updateCover({ timeLabel: value })}
+                  placeholder={neon ? '15H30' : '20H00'}
+                />
+              </>
+            ) : null}
+
+            <StudioField enabled={studio.accroche && !neon}>
+              <View style={styles.gap} />
+              <FieldWithCounter label={labels.accroche} value={cover.kicker} maxLength={40}>
+                <EditorInput
+                  value={cover.kicker}
+                  onChangeText={(value) => updateCover({ kicker: value })}
+                  placeholder={labels.accrochePlaceholder}
+                  maxLength={40}
+                />
+              </FieldWithCounter>
+            </StudioField>
 
             <View style={styles.gap} />
             <FieldWithCounter label="Noms des mariés" value={cover.couple} maxLength={50}>
@@ -124,10 +169,20 @@ export default function EditorInfosScreen() {
               />
             </FieldWithCounter>
 
-            <StudioField
-              enabled={studio.couplePhoto}
-              note="Ce modèle n’utilise pas la photo du couple."
-            >
+            <View style={styles.gap} />
+            <FieldWithCounter label="Message à l’invité" value={cover.guestLine} maxLength={100}>
+              <EditorInput
+                value={cover.guestLine}
+                onChangeText={(value) => updateCover({ guestLine: value })}
+                placeholder="{{Nom}}, réservez votre place pour ce jour-là."
+                maxLength={100}
+              />
+            </FieldWithCounter>
+            <Text style={[styles.fieldHelp, { color: c.textMuted }]}>
+              {'{{Nom}}'} devient automatiquement le prénom de chaque invité.
+            </Text>
+
+            <StudioField enabled={studio.couplePhoto}>
               <Text style={[styles.heading, { color: c.textPrimary }]}>Photo du couple</Text>
               <CoupleFramePicker
                 uri={cover.couplePhotoUri}
@@ -161,7 +216,7 @@ export default function EditorInfosScreen() {
               placeholder="Save the Date"
             />
             <View style={styles.gap} />
-            <Text style={[styles.fieldLabel, { color: c.textMuted }]}>Accroche</Text>
+            <Text style={[styles.fieldLabel, { color: c.textMuted }]}>Ligne festive</Text>
             <EditorInput
               value={cover.kicker}
               onChangeText={(value) => updateCover({ kicker: value })}
@@ -182,25 +237,16 @@ export default function EditorInfosScreen() {
               placeholder="04 | 05 | 2026"
             />
             <View style={styles.gap} />
-            <Text style={[styles.fieldLabel, { color: c.textMuted }]}>Heure & lieu</Text>
+            <Text style={[styles.fieldLabel, { color: c.textMuted }]}>Heure</Text>
             <EditorInput
-              value={dressCode}
-              onChangeText={setDressCode}
-              placeholder="À 21h · Nom du lieu"
+              value={cover.timeLabel}
+              onChangeText={(value) => updateCover({ timeLabel: value })}
+              placeholder="À 21h"
             />
-            <StudioField
-              enabled={studio.backgroundPhoto}
-              note="Cette affiche n’utilise pas de photo de fond."
-            >
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setPhotoSheet(true)}
-                style={({ pressed }) => [styles.styleRow, { marginTop: 12 }, pressed && styles.pressed]}
-              >
-                <Ionicons name="image-outline" size={17} color={c.accent} />
-                <Text style={[styles.styleRowLabel, { color: c.accent }]}>Photo de fond</Text>
-              </Pressable>
-            </StudioField>
+            <VenuePlaceEditor venue={venue} onChange={updateVenue} />
+            <Text style={[styles.paletteNote, { color: c.textMuted }]}>
+              Couleurs : étape Décor (suivante après Photos).
+            </Text>
           </>
         ) : null}
 
@@ -214,7 +260,7 @@ export default function EditorInfosScreen() {
               placeholder="Nom de la conférence"
             />
             <View style={styles.gap} />
-            <Text style={[styles.fieldLabel, { color: c.textMuted }]}>Accroche</Text>
+            <Text style={[styles.fieldLabel, { color: c.textMuted }]}>Sous-titre</Text>
             <EditorInput
               value={cover.kicker}
               onChangeText={(value) => updateCover({ kicker: value })}
@@ -244,7 +290,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   fieldLabel: { fontFamily: fontFamilies.sansMedium, fontSize: 12.5, marginBottom: 6 },
+  fieldHelp: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 6,
+  },
   gap: { height: 10 },
+  paletteNote: {
+    fontFamily: fontFamilies.sans,
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginTop: 8,
+  },
   photoZone: {
     height: 160,
     borderRadius: 16,

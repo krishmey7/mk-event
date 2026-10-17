@@ -169,6 +169,7 @@ export function invitationConfigFromStudio(
       couple: asString(coverRow.couple, fallback.cover.couple),
       guestLine: asString(coverRow.guestLine, fallback.cover.guestLine),
       kicker: asString(coverRow.kicker, fallback.cover.kicker),
+      timeLabel: asString(coverRow.timeLabel, fallback.cover.timeLabel ?? ''),
       photoUri: (() => {
         const uri = asString(coverRow.photoUri, fallback.cover.photoUri);
         return isGuestVisibleImageUri(uri) ? uri : fallback.cover.photoUri;
@@ -186,7 +187,13 @@ export function invitationConfigFromStudio(
     voix: voixRow
       ? {
           musicKey: asString(voixRow.musicKey, 'soft-piano'),
-          ambientUri: typeof voixRow.ambientUri === 'string' ? voixRow.ambientUri : null,
+          ambientUri: (() => {
+            const uri = typeof voixRow.ambientUri === 'string' ? voixRow.ambientUri.trim() : '';
+            if (!uri) return null;
+            /* blob:/file: ne sont pas joignables depuis le lien invité. */
+            if (/^https?:\/\//i.test(uri) || uri.startsWith('data:audio')) return uri;
+            return null;
+          })(),
           ambientName: typeof voixRow.ambientName === 'string' ? voixRow.ambientName : null,
           autoplay: Boolean(voixRow.autoplay),
           loop: voixRow.loop !== false,

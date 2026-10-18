@@ -1,0 +1,48 @@
+# Render Blueprint — MK Event API (Django DRF + Supabase Postgres)
+# Docs: https://render.com/docs/blueprint-spec
+# Déploiement: dashboard Render → New → Blueprint → repo krishmey7/mk-event (fichier render.yaml à la racine).
+# Le service pointe sur backend/ (rootDir). La DB est EXTERNE (Supabase) → DATABASE_URL à renseigner.
+# Anti-veille free tier: pinger externe (UptimeRobot / cron-job.org) sur https://<api>.onrender.com/ toutes les 10 min.
+
+services:
+  - type: web
+    name: mk-event-api
+    runtime: python
+    rootDir: backend
+    # Build: installe uv (gestionnaire du projet), sync deps gelées, puis collectstatic.
+    buildCommand: "pip install uv && uv sync --frozen && uv run python manage.py collectstatic --noinput"
+    # Migrate AVANT chaque déploiement (équivalent du startCommand Railway).
+    preDeployCommand: "uv run python manage.py migrate --noinput"
+    # Gunicorn WSGI — $PORT injecté par Render.
+    startCommand: "uv run gunicorn config.wsgi --bind 0.0.0.0:$PORT"
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: DJANGO_DEBUG
+        value: false
+      # Secrets — à remplir dans le dashboard Render (ne jamais committer de valeurs).
+      - key: DJANGO_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL_REQUIRE
+        value: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://*.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://mk-event-five.vercel.app
+      # PUBLIC_BASE_URL = URL publique Render du service (à mettre à jour après 1er déploiement).
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: FRONTEND_URL
+        value: https://mk-event-five.vercel.app
+      - key: RESEND_API_KEY
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        value: MK Events <onboarding@resend.dev>
+      - key: GOOGLE_OAUTH_CLIENT_IDS
+        sync: false

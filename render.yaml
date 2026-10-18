@@ -10,10 +10,8 @@ services:
     runtime: python
     plan: free
     rootDir: backend
-    # Build: installe uv (gestionnaire du projet), sync deps gelées, puis collectstatic.
-    buildCommand: "pip install uv && uv sync --frozen && uv run python manage.py collectstatic --noinput"
-    # Migrate AVANT chaque déploiement (équivalent du startCommand Railway).
-    preDeployCommand: "uv run python manage.py migrate --noinput"
+    # Build (free tier: pas de preDeployCommand — migrate intégré ici).
+    buildCommand: "pip install uv && uv sync --frozen && uv run python manage.py collectstatic --noinput && uv run python manage.py migrate --noinput"
     # Gunicorn WSGI — $PORT injecté par Render.
     startCommand: "uv run gunicorn config.wsgi --bind 0.0.0.0:$PORT"
     healthCheckPath: /

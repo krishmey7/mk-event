@@ -11,7 +11,7 @@
 
 /**
  * URL de base de l'API Django REST Framework (sans slash final).
- * Prod (Vercel) : définir EXPO_PUBLIC_API_URL=https://<api-railway>/api
+ * Prod (Vercel) : définir EXPO_PUBLIC_API_URL=https://mk-event-api.onrender.com/api
  */
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api';

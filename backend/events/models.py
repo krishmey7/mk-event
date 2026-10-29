@@ -88,6 +88,11 @@ class Event(models.Model):
         super().save(*args, **kwargs)
 
 
+def make_studio_key() -> str:
+    """Clé studio stable, générée côté serveur (jamais inventée par le client)."""
+    return f"INV-{uuid.uuid4().hex[:12].upper()}"
+
+
 class Table(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="tables")
     name = models.CharField(max_length=120)
@@ -138,8 +143,15 @@ class Guest(models.Model):
     )
     drink = models.CharField(max_length=80, blank=True, null=True)
     access_token = models.CharField(max_length=64, unique=True, editable=False)
-    # Clé studio (INV-1234) pour synchroniser la publication.
-    studio_key = models.CharField(max_length=64, blank=True, null=True)
+    # Clé studio (INV-…) pour synchroniser la publication.
+    # Générée côté serveur : le client ne doit jamais en inventer une.
+    studio_key = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        default=make_studio_key,
+        help_text="Clé studio stable, générée côté serveur.",
+    )
     checked_in = models.BooleanField(default=False)
     checked_in_at = models.DateTimeField(blank=True, null=True)
     responded_at = models.DateTimeField(blank=True, null=True)

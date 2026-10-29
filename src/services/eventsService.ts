@@ -14,9 +14,17 @@ import { apiClient } from './apiClient';
 import { SIMULATE_BACKEND } from '@/constants/config';
 import { getSnapshot, hydrateLibrary, persistLibrary, putSnapshot } from '@/features/editor/library';
 import type { EditorSnapshot } from '@/features/editor/snapshot';
-import type { Event, EventDraftPayload, Guest, PaginatedResponse } from '@/types';
+import type {
+  Event,
+  EventDraftPayload,
+  EventWritePayload,
+  Guest,
+  PaginatedResponse,
+} from '@/types';
 
 export interface PublishGuestInput {
+  /** PK Django si l'invité existe déjà (lève toute ambiguïté legacy). */
+  guest_id?: number;
   studio_key: string;
   full_name: string;
   contact?: string;
@@ -159,7 +167,8 @@ export const eventsService = {
         name: payload.name,
         type: payload.type,
         status: 'draft',
-        template: payload.template ?? null,
+        /* L'API mock ne stocke que l'ID ; le slug sert au vrai backend. */
+        template: typeof payload.template === 'number' ? payload.template : null,
         event_date: payload.event_date,
         venue_name: payload.venue_name,
         venue_city: payload.venue_city,
@@ -186,14 +195,25 @@ export const eventsService = {
   },
 
   /** PATCH /api/events/{id}/ — met à jour une invitation déjà dans Mes invitations. */
-  async updateEvent(id: number, patch: Partial<Event>): Promise<Event> {
+  async updateEvent(id: number, patch: EventWritePayload): Promise<Event> {
     if (SIMULATE_BACKEND) {
       hydrateLibrary(MOCK_EVENTS);
       await delay(280);
       const index = MOCK_EVENTS.findIndex((item) => item.id === id);
       if (index < 0) throw new Error('Invitation introuvable');
       const now = new Date().toISOString();
-      MOCK_EVENTS[index] = { ...MOCK_EVENTS[index], ...patch, id, updated_at: now };
+      const { template, ...rest } = patch;
+      const nextTemplate =
+        typeof template === 'number' || template === null
+          ? template
+          : MOCK_EVENTS[index].template;
+      MOCK_EVENTS[index] = {
+        ...MOCK_EVENTS[index],
+        ...rest,
+        template: nextTemplate,
+        id,
+        updated_at: now,
+      };
       persistLibrary(MOCK_EVENTS);
       return MOCK_EVENTS[index];
     }
@@ -234,6 +254,9 @@ export const eventsService = {
     payload: {
       slug?: string;
       guests?: PublishGuestInput[];
+      /** Suppressions explicites demandées par le studio. */
+      deleted_guest_keys?: string[];
+      deleted_guest_ids?: number[];
       /** Contenu édité (cover, story, galerie…) — requis pour l’affichage invité. */
       studio_config?: Record<string, unknown>;
       theme_key?: string | null;

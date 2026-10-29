@@ -32,7 +32,7 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
-# Derrière le proxy HTTPS Railway — requis pour cookies CSRF admin.
+# Derrière le proxy HTTPS (Render) — requis pour cookies CSRF admin.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
@@ -40,7 +40,7 @@ CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
         "CSRF_TRUSTED_ORIGINS",
-        "https://*.up.railway.app,https://web-production-3e791.up.railway.app",
+        "https://*.onrender.com",
     ).split(",")
     if origin.strip()
 ]
@@ -96,7 +96,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Local : SQLite. Prod (Railway) : définir DATABASE_URL (Postgres).
+# Local : SQLite. Prod (Render/Supabase) : définir DATABASE_URL (Postgres).
 _database_url = os.getenv("DATABASE_URL", "").strip()
 if _database_url:
     import dj_database_url
@@ -133,9 +133,29 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+
+def _env_flag(name: str, default: str = "false") -> bool:
+    return os.getenv(name, default).strip().lower() in {"1", "true", "yes", "on"}
+
+
+# Stockage média : objet compatible S3 en production, disque local en dev.
+# Actif dès qu'un bucket est configuré (AWS S3, Supabase Storage, R2, MinIO).
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
+AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL", "").strip() or None
+_raw_custom_domain = os.getenv("AWS_S3_CUSTOM_DOMAIN", "").strip().rstrip("/")
+if "://" in _raw_custom_domain:
+    _raw_custom_domain = _raw_custom_domain.split("://", 1)[1]
+AWS_S3_CUSTOM_DOMAIN = _raw_custom_domain or None
+USE_S3_MEDIA = bool(AWS_STORAGE_BUCKET_NAME)
+
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": (
+            "storages.backends.s3.S3Storage"
+            if USE_S3_MEDIA
+            else "django.core.files.storage.FileSystemStorage"
+        ),
     },
     "staticfiles": {
         "BACKEND": (
@@ -145,10 +165,29 @@ STORAGES = {
         ),
     },
 }
-MEDIA_URL = "/media/"
+
+if USE_S3_MEDIA:
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "").strip()
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "").strip()
+    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "").strip() or None
+    AWS_S3_ADDRESSING_STYLE = os.getenv("AWS_S3_ADDRESSING_STYLE", "").strip() or None
+    AWS_S3_SIGNATURE_VERSION = os.getenv("AWS_S3_SIGNATURE_VERSION", "").strip() or "s3v4"
+    # Buckets publics : URLs stables (pas de signature qui expire dans la base).
+    AWS_QUERYSTRING_AUTH = _env_flag("AWS_QUERYSTRING_AUTH", "false")
+    AWS_DEFAULT_ACL = None
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "public, max-age=86400"}
+    MEDIA_URL = (
+        f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+        if AWS_S3_CUSTOM_DOMAIN
+        else os.getenv("MEDIA_URL", "/media/")
+    )
+else:
+    MEDIA_URL = "/media/"
+
 MEDIA_ROOT = BASE_DIR / "media"
 
-# URL publique de l’API (Railway) — URLs absolues des médias pour les invités.
+# URL publique de l’API — URLs absolues des médias locaux (stockage objet = URL directe).
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").rstrip("/")
 
 # Uploads images (multipart) + ancienne limite data URL.
@@ -165,6 +204,15 @@ CORS_ALLOWED_ORIGINS = [
         "http://localhost:8081,http://127.0.0.1:8081,http://localhost:8082,http://127.0.0.1:8082,http://localhost:19006",
     ).split(",")
     if origin.strip()
+]
+# Previews Vercel (https://mk-event-<hash>-<scope>.vercel.app) — couvre aussi le domaine de prod.
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    pattern.strip()
+    for pattern in os.getenv(
+        "CORS_ALLOWED_ORIGIN_REGEXES",
+        r"^https://mk-event-[a-z0-9-]+\.vercel\.app$",
+    ).split(",")
+    if pattern.strip()
 ]
 
 REST_FRAMEWORK = {

@@ -87,8 +87,11 @@ export type CoverLayout =
   | 'neonScript';
 
 export interface TemplateDefinition {
+  /**
+   * Slug canonique — seule référence stable côté API (`template: key`).
+   * Les IDs numériques dépendent de l'ordre des migrations/seed.
+   */
   key: string;
-  id: number;
   name: string;
   category: EventType;
   description: string;
@@ -198,7 +201,6 @@ const conferenceThemes: TemplateThemeDefinition[] = CONFERENCE_THEME_ORDER.map((
 export const TEMPLATES: TemplateDefinition[] = [
   {
     key: 'elegance',
-    id: 1,
     name: 'Élégance',
     category: 'wedding',
     description: 'Histoire, programme, compte à rebours, RSVP, galerie — 6 thèmes.',
@@ -223,7 +225,6 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     key: 'hiver',
-    id: 2,
     name: 'Hiver',
     category: 'wedding',
     description: 'Affiche marine & or, photo hexagonale — 6 palettes d’hiver.',
@@ -250,7 +251,6 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     key: 'aurore',
-    id: 7,
     name: 'Aurore',
     category: 'wedding',
     description: 'Save the date émeraude et or — portrait plein cadre, calligraphie dorée.',
@@ -277,7 +277,6 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     key: 'pellicule',
-    id: 8,
     name: 'Pellicule',
     category: 'wedding',
     description: 'Bande photo et panneau sombre calligraphié — réservez la date, fond texturé.',
@@ -305,7 +304,6 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     key: 'neon',
-    id: 9,
     name: 'Néon',
     category: 'wedding',
     description: 'Photo plein cadre, script lumineux et or — timeline, lieu, détails, compte à rebours.',
@@ -333,7 +331,6 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     key: 'celebration',
-    id: 3,
     name: 'Célébration',
     category: 'birthday',
     description: 'Affiche anniversaire une page — or & crème, décor Iconify.',
@@ -368,7 +365,6 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     key: 'summit',
-    id: 4,
     name: 'Summit',
     category: 'corporate',
     description: 'Invitation pro multi-pages : agenda, intervenants, inscription.',
@@ -404,12 +400,13 @@ export const TEMPLATES: TemplateDefinition[] = [
 
 export const DEFAULT_TEMPLATE_KEY = 'elegance';
 
-export function getTemplate(key?: string | null): TemplateDefinition {
-  return TEMPLATES.find((template) => template.key === key) ?? TEMPLATES[0];
+/** Retrouve un modèle par son slug canonique, sans repli. */
+export function findTemplate(key?: string | null): TemplateDefinition | undefined {
+  return key ? TEMPLATES.find((template) => template.key === key) : undefined;
 }
 
-export function getTemplateById(id?: number | null): TemplateDefinition {
-  return TEMPLATES.find((template) => template.id === id) ?? TEMPLATES[0];
+export function getTemplate(key?: string | null): TemplateDefinition {
+  return findTemplate(key) ?? TEMPLATES[0];
 }
 
 export function getTemplatesForCategory(category: EventType): TemplateDefinition[] {

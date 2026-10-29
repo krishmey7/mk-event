@@ -19,6 +19,25 @@ def sanitize_public_studio_config(value):
     return cleaned
 
 
+class TemplateReferenceField(serializers.PrimaryKeyRelatedField):
+    """
+    Référence un modèle par son slug stable (recommandé) ou par son ID legacy.
+
+    Les IDs auto-incrémentés dépendent de l'ordre des migrations / du seed :
+    le slug (`elegance`, `hiver`, `neon`…) est la seule référence fiable.
+    """
+
+    def to_internal_value(self, data):
+        if isinstance(data, str):
+            value = data.strip()
+            if value and not value.isdigit():
+                try:
+                    return self.get_queryset().get(slug=value)
+                except InvitationTemplate.DoesNotExist:
+                    self.fail("does_not_exist", pk_value=value)
+        return super().to_internal_value(data)
+
+
 class InvitationTemplateSerializer(serializers.ModelSerializer):
     palette = serializers.SerializerMethodField()
 
@@ -103,7 +122,6 @@ class GuestWriteSerializer(serializers.ModelSerializer):
             "children_count",
             "table",
             "drink",
-            "studio_key",
         )
 
 
@@ -114,6 +132,11 @@ class EventSerializer(serializers.ModelSerializer):
     playlist = serializers.SerializerMethodField()
     gifts = serializers.SerializerMethodField()
     practical_info = serializers.SerializerMethodField()
+    template = TemplateReferenceField(
+        queryset=InvitationTemplate.objects.all(),
+        required=False,
+        allow_null=True,
+    )
     template_detail = InvitationTemplateSerializer(source="template", read_only=True)
 
     class Meta:
@@ -201,6 +224,12 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventDraftSerializer(serializers.ModelSerializer):
+    template = TemplateReferenceField(
+        queryset=InvitationTemplate.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+
     class Meta:
         model = Event
         fields = (

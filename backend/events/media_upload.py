@@ -1,12 +1,13 @@
-"""Upload d’images / audio événement — fichiers sur MEDIA_ROOT (volume Railway)."""
+"""Upload d’images / audio événement — disque local ou stockage objet S3."""
 
 from __future__ import annotations
 
 import uuid
 from io import BytesIO
-from pathlib import Path
 
 from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from PIL import Image, UnidentifiedImageError
 
 ALLOWED_IMAGE_CONTENT_TYPES = {
@@ -53,8 +54,9 @@ class MediaUploadError(ValueError):
 
 def save_event_image(event_id: int, uploaded_file) -> str:
     """
-    Convertit l’image en JPEG, l’écrit sous MEDIA_ROOT/events/{id}/…,
-    retourne le chemin relatif URL (ex. events/12/abc.jpg).
+    Convertit l’image en JPEG puis l’enregistre dans le stockage média
+    (`events/{id}/…`), via `default_storage` (local ou S3-compatible).
+    Retourne le nom relatif du fichier.
     """
     if not uploaded_file:
         raise MediaUploadError("Fichier manquant.")
@@ -90,20 +92,16 @@ def save_event_image(event_id: int, uploaded_file) -> str:
             Image.Resampling.LANCZOS,
         )
 
-    relative_dir = Path("events") / str(event_id)
-    dest_dir = Path(settings.MEDIA_ROOT) / relative_dir
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    filename = f"{uuid.uuid4().hex}.jpg"
-    dest_path = dest_dir / filename
-    image.save(dest_path, format="JPEG", quality=JPEG_QUALITY, optimize=True)
-
-    return f"{relative_dir.as_posix()}/{filename}"
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", quality=JPEG_QUALITY, optimize=True)
+    relative_name = f"events/{event_id}/{uuid.uuid4().hex}.jpg"
+    return default_storage.save(relative_name, ContentFile(buffer.getvalue()))
 
 
 def save_event_audio(event_id: int, uploaded_file) -> str:
     """
-    Enregistre un fichier audio sous MEDIA_ROOT/events/{id}/audio/…
-    Retourne le chemin relatif URL.
+    Enregistre un fichier audio dans le stockage média (`events/{id}/audio/…`).
+    Retourne le nom relatif du fichier.
     """
     if not uploaded_file:
         raise MediaUploadError("Fichier manquant.")
@@ -143,14 +141,8 @@ def save_event_audio(event_id: int, uploaded_file) -> str:
         else:
             ext = ".mp3"
 
-    relative_dir = Path("events") / str(event_id) / "audio"
-    dest_dir = Path(settings.MEDIA_ROOT) / relative_dir
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    filename = f"{uuid.uuid4().hex}{ext}"
-    dest_path = dest_dir / filename
-    dest_path.write_bytes(raw)
-
-    return f"{relative_dir.as_posix()}/{filename}"
+    relative_name = f"events/{event_id}/audio/{uuid.uuid4().hex}{ext}"
+    return default_storage.save(relative_name, ContentFile(raw))
 
 
 def save_event_media(event_id: int, uploaded_file) -> str:
@@ -166,10 +158,11 @@ def save_event_media(event_id: int, uploaded_file) -> str:
 
 
 def absolute_media_url(request, relative_path: str) -> str:
-    """URL absolue publique pour un fichier média."""
-    media_url = settings.MEDIA_URL.rstrip("/")
-    path = f"{media_url}/{relative_path.lstrip('/')}"
+    """URL publique absolue pour un fichier média (S3 ou stockage local)."""
+    url = default_storage.url(relative_path)
+    if url.startswith(("http://", "https://", "//")):
+        return url
     public = getattr(settings, "PUBLIC_BASE_URL", "").rstrip("/")
     if public:
-        return f"{public}{path}"
-    return request.build_absolute_uri(path)
+        return f"{public}/{url.lstrip('/')}"
+    return request.build_absolute_uri(url)

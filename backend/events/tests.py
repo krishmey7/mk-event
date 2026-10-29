@@ -1,14 +1,23 @@
 from datetime import timedelta
 from io import BytesIO
+import shutil
+import tempfile
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.core.files.storage import default_storage
+from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
 from PIL import Image
 from rest_framework.test import APIClient
 
-from events.media_upload import MediaUploadError, save_event_audio, save_event_image
-from events.models import Event, GuestbookEntry
+from events.media_upload import (
+    MediaUploadError,
+    absolute_media_url,
+    save_event_audio,
+    save_event_image,
+)
+from events.models import Event, Guest, GuestbookEntry, InvitationTemplate
 
 
 User = get_user_model()
@@ -33,7 +42,24 @@ def _mp3_file(name="ambiance.mp3"):
     return buffer
 
 
-class MediaUploadHelperTests(TestCase):
+class TempMediaRootMixin:
+    """Isole les uploads de test dans un dossier temporaire."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls._media_dir = tempfile.mkdtemp(prefix="mk-media-")
+        cls._media_override = override_settings(MEDIA_ROOT=cls._media_dir)
+        cls._media_override.enable()
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cls._media_override.disable()
+        shutil.rmtree(cls._media_dir, ignore_errors=True)
+
+
+class MediaUploadHelperTests(TempMediaRootMixin, TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             email="orga@test.app",
@@ -50,19 +76,40 @@ class MediaUploadHelperTests(TestCase):
         relative = save_event_image(self.event.id, _jpeg_file())
         self.assertTrue(relative.startswith(f"events/{self.event.id}/"))
         self.assertTrue(relative.endswith(".jpg"))
+        self.assertTrue(default_storage.exists(relative))
 
     def test_save_event_audio_writes_mp3(self):
         relative = save_event_audio(self.event.id, _mp3_file())
         self.assertTrue(relative.startswith(f"events/{self.event.id}/audio/"))
         self.assertTrue(relative.endswith(".mp3"))
+        self.assertTrue(default_storage.exists(relative))
 
     def test_save_rejects_missing_file(self):
         with self.assertRaises(MediaUploadError):
             save_event_image(self.event.id, None)
 
+    def test_absolute_media_url_keeps_object_storage_url(self):
+        """En S3, l’URL signée/publique du stockage est renvoyée telle quelle."""
+        request = RequestFactory().get("/")
+        remote_url = "https://cdn.example.test/events/1/photo.jpg"
+        with patch.object(default_storage, "url", return_value=remote_url):
+            self.assertEqual(
+                absolute_media_url(request, f"events/{self.event.id}/photo.jpg"),
+                remote_url,
+            )
+
+    def test_absolute_media_url_prefixes_local_storage_with_public_base(self):
+        request = RequestFactory().get("/")
+        with override_settings(PUBLIC_BASE_URL="https://api.example.test"):
+            url = absolute_media_url(request, f"events/{self.event.id}/photo.jpg")
+        self.assertEqual(
+            url,
+            f"https://api.example.test/media/events/{self.event.id}/photo.jpg",
+        )
+
 
 @override_settings(PUBLIC_BASE_URL="https://api.example.test")
-class MediaUploadApiTests(TestCase):
+class MediaUploadApiTests(TempMediaRootMixin, TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             email="orga2@test.app",
@@ -167,3 +214,161 @@ class GuestbookApiTests(TestCase):
         finally:
             SimpleRateThrottle.THROTTLE_RATES = previous
             cache.clear()
+
+
+class EventTemplateResolutionTests(TestCase):
+    """Le modèle doit être résolu par slug, l'ID restant accepté (legacy)."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="templates@test.app",
+            password="test-pass-123",
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.elegance, _ = InvitationTemplate.objects.get_or_create(
+            slug="elegance",
+            defaults={"name": "Élégance", "category": "wedding"},
+        )
+        self.neon, _ = InvitationTemplate.objects.get_or_create(
+            slug="neon",
+            defaults={"name": "Néon", "category": "wedding"},
+        )
+        self.payload = {
+            "name": "Mariage test",
+            "type": Event.Type.WEDDING,
+            "event_date": (timezone.now() + timedelta(days=30)).isoformat(),
+        }
+
+    def test_create_event_with_template_slug(self):
+        response = self.client.post(
+            "/api/events/",
+            {**self.payload, "template": "neon"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        event = Event.objects.get(pk=response.data["id"])
+        self.assertEqual(event.template_id, self.neon.id)
+        self.assertEqual(response.data["template_detail"]["slug"], "neon")
+
+    def test_create_event_with_legacy_template_id(self):
+        response = self.client.post(
+            "/api/events/",
+            {**self.payload, "template": self.elegance.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        event = Event.objects.get(pk=response.data["id"])
+        self.assertEqual(event.template_id, self.elegance.id)
+
+    def test_patch_event_with_template_slug(self):
+        event = Event.objects.create(
+            organizer=self.user,
+            name="À modifier",
+            template=self.elegance,
+            event_date=timezone.now() + timedelta(days=30),
+            slug="a-modifier",
+        )
+        response = self.client.patch(
+            f"/api/events/{event.id}/",
+            {"template": "neon"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        event.refresh_from_db()
+        self.assertEqual(event.template_id, self.neon.id)
+
+    def test_unknown_template_slug_is_rejected(self):
+        response = self.client.post(
+            "/api/events/",
+            {**self.payload, "template": "modele-inexistant"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("template", response.data)
+
+
+class GuestPublishSyncTests(TestCase):
+    """Publication idempotente : clé serveur stable + suppressions explicites."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="guests@test.app",
+            password="test-pass-123",
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.event = Event.objects.create(
+            organizer=self.user,
+            name="Sync invités",
+            event_date=timezone.now() + timedelta(days=30),
+            slug="sync-invites",
+        )
+
+    def _publish(self, **payload):
+        return self.client.post(
+            f"/api/events/{self.event.id}/publish/",
+            payload,
+            format="json",
+        )
+
+    def test_new_guest_gets_server_studio_key(self):
+        guest = Guest.objects.create(event=self.event, full_name="Alice")
+        self.assertTrue(guest.studio_key)
+        self.assertTrue(guest.studio_key.startswith("INV-"))
+
+    def test_publish_is_idempotent_with_same_studio_key(self):
+        payload = {"guests": [{"studio_key": "INV-STABLE", "full_name": "Alice"}]}
+        first = self._publish(**payload)
+        second = self._publish(**payload)
+        self.assertEqual(first.status_code, 200, first.data)
+        self.assertEqual(second.status_code, 200, second.data)
+        self.assertEqual(Guest.objects.filter(event=self.event).count(), 1)
+        self.assertEqual(Guest.objects.get(event=self.event).studio_key, "INV-STABLE")
+
+    def test_publish_updates_legacy_guest_by_server_id(self):
+        guest = Guest.objects.create(event=self.event, full_name="Legacy")
+        Guest.objects.filter(pk=guest.pk).update(studio_key=None)
+
+        response = self._publish(
+            guests=[
+                {
+                    "guest_id": guest.pk,
+                    "studio_key": "INV-LEGACY",
+                    "full_name": "Legacy updated",
+                }
+            ]
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        guest.refresh_from_db()
+        self.assertEqual(guest.studio_key, "INV-LEGACY")
+        self.assertEqual(guest.full_name, "Legacy updated")
+        self.assertEqual(Guest.objects.filter(event=self.event).count(), 1)
+
+    def test_publish_deletes_explicitly_removed_guest(self):
+        removed = Guest.objects.create(event=self.event, full_name="À retirer")
+        kept = Guest.objects.create(event=self.event, full_name="À garder")
+
+        response = self._publish(
+            guests=[{"studio_key": kept.studio_key, "full_name": kept.full_name}],
+            deleted_guest_keys=[removed.studio_key],
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertFalse(Guest.objects.filter(pk=removed.pk).exists())
+        self.assertTrue(Guest.objects.filter(pk=kept.pk).exists())
+
+    def test_publish_does_not_delete_a_submitted_guest(self):
+        guest = Guest.objects.create(event=self.event, full_name="Protégé")
+        response = self._publish(
+            guests=[{"studio_key": guest.studio_key, "full_name": guest.full_name}],
+            deleted_guest_keys=[guest.studio_key],
+            deleted_guest_ids=[guest.pk],
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertTrue(Guest.objects.filter(pk=guest.pk).exists())
+
+    def test_publish_deletes_by_server_id(self):
+        guest = Guest.objects.create(event=self.event, full_name="Via id")
+        response = self._publish(deleted_guest_ids=[guest.pk])
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertFalse(Guest.objects.filter(pk=guest.pk).exists())

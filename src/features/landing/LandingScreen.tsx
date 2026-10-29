@@ -44,7 +44,7 @@ import {
 } from './components/ScrollStorySection';
 import { LandingScrollProvider } from './components/LandingReveal';
 import { LANDING } from './landingTokens';
-import { ensureLandingFontsLoaded, landingFonts } from './landingFonts';
+import { landingFonts } from './landingFonts';
 
 export function LandingScreen() {
   const router = useRouter();
@@ -84,8 +84,6 @@ export function LandingScreen() {
       .then((m) => m.prefetchOnboardingHeroes())
       .catch(() => undefined);
   }, []);
-
-  useEffect(() => ensureLandingFontsLoaded(), []);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;

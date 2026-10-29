@@ -30,6 +30,7 @@ import { normalizePhotoFrame } from '@/features/invitation/types';
 import type { GalleryStyleKey, Guest, PhotoFrameKey, RevealEffectKey, Venue } from '@/features/invitation/types';
 import { normalizeVenue } from '@/features/invitation/types';
 import { eventsService } from '@/services/eventsService';
+import { EVENT_TYPE_LABELS } from '@/types';
 import { resolveTemplateTheme, resolveTemplateThemeKey } from '@/features/templates/resolveTheme';
 import {
   CONFERENCE_DEMO,
@@ -435,15 +436,18 @@ export function EditorProvider({
     setDiets((prev) => prev.map((item) => (item === oldLabel ? clean : item)));
   }, []);
 
-  /* Invités — ID unique auto (« INV-1234 »), lien & QR personnels. */
+  /* Invités — clé stable générée localement puis confirmée par le serveur. */
   const [guests, setGuests] = useState<Guest[]>(() => snap?.guests ? [...snap.guests] : []);
+  /* Invités retirés du studio : supprimés explicitement à la publication. */
+  const [removedGuestKeys, setRemovedGuestKeys] = useState<string[]>([]);
+  const [removedGuestIds, setRemovedGuestIds] = useState<number[]>([]);
 
   const addGuest = useCallback(
     (input: { firstName: string; lastName: string; contact: string; seats: number }) => {
       setGuests((prev) => [
         ...prev,
         {
-          id: makeGuestId(prev.length),
+          id: makeGuestId(),
           firstName: input.firstName.trim(),
           lastName: input.lastName.trim(),
           contact: input.contact.trim(),
@@ -454,9 +458,20 @@ export function EditorProvider({
     [],
   );
 
-  const removeGuest = useCallback((id: string) => {
-    setGuests((prev) => prev.filter((guest) => guest.id !== id));
-  }, []);
+  const removeGuest = useCallback(
+    (id: string) => {
+      const target = guests.find((guest) => guest.id === id);
+      setGuests((prev) => prev.filter((guest) => guest.id !== id));
+      if (!target) return;
+      setRemovedGuestKeys((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      if (target.serverId != null) {
+        setRemovedGuestIds((prev) =>
+          prev.includes(target.serverId!) ? prev : [...prev, target.serverId!],
+        );
+      }
+    },
+    [guests],
+  );
 
   /* Publication temps réel vers /inv/{slug} (registre local + API). */
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
@@ -535,17 +550,18 @@ export function EditorProvider({
         galleryStyle,
         venue,
       };
+      const eventType = activeEvent.type || template.category;
       const name = cover.couple.trim()
-        ? `${template.category === 'corporate' ? 'Conférence' : template.category === 'birthday' ? 'Anniversaire' : 'Mariage'} – ${cover.couple.trim()}`
+        ? `${EVENT_TYPE_LABELS[eventType]} – ${cover.couple.trim()}`
         : template.name;
       const base = {
         name,
-        type: activeEvent.type || template.category,
+        type: eventType,
         event_date: parseFrenchDateLabel(cover.dateLabel),
         venue_name: venue.name,
         venue_city: venue.city,
         message: dressCode.trim() || null,
-        template: template.id,
+        template: template.key,
         theme_key: cover.themeKey,
       };
 
@@ -648,11 +664,14 @@ export function EditorProvider({
       const publishedResult = await eventsService.publishEvent(event.id, {
         slug: desiredSlug,
         guests: guests.map((guest) => ({
+          guest_id: guest.serverId,
           studio_key: guest.id,
           full_name: `${guest.firstName} ${guest.lastName}`.trim(),
           contact: guest.contact,
           seats: guest.seats,
         })),
+        deleted_guest_keys: removedGuestKeys,
+        deleted_guest_ids: removedGuestIds,
         studio_config: studioConfig,
         theme_key: cover.themeKey,
       });
@@ -660,22 +679,32 @@ export function EditorProvider({
       if (activeEvent.eventId !== event.id || activeEvent.themeKey !== cover.themeKey) {
         activeEvent.setActiveEvent({
           eventId: event.id,
-          type: activeEvent.type || template.category,
+          type: eventType,
           themeKey: cover.themeKey,
         });
       }
 
-      const tokenByStudioKey = new Map(
-        publishedResult.guests.map((item) => [
-          (item.studio_key || '').trim(),
-          item.access_token,
-        ]),
+      /* Le serveur est l'autorité sur la clé studio (nouvel invité, legacy…). */
+      const byServerId = new Map(
+        publishedResult.guests.map((item) => [item.id, item] as const),
       );
-      const guestsWithTokens = guests.map((guest) => ({
-        ...guest,
-        accessToken: tokenByStudioKey.get(guest.id) ?? guest.accessToken,
-      }));
+      const byStudioKey = new Map(
+        publishedResult.guests.map((item) => [(item.studio_key || '').trim(), item] as const),
+      );
+      const guestsWithTokens = guests.map((guest) => {
+        const publishedGuest =
+          (guest.serverId != null ? byServerId.get(guest.serverId) : undefined)
+          ?? byStudioKey.get(guest.id);
+        return {
+          ...guest,
+          id: publishedGuest?.studio_key?.trim() || guest.id,
+          serverId: publishedGuest?.id ?? guest.serverId,
+          accessToken: publishedGuest?.access_token ?? guest.accessToken,
+        };
+      });
       setGuests(guestsWithTokens);
+      setRemovedGuestKeys([]);
+      setRemovedGuestIds([]);
       setPublishedSlug(publishedResult.event.slug);
       setPublished(true);
 
@@ -703,7 +732,8 @@ export function EditorProvider({
     }
   }, [
     activeEvent, boundEventId, cover, countdownStyle, diets, dressCode, drinks, gallery, galleryStyle,
-    guests, program, programStyle, revealEffect, story, template, venue, voix, speakers, practical,
+    guests, removedGuestKeys, removedGuestIds, program, programStyle, revealEffect, story, template,
+    venue, voix, speakers, practical,
   ]);
 
   useEffect(() => {

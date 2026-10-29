@@ -4,8 +4,10 @@
 
 /** Invité d'une invitation (créé côté organisateur). */
 export interface Guest {
-  /** Identifiant studio stable — « INV-1234 » (studio_key Django). */
+  /** Identifiant studio stable — `studio_key` généré côté serveur. */
   id: string;
+  /** PK Django (si l'invité existe déjà côté serveur). */
+  serverId?: number;
   /** Jeton Django `access_token` — utilisé pour lien/QR après publication. */
   accessToken?: string;
   firstName: string;

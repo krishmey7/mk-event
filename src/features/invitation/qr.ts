@@ -36,9 +36,13 @@ export function qrCells(seed: string, size = 21): boolean[] {
   return cells;
 }
 
-/** « INV-1234 », « INV-1235 »… */
-export function makeGuestId(index: number): string {
-  return `INV-${1234 + index}`;
+/**
+ * Clé studio locale — unique même après suppression/ajout d'invités.
+ * Le serveur reste l'autorité : cette clé est remplacée par son `studio_key`
+ * à la publication si nécessaire.
+ */
+export function makeGuestId(): string {
+  return `INV-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
 }
 
 /** « Léa & Thomas » → « lea-thomas » (accents retirés). */

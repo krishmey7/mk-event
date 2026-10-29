@@ -9,7 +9,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .media_upload import MediaUploadError, absolute_media_url, save_event_media
-from .models import Event, Guest, GuestbookEntry, RSVPResponse, Table
+from .models import Event, Guest, GuestbookEntry, RSVPResponse, Table, make_studio_key
 from .serializers import (
     EventDraftSerializer,
     EventSerializer,
@@ -96,13 +96,48 @@ class EventViewSet(viewsets.ModelViewSet):
             event.slug = candidate
 
         synced_guests = []
+        submitted_keys: set[str] = set()
+        submitted_ids: set[int] = set()
         for raw in request.data.get("guests") or []:
             if not isinstance(raw, dict):
                 continue
-            studio_key = (raw.get("studio_key") or raw.get("client_id") or "").strip() or None
             full_name = (raw.get("full_name") or "").strip()
             if not full_name:
                 continue
+
+            studio_key = (
+                (raw.get("studio_key") or raw.get("client_id") or "").strip()[:64] or None
+            )
+            try:
+                guest_id = int(raw.get("guest_id")) if raw.get("guest_id") not in (None, "") else None
+            except (TypeError, ValueError):
+                guest_id = None
+
+            # Identité : PK Django (legacy fiable) puis clé studio stable.
+            guest = None
+            if guest_id is not None:
+                guest = Guest.objects.filter(event=event, pk=guest_id).first()
+            if guest is None and studio_key:
+                guest = Guest.objects.filter(event=event, studio_key=studio_key).first()
+            if guest is None:
+                guest = Guest(event=event)
+
+            # Une clé studio ne doit jamais « voler » celle d'un autre invité.
+            if studio_key and (
+                Guest.objects.filter(event=event, studio_key=studio_key)
+                .exclude(pk=guest.pk)
+                .exists()
+            ):
+                studio_key = None
+            if not studio_key:
+                studio_key = guest.studio_key or make_studio_key()
+                while (
+                    Guest.objects.filter(event=event, studio_key=studio_key)
+                    .exclude(pk=guest.pk)
+                    .exists()
+                ):
+                    studio_key = make_studio_key()
+
             contact = (raw.get("contact") or "").strip()
             email = raw.get("email")
             phone = raw.get("phone")
@@ -110,34 +145,52 @@ class EventViewSet(viewsets.ModelViewSet):
                 email = contact
             elif contact:
                 phone = contact
+
             adults = max(1, int(raw.get("adults_count") or raw.get("seats") or 1))
-            defaults = {
-                "full_name": full_name,
-                "email": email or None,
-                "phone": phone or None,
-                "adults_count": adults,
-                "children_count": int(raw.get("children_count") or 0),
-                "studio_key": studio_key,
-            }
-            guest = None
-            if studio_key:
-                guest = Guest.objects.filter(event=event, studio_key=studio_key).first()
-            if guest is None:
-                guest = Guest(event=event)
-            for key, value in defaults.items():
-                setattr(guest, key, value)
+            children = int(raw.get("children_count") or 0)
+
+            def apply_fields(target: Guest) -> None:
+                target.full_name = full_name
+                target.email = email or None
+                target.phone = phone or None
+                target.adults_count = adults
+                target.children_count = children
+                target.studio_key = studio_key
+
+            apply_fields(guest)
             try:
                 guest.save()
             except IntegrityError:
+                # Course concurrente sur la clé : on reprend la ligne existante.
                 guest = Guest.objects.filter(event=event, studio_key=studio_key).first()
                 if guest is None:
                     continue
-                for key, value in defaults.items():
-                    setattr(guest, key, value)
+                apply_fields(guest)
                 guest.save()
-            payload = GuestSerializer(guest).data
-            payload["studio_key"] = studio_key or guest.studio_key
-            synced_guests.append(payload)
+
+            submitted_keys.add(guest.studio_key or studio_key)
+            submitted_ids.add(guest.pk)
+            synced_guests.append(GuestSerializer(guest).data)
+
+        # Suppressions explicites du studio — jamais implicites (évite de
+        # perdre un invité ajouté entre-temps depuis la gestion).
+        deleted_keys = {
+            str(value).strip()
+            for value in (request.data.get("deleted_guest_keys") or [])
+            if str(value).strip()
+        } - submitted_keys
+        if deleted_keys:
+            Guest.objects.filter(event=event, studio_key__in=deleted_keys).delete()
+
+        deleted_ids: set[int] = set()
+        for value in request.data.get("deleted_guest_ids") or []:
+            try:
+                deleted_ids.add(int(value))
+            except (TypeError, ValueError):
+                continue
+        deleted_ids -= submitted_ids
+        if deleted_ids:
+            Guest.objects.filter(event=event, pk__in=deleted_ids).delete()
 
         event.status = Event.Status.PUBLISHED
         update_fields = ["slug", "status", "updated_at"]
@@ -167,7 +220,7 @@ class EventViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="media")
     def upload_media(self, request, pk=None):
-        """POST multipart — image ou audio sur le volume MEDIA_ROOT."""
+        """POST multipart — image ou audio dans le stockage média (S3 ou local)."""
         event = self.get_object()
         uploaded = request.FILES.get("file")
         try:

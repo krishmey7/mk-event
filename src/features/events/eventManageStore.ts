@@ -529,9 +529,24 @@ export function replaceGuestsFromImport(
   });
   emit();
 
-  /* Import bulk API : création best-effort des nouveaux invités. */
+  /* Import bulk API : remplacement = suppression des anciens, puis création. */
   if (isApi(state)) {
     void (async () => {
+      if (mode === 'replace') {
+        const keepIds = new Set(
+          nextGuests
+            .map((guest) => guest.apiId)
+            .filter((id): id is number => id != null),
+        );
+        const stale = state.guests.filter(
+          (guest) => guest.apiId != null && !keepIds.has(guest.apiId),
+        );
+        await Promise.all(
+          stale.map((guest) =>
+            guestsService.deleteGuest(eventId, guest.apiId!).catch(() => undefined),
+          ),
+        );
+      }
       for (const guest of nextGuests) {
         if (guest.apiId != null) continue;
         const created = await guestsService.createGuest(eventId, {

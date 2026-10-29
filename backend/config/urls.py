@@ -31,7 +31,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("accounts.urls")),
     path("api/", include("events.urls")),
-    # Médias publics (pages invité) — aussi hors DEBUG (volume Railway).
+    # Médias locaux (dev / legacy) — en prod, le stockage objet sert les fichiers.
     re_path(
         r"^media/(?P<path>.*)$",
         serve,

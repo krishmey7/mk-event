@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { Router } from 'expo-router';
 
 import type { Event } from '@/types';
-import { getTemplate, getTemplateById, getTemplatesForCategory } from '@/features/templates/registry';
+import { findTemplate, getTemplate, getTemplatesForCategory } from '@/features/templates/registry';
 
 let pendingTemplateKey: string | undefined;
 let pendingThemeKey: string | undefined;
@@ -100,12 +100,13 @@ export function openTemplateEditor(
 /** Ouvre le studio pour un événement déjà dans Mes invitations. */
 export function openEventEditor(
   router: Router,
-  event: Pick<Event, 'id' | 'template' | 'theme_key' | 'type'>,
+  event: Pick<Event, 'id' | 'template_detail' | 'theme_key' | 'type'>,
 ): void {
-  const byId = event.template != null ? getTemplateById(event.template) : null;
-  const byCategory = getTemplatesForCategory(event.type)[0];
+  /* Le slug est la référence stable ; l'ID legacy n'est plus utilisé. */
   const template =
-    byId && byId.category === event.type ? byId : byCategory ?? getTemplate();
+    findTemplate(event.template_detail?.slug)
+    ?? getTemplatesForCategory(event.type)[0]
+    ?? getTemplate();
   rememberEditorTemplate(template.key);
   if (event.theme_key) rememberEditorTheme(event.theme_key);
   router.navigate({

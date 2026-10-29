@@ -50,29 +50,33 @@ EXPO_PUBLIC_API_URL=http://127.0.0.1:8000/api
 
 Sur appareil physique, utiliser l’IP LAN de la machine (ex. `http://192.168.x.x:8000/api`).
 
-## Production (Railway + Vercel)
+## Production (Render + Vercel)
 
-Préparation locale déjà faite : `Procfile`, `railway.toml`, `DATABASE_URL` optionnel dans `settings.py`.
+Le blueprint est à la racine : `render.yaml` (service `mk-event-api`, `rootDir: backend`).
+La base Postgres est externe (Supabase) → `DATABASE_URL` à renseigner.
 
-### Railway (API)
+### Render (API)
 
-1. Créer un service pointant sur le dossier `backend/`
-2. Ajouter l’addon Postgres (injecte `DATABASE_URL`)
-3. Variables d’environnement (voir `.env.example`) :
+1. Dashboard Render → **New → Blueprint** → repo `krishmey7/mk-event`.
+2. Variables d’environnement (voir `.env.example`) :
    - `DJANGO_DEBUG=false`
    - `DJANGO_SECRET_KEY=…`
-   - `DJANGO_ALLOWED_HOSTS=.up.railway.app`
-   - `CORS_ALLOWED_ORIGINS=https://votre-app.vercel.app`
-   - `PUBLIC_BASE_URL=https://<votre-api>.up.railway.app`
-4. **Volume** : monter un volume Railway sur le dossier `media/` du service
-   (chemin conteneur typique `/app/media`) pour persister les photos
-   d’invitation hors Postgres.
-5. Le démarrage exécute `migrate` + `collectstatic` + `gunicorn`
-6. Seed démo (optionnel, une fois) :
-   `railway run python manage.py seed_demo`
+   - `DJANGO_ALLOWED_HOSTS=.onrender.com`
+   - `CORS_ALLOWED_ORIGINS=https://mk-event-five.vercel.app`
+   - `CORS_ALLOWED_ORIGIN_REGEXES=^https://mk-event-[a-z0-9-]+\.vercel\.app$` (previews Vercel)
+   - `PUBLIC_BASE_URL=https://<votre-api>.onrender.com`
+   - `DATABASE_URL=postgresql://…` (Supabase)
+3. **Stockage média** : le plan free n’a pas de disque. Configurer un bucket
+   **public** compatible S3 (`AWS_STORAGE_BUCKET_NAME`, `AWS_S3_ENDPOINT_URL`,
+   `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_CUSTOM_DOMAIN`,
+   `AWS_QUERYSTRING_AUTH=false`). Voir `.env.example` pour Supabase Storage,
+   AWS S3, R2 et MinIO. Sans bucket, les uploads sont perdus à chaque
+   redéploiement.
+4. Le build exécute `collectstatic` + `migrate`, puis `gunicorn`.
+5. Seed démo (optionnel, une fois) : `python manage.py seed_demo`.
 
 ### Vercel (front)
 
 1. Root du projet = racine du repo (pas `backend/`)
 2. `vercel.json` à la racine : build `npm run build:web`, output `dist`
-3. Variable : `EXPO_PUBLIC_API_URL=https://<votre-api>.up.railway.app/api`
+3. Variable : `EXPO_PUBLIC_API_URL=https://<votre-api>.onrender.com/api`

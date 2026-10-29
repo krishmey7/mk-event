@@ -1,6 +1,6 @@
 /**
  * Rend une URI d’image publiable pour l’invité.
- * Avec eventId (API réelle) : upload vers MEDIA_ROOT → URL https.
+ * Avec eventId (API réelle) : upload vers le stockage média → URL https.
  * Sinon (simulation) : blob/file → data URL JPEG compressée.
  */
 

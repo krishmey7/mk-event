@@ -238,7 +238,10 @@ export interface Event {
   name: string;
   type: EventType;
   status: EventStatus;
-  /** Modèle utilisé (FK InvitationTemplate) — `template_detail` si ?expand=template. */
+  /**
+   * FK InvitationTemplate (ID, lecture seule).
+   * Référence stable à utiliser : `template_detail.slug`.
+   */
   template: ID | null;
   template_detail?: InvitationTemplate;
   /** Date de l'événement — « 14 JUIN 2025 » sur les cartes. */
@@ -266,11 +269,19 @@ export interface Event {
   updated_at: ISODateString;
 }
 
+/**
+ * Payload d'écriture d'un événement.
+ * `template` accepte le slug (recommandé : `elegance`, `neon`…) ou l'ID legacy.
+ */
+export type EventWritePayload = Partial<Omit<Event, 'template'>> & {
+  template?: ID | string | null;
+};
+
 /** Payload de création (étape 1 du stepper « Créer une invitation »). */
 export type EventDraftPayload = Pick<
   Event,
   'name' | 'type' | 'event_date' | 'venue_name' | 'venue_city' | 'message'
-> & { template?: ID | null; theme_key?: string | null };
+> & { template?: ID | string | null; theme_key?: string | null };
 
 /* ════════════════════════ Invités ════════════════════════ */
 

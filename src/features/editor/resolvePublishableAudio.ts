@@ -1,6 +1,6 @@
 /**
  * Rend une URI audio publiable pour l’invité.
- * Avec eventId (API réelle) : upload vers MEDIA_ROOT → URL https.
+ * Avec eventId (API réelle) : upload vers le stockage média → URL https.
  * Les blob:/file: locaux ne doivent jamais partir dans le snapshot public.
  */
 

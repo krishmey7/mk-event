@@ -290,6 +290,7 @@ export function editorSnapshotFromStudioConfig(
 
 /** Mappe les invités DRF vers le modèle éditeur. */
 export function mapApiGuestsToEditor(apiGuests: {
+  id: number;
   full_name: string;
   email?: string | null;
   phone?: string | null;
@@ -298,7 +299,7 @@ export function mapApiGuestsToEditor(apiGuests: {
   access_token?: string;
   studio_key?: string | null;
 }[]): Guest[] {
-  return apiGuests.map((guest, index) => {
+  return apiGuests.map((guest) => {
     const parts = guest.full_name.trim().split(/\s+/);
     const firstName = parts[0] || 'Invité';
     const lastName = parts.slice(1).join(' ');
@@ -306,8 +307,10 @@ export function mapApiGuestsToEditor(apiGuests: {
       1,
       (guest.adults_count ?? 1) + (guest.children_count ?? 0),
     );
+    /* Repli déterministe (jamais un index) pour les lignes legacy sans clé. */
     return {
-      id: (guest.studio_key || '').trim() || `INV-${index + 1}`,
+      id: (guest.studio_key || '').trim() || `INV-${guest.id}`,
+      serverId: guest.id,
       firstName,
       lastName,
       contact: guest.email || guest.phone || '',

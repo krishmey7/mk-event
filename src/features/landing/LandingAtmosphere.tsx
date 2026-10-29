@@ -1,5 +1,5 @@
 /**
- * Atmosphère landing / dashboard.
+ * AtmosphÃ¨re landing / dashboard.
  * Landing = clair Edulex-like (orbes soft). Dashboard peut forcer sombre.
  */
 

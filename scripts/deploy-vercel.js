@@ -113,6 +113,11 @@ fs.writeFileSync(
     {
       rewrites: [{ source: '/((?!_expo/|assets/|.*\\..*).*)', destination: '/index.html' }],
       headers: [
+        // Règle générique en premier : les règles spécifiques ci-dessous priment.
+        {
+          source: '/(.*)\\.(js|css|woff2|ttf|png|webp|jpg|jpeg|svg|ico)',
+          headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+        },
         {
           source: '/sw.js',
           headers: [
@@ -135,10 +140,6 @@ fs.writeFileSync(
         {
           source: '/apple-touch-icon.png',
           headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, must-revalidate' }],
-        },
-        {
-          source: '/(.*)\\.(js|css|woff2|ttf|png|webp|jpg|jpeg|svg|ico)',
-          headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
         },
       ],
     },

@@ -142,18 +142,41 @@ export function VenuePlaceEditor({
         </View>
       ) : null}
 
-      {query.trim().length >= 3 && !searching && hits.length === 0 ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setManualOpen(true)}
-          style={({ pressed }) => [styles.manualFallback, pressed && styles.pressed]}
-        >
-          <Text style={[styles.noResults, { color: c.accent }]}>
-            Aucun résultat ? Saisir le lieu manuellement
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={manualOpen ? 'Masquer la saisie manuelle du lieu' : 'Saisir le lieu manuellement'}
+        accessibilityState={{ expanded: manualOpen }}
+        onPress={() => setManualOpen((v) => !v)}
+        style={({ pressed }) => [
+          styles.manualAction,
+          { backgroundColor: c.accentMuted, borderColor: c.accent },
+          pressed && styles.pressed,
+        ]}
+      >
+        <View style={[styles.manualIcon, { backgroundColor: c.surface }]}>
+          <Ionicons name="create-outline" size={20} color={c.accent} />
+        </View>
+        <View style={styles.manualActionCopy}>
+          <Text style={[styles.manualActionTitle, { color: c.textPrimary }]}>
+            {manualOpen ? 'Saisie manuelle du lieu' : 'Vous ne trouvez pas votre lieu ?'}
           </Text>
-          <Ionicons name="create-outline" size={16} color={c.accent} />
-        </Pressable>
-      ) : null}
+          <Text style={[styles.manualActionHint, { color: c.textSecondary }]}>
+            {manualOpen
+              ? 'Ajoutez un nom et un repère, sans utiliser la carte.'
+              : 'Saisissez son nom et une courte indication.'}
+          </Text>
+        </View>
+        <View style={styles.manualActionCta}>
+          <Text style={[styles.manualActionCtaText, { color: c.accent }]}>
+            {manualOpen ? 'Masquer' : 'Saisir'}
+          </Text>
+          <Ionicons
+            name={manualOpen ? 'chevron-up' : 'chevron-forward'}
+            size={17}
+            color={c.accent}
+          />
+        </View>
+      </Pressable>
 
       {venueHasCoords(venue) ? (
         <View style={styles.mapBlock}>
@@ -185,22 +208,6 @@ export function VenuePlaceEditor({
           )}
         </Pressable>
       )}
-
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => setManualOpen((v) => !v)}
-        style={styles.manualToggle}
-        hitSlop={8}
-      >
-        <Text style={[styles.manualToggleLabel, { color: c.textMuted }]}>
-          {manualOpen ? 'Masquer la saisie manuelle' : 'Saisir le lieu manuellement'}
-        </Text>
-        <Ionicons
-          name={manualOpen ? 'chevron-up' : 'chevron-down'}
-          size={16}
-          color={c.textMuted}
-        />
-      </Pressable>
 
       {manualOpen ? (
         <View style={styles.manual}>
@@ -275,17 +282,30 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   locateLabel: { fontFamily: fontFamilies.sansSemiBold, fontSize: 13.5 },
-  manualToggle: {
+  manualAction: {
     marginTop: 10,
+    minHeight: 68,
+    borderRadius: 12,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  manualToggleLabel: { fontFamily: fontFamilies.sansMedium, fontSize: 13 },
+  manualIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  manualActionCopy: { flex: 1, gap: 2 },
+  manualActionTitle: { fontFamily: fontFamilies.sansSemiBold, fontSize: 13.5 },
+  manualActionHint: { fontFamily: fontFamilies.sans, fontSize: 11.5, lineHeight: 16 },
+  manualActionCta: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  manualActionCtaText: { fontFamily: fontFamilies.sansSemiBold, fontSize: 12.5 },
   manual: { marginTop: 8 },
-  manualFallback: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 8 },
-  noResults: { fontFamily: fontFamilies.sansMedium, fontSize: 12.5, lineHeight: 18 },
   manualHint: { fontFamily: fontFamilies.sans, fontSize: 12, lineHeight: 17, marginTop: 8 },
   gap: { height: 10 },
   error: { fontFamily: fontFamilies.sansMedium, fontSize: 12.5, marginTop: 8, color: '#A45A45' },

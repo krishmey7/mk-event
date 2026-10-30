@@ -162,8 +162,8 @@ export function VenuePlaceEditor({
           </Text>
           <Text style={[styles.manualActionHint, { color: c.textSecondary }]}>
             {manualOpen
-              ? 'Ajoutez un nom et un repère, sans utiliser la carte.'
-              : 'Saisissez son nom et une courte indication.'}
+              ? 'Indiquez le lieu en une seule fois, sans utiliser la carte.'
+              : 'Saisissez le nom, l’adresse ou un repère en un seul champ.'}
           </Text>
         </View>
         <View style={styles.manualActionCta}>
@@ -212,30 +212,20 @@ export function VenuePlaceEditor({
       {manualOpen ? (
         <View style={styles.manual}>
           <EditorInput
-            value={venue.name}
-            onChangeText={(value) => onChange({ name: value, lat: null, lng: null })}
-            placeholder="Nom du lieu ou repère"
-          />
-          <View style={styles.gap} />
-          <EditorInput
-            value={venue.street}
-            onChangeText={(value) => onChange({ street: value, lat: null, lng: null })}
-            placeholder="Adresse, quartier ou repère (facultatif)"
-          />
-          <View style={styles.gap} />
-          <EditorInput
-            value={venue.zip}
-            onChangeText={(value) => onChange({ zip: value, lat: null, lng: null })}
-            placeholder="Code postal"
-          />
-          <View style={styles.gap} />
-          <EditorInput
-            value={venue.city}
-            onChangeText={(value) => onChange({ city: value, lat: null, lng: null })}
-            placeholder="Ville"
+            value={venueFullAddress(venue)}
+            onChangeText={(value) => onChange({
+              name: value,
+              street: '',
+              zip: '',
+              city: '',
+              lat: null,
+              lng: null,
+            })}
+            placeholder="Nom du lieu, adresse ou repère"
+            maxLength={200}
           />
           <Text style={[styles.manualHint, { color: c.textMuted }]}>
-            Un nom et une courte indication suffisent. Sans coordonnées, le lieu sera affiché sur l’invitation et le bouton d’itinéraire recherchera le texte saisi.
+            Le texte saisi sera affiché sur l’invitation et utilisé pour rechercher l’itinéraire.
           </Text>
         </View>
       ) : null}
@@ -307,7 +297,6 @@ const styles = StyleSheet.create({
   manualActionCtaText: { fontFamily: fontFamilies.sansSemiBold, fontSize: 12.5 },
   manual: { marginTop: 8 },
   manualHint: { fontFamily: fontFamilies.sans, fontSize: 12, lineHeight: 17, marginTop: 8 },
-  gap: { height: 10 },
   error: { fontFamily: fontFamilies.sansMedium, fontSize: 12.5, marginTop: 8, color: '#A45A45' },
   pressed: { opacity: 0.85 },
 });

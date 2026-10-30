@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.storage import default_storage
+from django.core.exceptions import ValidationError
 from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
 from PIL import Image
@@ -21,7 +22,15 @@ from events.media_upload import (
     save_event_audio,
     save_event_image,
 )
-from events.models import Event, EventPayment, Guest, GuestbookEntry, InvitationTemplate
+from events.models import (
+    AdminEarning,
+    AdminWithdrawal,
+    Event,
+    EventPayment,
+    Guest,
+    GuestbookEntry,
+    InvitationTemplate,
+)
 
 
 User = get_user_model()
@@ -436,6 +445,8 @@ class EventPaymentFlowTests(TestCase):
                     "id": "kiba-payment-1",
                     "reference": "KIBA-REF-1",
                     "status": "PENDING",
+                    "amount_net": "2.35",
+                    "currency": "USD",
                 }
             ),
         )
@@ -457,6 +468,7 @@ class EventPaymentFlowTests(TestCase):
         self.assertEqual(response.data["amount_due"], "2.50")
         payment = EventPayment.objects.get(event=self.event)
         self.assertEqual(payment.amount, Decimal("2.50"))
+        self.assertEqual(payment.amount_net, Decimal("2.35"))
         self.assertEqual(payment.guest_quota, 5)
         self.assertEqual(payment.status, EventPayment.Status.PENDING)
         self.event.refresh_from_db()
@@ -522,6 +534,9 @@ class EventPaymentFlowTests(TestCase):
         self.assertEqual(self.event.payment_status, "failed")
 
     def test_signed_webhook_publishes_and_allocates_links_idempotently(self):
+        self.user.role = User.Role.ADMIN
+        self.user.payout_share_percent = Decimal("25.00")
+        self.user.save()
         guests = [
             Guest.objects.create(event=self.event, full_name=f"Invité {index}")
             for index in range(3)
@@ -540,6 +555,7 @@ class EventPaymentFlowTests(TestCase):
                 "transaction_id": "kiba-payment-2",
                 "external_reference": payment.external_reference,
                 "amount_gross": "1.00",
+                "amount_net": "0.94",
                 "currency": "USD",
             },
         }
@@ -571,6 +587,10 @@ class EventPaymentFlowTests(TestCase):
         self.assertEqual(self.event.paid_guest_count, 2)
         self.assertEqual(self.event.amount_paid_total, Decimal("1.00"))
         self.assertEqual(payment.status, EventPayment.Status.SUCCEEDED)
+        self.assertEqual(payment.amount_net, Decimal("0.94"))
+        earning = AdminEarning.objects.get(user=self.user, payment=payment)
+        self.assertEqual(earning.share_percent, Decimal("25.00"))
+        self.assertEqual(earning.amount, Decimal("0.23"))
         self.assertEqual(
             [guest.has_personal_link for guest in Guest.objects.filter(pk__in=[g.pk for g in guests]).order_by("id")],
             [True, True, False],
@@ -599,3 +619,269 @@ class EventPaymentFlowTests(TestCase):
         self.assertEqual(response.data["pending_count"], 1)
         self.assertEqual(response.data["available_credits"], 1)
         self.assertEqual(response.data["amount_due"], "0.00")
+
+
+@override_settings(KIBA_WEBHOOK_SECRET="test-webhook-secret")
+class AdminWalletTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            email="admin-wallet@test.app",
+            password="test-password-123",
+            full_name="Wallet Admin",
+            role=User.Role.ADMIN,
+            payout_share_percent=Decimal("25.00"),
+        )
+        self.other_admin = User.objects.create_user(
+            email="other-admin-wallet@test.app",
+            password="test-password-123",
+            full_name="Other Admin",
+            role=User.Role.ADMIN,
+            payout_share_percent=Decimal("10.00"),
+        )
+        self.organizer = User.objects.create_user(
+            email="wallet-organizer@test.app",
+            password="test-password-123",
+            full_name="Organizer",
+        )
+        self.event = Event.objects.create(
+            organizer=self.organizer,
+            name="Portefeuille test",
+            event_date=timezone.now() + timedelta(days=30),
+            slug="portefeuille-test",
+        )
+        self.payment = EventPayment.objects.create(
+            event=self.event,
+            external_reference="inv-wallet-earned",
+            provider_payment_id="kiba-wallet-earned",
+            payment_method=EventPayment.Method.MOBILE_MONEY,
+            guest_quota=2,
+            amount=Decimal("1.00"),
+            amount_net=Decimal("0.94"),
+            status=EventPayment.Status.SUCCEEDED,
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.admin)
+
+    def test_dashboard_only_exposes_the_current_admin_transactions(self):
+        own_earning = AdminEarning.objects.create(
+            user=self.admin,
+            payment=self.payment,
+            share_percent=Decimal("25.00"),
+            amount=Decimal("5.00"),
+            currency="USD",
+        )
+        other_payment = EventPayment.objects.create(
+            event=self.event,
+            external_reference="inv-other-admin",
+            payment_method=EventPayment.Method.CARD,
+            guest_quota=1,
+            amount=Decimal("0.50"),
+            amount_net=Decimal("0.47"),
+            status=EventPayment.Status.SUCCEEDED,
+        )
+        AdminEarning.objects.create(
+            user=self.other_admin,
+            payment=other_payment,
+            share_percent=Decimal("10.00"),
+            amount=Decimal("2.00"),
+            currency="USD",
+        )
+
+        response = self.client.get("/api/admin/wallet/")
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["balances"]["USD"], "5.00")
+        self.assertEqual(
+            [item["id"] for item in response.data["transactions"]],
+            [f"earning-{own_earning.id}"],
+        )
+        self.assertEqual(response.data["admin_balances"], [])
+
+    def test_organizer_cannot_open_admin_wallet(self):
+        self.client.force_authenticate(user=self.organizer)
+        response = self.client.get("/api/admin/wallet/")
+        self.assertEqual(response.status_code, 403)
+
+    def test_superuser_can_see_global_balances_and_transactions(self):
+        superuser = User.objects.create_superuser(
+            email="root-wallet@test.app",
+            password="test-password-123",
+        )
+        AdminEarning.objects.create(
+            user=self.admin,
+            payment=self.payment,
+            share_percent=Decimal("25.00"),
+            amount=Decimal("5.00"),
+            currency="USD",
+        )
+        self.client.force_authenticate(user=superuser)
+
+        response = self.client.get("/api/admin/wallet/")
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertTrue(response.data["is_superuser"])
+        self.assertEqual(len(response.data["transactions"]), 2)
+        self.assertEqual(
+            {item["type"] for item in response.data["transactions"]},
+            {"earning", "incoming_payment"},
+        )
+        self.assertEqual(len(response.data["admin_balances"]), 3)
+
+    def test_admin_share_configuration_cannot_exceed_one_hundred_percent(self):
+        self.other_admin.payout_share_percent = Decimal("76.00")
+        with self.assertRaises(ValidationError):
+            self.other_admin.full_clean()
+
+    def test_withdrawal_reserves_the_amount_and_uses_kibawallet(self):
+        AdminEarning.objects.create(
+            user=self.admin,
+            payment=self.payment,
+            share_percent=Decimal("25.00"),
+            amount=Decimal("10.00"),
+            currency="USD",
+        )
+        wallet_response = Mock(ok=True, json=Mock(return_value={"balance": "100.00"}))
+        payout_response = Mock(
+            ok=True,
+            json=Mock(
+                return_value={
+                    "id": "kiba-withdrawal-1",
+                    "reference": "KIBA-WITHDRAW-1",
+                    "status": "PENDING",
+                    "fee_withdrawal": "0.05",
+                    "amount_debited": "5.05",
+                }
+            ),
+        )
+        with patch.dict(
+            "os.environ",
+            {"KIBA_PUBLIC_KEY": "pk_test", "KIBA_SECRET_KEY": "sk_test"},
+        ), patch(
+            "events.payouts.requests.get",
+            return_value=wallet_response,
+        ) as get_wallet, patch(
+            "events.payouts.requests.post",
+            return_value=payout_response,
+        ) as send:
+            response = self.client.post(
+                "/api/admin/wallet/withdrawals/",
+                {"amount": "5.00", "currency": "USD", "account": "+243900000000"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        withdrawal = AdminWithdrawal.objects.get(user=self.admin)
+        self.assertEqual(withdrawal.status, AdminWithdrawal.Status.PENDING)
+        self.assertEqual(withdrawal.amount_debited, Decimal("5.05"))
+        self.assertEqual(send.call_args.kwargs["json"]["amount"], 5.0)
+        self.assertEqual(send.call_args.kwargs["json"]["currency"], "USD")
+        self.assertEqual(
+            get_wallet.call_args.kwargs["headers"]["Authorization"],
+            "Bearer sk_test",
+        )
+
+    def test_withdrawal_cannot_exceed_earned_balance_including_fee(self):
+        AdminEarning.objects.create(
+            user=self.admin,
+            payment=self.payment,
+            share_percent=Decimal("25.00"),
+            amount=Decimal("1.00"),
+            currency="USD",
+        )
+        with patch("events.payouts.requests.get") as get_wallet:
+            response = self.client.post(
+                "/api/admin/wallet/withdrawals/",
+                {"amount": "1.00", "currency": "USD", "account": "+243900000000"},
+                format="json",
+            )
+        self.assertEqual(response.status_code, 400)
+        get_wallet.assert_not_called()
+        self.assertFalse(AdminWithdrawal.objects.exists())
+
+    def test_withdrawal_webhook_confirms_pending_withdrawal_idempotently(self):
+        withdrawal = AdminWithdrawal.objects.create(
+            user=self.admin,
+            external_reference="mkp-test-withdraw",
+            provider_withdrawal_id="kiba-withdrawal-2",
+            account="+243900000000",
+            amount=Decimal("5.00"),
+            fee=Decimal("0.05"),
+            amount_debited=Decimal("5.05"),
+            currency="USD",
+        )
+        payload = {
+            "event": "withdrawal.success",
+            "data": {
+                "withdrawal_id": "kiba-withdrawal-2",
+                "external_reference": withdrawal.external_reference,
+                "amount": "5.00",
+                "currency": "USD",
+            },
+        }
+        raw_body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        signature = hmac.new(
+            b"test-webhook-secret",
+            raw_body,
+            hashlib.sha256,
+        ).hexdigest()
+
+        response = self.client.generic(
+            "POST",
+            "/api/payments/kibawallet/webhook/",
+            raw_body,
+            content_type="application/json",
+            HTTP_X_KIBA_SIGNATURE=signature,
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        withdrawal.refresh_from_db()
+        self.assertEqual(withdrawal.status, AdminWithdrawal.Status.SUCCEEDED)
+        self.assertIsNotNone(withdrawal.completed_at)
+
+    def test_failed_withdrawal_webhook_releases_reserved_admin_balance(self):
+        AdminEarning.objects.create(
+            user=self.admin,
+            payment=self.payment,
+            share_percent=Decimal("25.00"),
+            amount=Decimal("10.00"),
+            currency="USD",
+        )
+        withdrawal = AdminWithdrawal.objects.create(
+            user=self.admin,
+            external_reference="mkp-test-failed-withdraw",
+            provider_withdrawal_id="kiba-withdrawal-failed",
+            account="+243900000000",
+            amount=Decimal("5.00"),
+            fee=Decimal("0.05"),
+            amount_debited=Decimal("5.05"),
+            currency="USD",
+        )
+        payload = {
+            "event": "withdrawal.failed",
+            "data": {
+                "withdrawal_id": "kiba-withdrawal-failed",
+                "external_reference": withdrawal.external_reference,
+                "amount": "5.00",
+                "currency": "USD",
+            },
+        }
+        raw_body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        signature = hmac.new(
+            b"test-webhook-secret",
+            raw_body,
+            hashlib.sha256,
+        ).hexdigest()
+
+        response = self.client.generic(
+            "POST",
+            "/api/payments/kibawallet/webhook/",
+            raw_body,
+            content_type="application/json",
+            HTTP_X_KIBA_SIGNATURE=signature,
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        withdrawal.refresh_from_db()
+        self.assertEqual(withdrawal.status, AdminWithdrawal.Status.FAILED)
+        dashboard = self.client.get("/api/admin/wallet/")
+        self.assertEqual(dashboard.data["balances"]["USD"], "10.00")

@@ -23,6 +23,9 @@ class UserSerializer(serializers.ModelSerializer):
             "avatar_url",
             "role",
             "is_active",
+            "is_staff",
+            "is_superuser",
+            "payout_share_percent",
             "date_joined",
         )
         read_only_fields = fields

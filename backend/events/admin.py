@@ -1,6 +1,16 @@
 from django.contrib import admin
 
-from .models import Event, EventPayment, Guest, GuestbookEntry, InvitationTemplate, RSVPResponse, Table
+from .models import (
+    AdminEarning,
+    AdminWithdrawal,
+    Event,
+    EventPayment,
+    Guest,
+    GuestbookEntry,
+    InvitationTemplate,
+    RSVPResponse,
+    Table,
+)
 
 
 @admin.register(InvitationTemplate)
@@ -56,3 +66,57 @@ class EventPaymentAdmin(admin.ModelAdmin):
     list_filter = ("status", "payment_method", "currency")
     search_fields = ("external_reference", "provider_payment_id", "event__name")
     readonly_fields = ("created_at", "updated_at", "paid_at")
+
+
+@admin.register(AdminEarning)
+class AdminEarningAdmin(admin.ModelAdmin):
+    list_display = ("user", "payment", "share_percent", "amount", "currency", "created_at")
+    list_filter = ("currency",)
+    search_fields = ("user__email", "payment__external_reference")
+    readonly_fields = tuple(field.name for field in AdminEarning._meta.fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+
+@admin.register(AdminWithdrawal)
+class AdminWithdrawalAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "external_reference",
+        "amount",
+        "fee",
+        "currency",
+        "status",
+        "created_at",
+    )
+    list_filter = ("status", "currency")
+    search_fields = ("user__email", "external_reference", "provider_withdrawal_id")
+    readonly_fields = tuple(field.name for field in AdminWithdrawal._meta.fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_superuser

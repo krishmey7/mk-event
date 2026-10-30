@@ -58,6 +58,9 @@ const buildMockSession = (payload: LoginPayload | RegisterPayload | { email: str
       avatar_url: null,
       role: 'organizer',
       is_active: true,
+      is_staff: false,
+      is_superuser: false,
+      payout_share_percent: '0.00',
       date_joined: now,
     },
     tokens: {

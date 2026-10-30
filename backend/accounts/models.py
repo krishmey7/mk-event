@@ -1,5 +1,8 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q, Sum
 
 
 class UserManager(BaseUserManager):
@@ -47,6 +50,13 @@ class User(AbstractUser):
         choices=Role.choices,
         default=Role.ORGANIZER,
     )
+    payout_share_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Part des revenus nets KibaWallet attribuée à cet administrateur.",
+    )
 
     objects = UserManager()
 
@@ -55,6 +65,27 @@ class User(AbstractUser):
 
     class Meta:
         ordering = ["email"]
+
+    def clean(self):
+        super().clean()
+        is_eligible = self.is_superuser or self.role == self.Role.ADMIN
+        if not is_eligible and self.payout_share_percent:
+            raise ValidationError(
+                {"payout_share_percent": "Seuls les administrateurs peuvent recevoir une part."}
+            )
+        if not is_eligible or not self.payout_share_percent:
+            return
+
+        eligible_users = self.__class__.objects.filter(
+            Q(is_superuser=True) | Q(role=self.Role.ADMIN),
+        ).exclude(pk=self.pk)
+        other_percent = eligible_users.aggregate(
+            total=Sum("payout_share_percent"),
+        )["total"] or 0
+        if other_percent + self.payout_share_percent > 100:
+            raise ValidationError(
+                {"payout_share_percent": "La somme des parts administrateur ne peut pas dépasser 100 %."}
+            )
 
     def __str__(self) -> str:
         return self.full_name or self.email

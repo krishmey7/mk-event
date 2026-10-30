@@ -120,6 +120,9 @@ export interface User {
   avatar_url: string | null;
   role: UserRole;
   is_active: boolean;
+  is_staff: boolean;
+  is_superuser: boolean;
+  payout_share_percent: string;
   date_joined: ISODateString;
 }
 

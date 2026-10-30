@@ -2,6 +2,8 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    AdminWalletView,
+    AdminWithdrawalView,
     EventGuestbookViewSet,
     EventPayView,
     EventPaymentStatusView,
@@ -71,6 +73,16 @@ urlpatterns = [
         "events/<int:pk>/payment-status/",
         EventPaymentStatusView.as_view(),
         name="event-payment-status",
+    ),
+    path(
+        "admin/wallet/",
+        AdminWalletView.as_view(),
+        name="admin-wallet",
+    ),
+    path(
+        "admin/wallet/withdrawals/",
+        AdminWithdrawalView.as_view(),
+        name="admin-wallet-withdrawal",
     ),
     path(
         "payments/kibawallet/webhook/",

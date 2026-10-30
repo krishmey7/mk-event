@@ -57,7 +57,7 @@ export default function AppLayout() {
           tabBar={(props) => {
             if (isDesktop || onSetup) return null;
             const active = props.state.routes[props.state.index]?.name;
-            if (active === 'editor' || active === 'pay' || active === 'reponses' || active === 'setup' || onManageScreen) {
+            if (active === 'editor' || active === 'pay' || active === 'admin-wallet' || active === 'reponses' || active === 'setup' || onManageScreen) {
               return null;
             }
             return <AppTabBar {...props} />;
@@ -86,6 +86,7 @@ export default function AppLayout() {
             }}
           />
           <Tabs.Screen name="pay" options={{ href: null, title: 'Paiement' }} />
+          <Tabs.Screen name="admin-wallet" options={{ href: null, title: 'Portefeuille admin' }} />
         </Tabs>
       </View>
     </View>

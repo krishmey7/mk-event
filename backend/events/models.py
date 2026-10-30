@@ -146,6 +146,13 @@ class EventPayment(models.Model):
     payment_method = models.CharField(max_length=20, choices=Method.choices)
     guest_quota = models.PositiveIntegerField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount_net = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Montant effectivement crédité par KibaWallet.",
+    )
     currency = models.CharField(max_length=3, default="USD")
     status = models.CharField(
         max_length=20,
@@ -161,6 +168,75 @@ class EventPayment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.event_id} · {self.external_reference}"
+
+
+class AdminEarning(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="payout_earnings",
+    )
+    payment = models.ForeignKey(
+        EventPayment,
+        on_delete=models.PROTECT,
+        related_name="admin_earnings",
+    )
+    share_percent = models.DecimalField(max_digits=5, decimal_places=2)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "payment"],
+                name="unique_admin_earning_per_payment",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} · {self.amount} {self.currency}"
+
+
+class AdminWithdrawal(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "En attente"
+        SUCCEEDED = "succeeded", "Réussi"
+        FAILED = "failed", "Échoué"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="payout_withdrawals",
+    )
+    external_reference = models.CharField(max_length=128, unique=True)
+    provider_withdrawal_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        unique=True,
+    )
+    provider_reference = models.CharField(max_length=255, blank=True, default="")
+    account = models.CharField(max_length=32)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    fee = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    amount_debited = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.external_reference} · {self.amount} {self.currency}"
 
 
 def make_studio_key() -> str:

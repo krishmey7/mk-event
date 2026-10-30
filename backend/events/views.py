@@ -3,10 +3,11 @@ import hashlib
 import hmac
 import logging
 import uuid
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_DOWN
 import requests
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
@@ -19,7 +20,18 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .media_upload import MediaUploadError, absolute_media_url, save_event_media
-from .models import Event, EventPayment, Guest, GuestbookEntry, RSVPResponse, Table, make_studio_key
+from .models import (
+    AdminEarning,
+    AdminWithdrawal,
+    Event,
+    EventPayment,
+    Guest,
+    GuestbookEntry,
+    RSVPResponse,
+    Table,
+    make_studio_key,
+)
+from .payouts import AdminWalletView, AdminWithdrawalView
 from .serializers import (
     EventDraftSerializer,
     EventSerializer,
@@ -36,6 +48,7 @@ from .serializers import (
 )
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
 
 def _kibawallet_error_message(response):
@@ -723,7 +736,41 @@ class EventPayView(APIView):
             )
 
         payment.provider_payment_id = str(provider_id)
-        payment.save(update_fields=["provider_payment_id", "updated_at"])
+        provider_currency = str(data.get("currency") or "USD").upper()
+        if provider_currency not in {"USD", "CDF"}:
+            payment.status = EventPayment.Status.FAILED
+            payment.save(update_fields=["status", "updated_at"])
+            return Response(
+                {"detail": "Devise KibaWallet non prise en charge."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        payment.currency = provider_currency
+        provider_net = data.get("amount_net")
+        if provider_net is not None:
+            try:
+                payment.amount_net = Decimal(str(provider_net))
+            except InvalidOperation:
+                payment.status = EventPayment.Status.FAILED
+                payment.save(update_fields=["status", "updated_at"])
+                return Response(
+                    {"detail": "Montant net KibaWallet invalide."},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+            if payment.amount_net < 0 or payment.amount_net > payment.amount:
+                payment.status = EventPayment.Status.FAILED
+                payment.save(update_fields=["status", "updated_at"])
+                return Response(
+                    {"detail": "Montant net KibaWallet incohérent."},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+        payment.save(
+            update_fields=[
+                "provider_payment_id",
+                "currency",
+                "amount_net",
+                "updated_at",
+            ]
+        )
         event.payment_reference = str(provider_id)
         event.save(update_fields=["payment_reference", "updated_at"])
 
@@ -820,6 +867,9 @@ class KibaWalletWebhookView(APIView):
         payload = request.data
         data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
         event_name = str(payload.get("event") or "").lower()
+        if event_name in {"withdrawal.success", "withdrawal.failed"}:
+            return self._process_withdrawal(data, event_name)
+
         callback_status = str(data.get("status") or "").upper()
         if event_name == "payment.success":
             callback_status = "SUCCEEDED"
@@ -868,6 +918,26 @@ class KibaWalletWebhookView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        provider_net = data.get("amount_net", payment.amount_net)
+        if callback_status == "SUCCEEDED":
+            if provider_net is None:
+                return Response(
+                    {"detail": "Le montant net KibaWallet est requis pour créditer les parts."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                provider_net = Decimal(str(provider_net))
+            except InvalidOperation:
+                return Response(
+                    {"detail": "Montant net invalide dans le webhook."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if provider_net < 0 or provider_net > payment.amount:
+                return Response(
+                    {"detail": "Montant net incohérent dans le webhook."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         with transaction.atomic():
             payment = EventPayment.objects.select_for_update().get(pk=payment.pk)
             event = Event.objects.select_for_update().get(pk=payment.event_id)
@@ -877,8 +947,44 @@ class KibaWalletWebhookView(APIView):
             if provider_id and not payment.provider_payment_id:
                 payment.provider_payment_id = provider_id
             if callback_status == "SUCCEEDED":
+                admins = list(
+                    User.objects.select_for_update()
+                    .filter(Q(is_superuser=True) | Q(role=User.Role.ADMIN), is_active=True)
+                    .order_by("id")
+                )
+                total_share = sum(
+                    (admin.payout_share_percent for admin in admins),
+                    Decimal("0.00"),
+                )
+                if total_share > 100:
+                    logger.error(
+                        "Admin payout shares exceed 100%%; payment=%s shares=%s",
+                        payment.external_reference,
+                        total_share,
+                    )
+                    return Response(
+                        {"detail": "La configuration des parts administrateur dépasse 100 %."},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                earning_rows = []
+                for admin in admins:
+                    share_percent = admin.payout_share_percent
+                    earning_amount = (
+                        provider_net * share_percent / Decimal("100")
+                    ).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
+                    if share_percent > 0 and earning_amount > 0:
+                        earning_rows.append(
+                            AdminEarning(
+                                user=admin,
+                                payment=payment,
+                                share_percent=share_percent,
+                                amount=earning_amount,
+                                currency=payment.currency,
+                            )
+                        )
                 payment.status = EventPayment.Status.SUCCEEDED
                 payment.paid_at = timezone.now()
+                payment.amount_net = provider_net
                 event.paid_guest_quota += payment.guest_quota
                 event.amount_paid_total += payment.amount
                 event.currency = payment.currency
@@ -900,6 +1006,8 @@ class KibaWalletWebhookView(APIView):
                         ["has_personal_link", "payment_batch"],
                     )
                     event.paid_guest_count += len(guests)
+                if earning_rows:
+                    AdminEarning.objects.bulk_create(earning_rows)
             else:
                 payment.status = EventPayment.Status.FAILED
                 has_other_payment = event.payments.filter(
@@ -920,6 +1028,7 @@ class KibaWalletWebhookView(APIView):
                     "provider_payment_id",
                     "status",
                     "paid_at",
+                    "amount_net",
                     "updated_at",
                 ]
             )
@@ -935,3 +1044,68 @@ class KibaWalletWebhookView(APIView):
                 ]
             )
         return Response({"status": "ok", "event_id": event.id})
+        return Response({"status": "ok", "event_id": event.id})
+    def _process_withdrawal(self, data, event_name):
+        external_reference = str(data.get("external_reference") or "").strip()
+        withdrawal_id = str(
+            data.get("withdrawal_id") or data.get("id") or data.get("transaction_id") or ""
+        ).strip()
+        withdrawal = AdminWithdrawal.objects.filter(
+            external_reference=external_reference,
+        ).first()
+        if withdrawal is None and withdrawal_id:
+            withdrawal = AdminWithdrawal.objects.filter(
+                provider_withdrawal_id=withdrawal_id,
+            ).first()
+        if withdrawal is None:
+            return Response(
+                {"detail": "Retrait introuvable."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        callback_currency = str(data.get("currency") or withdrawal.currency).upper()
+        if callback_currency != withdrawal.currency:
+            return Response(
+                {"detail": "La devise du webhook ne correspond pas au retrait."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        callback_amount = data.get("amount")
+        if callback_amount is not None:
+            try:
+                if Decimal(str(callback_amount)) != withdrawal.amount:
+                    return Response(
+                        {"detail": "Le montant du webhook ne correspond pas au retrait."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            except InvalidOperation:
+                return Response(
+                    {"detail": "Montant invalide dans le webhook."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        with transaction.atomic():
+            withdrawal = AdminWithdrawal.objects.select_for_update().get(pk=withdrawal.pk)
+            if withdrawal.status != AdminWithdrawal.Status.PENDING:
+                return Response({"status": "ok", "external_reference": external_reference})
+            withdrawal.provider_withdrawal_id = (
+                withdrawal.provider_withdrawal_id or withdrawal_id or None
+            )
+            withdrawal.provider_reference = str(
+                data.get("kelpay_reference") or withdrawal.provider_reference
+            )
+            withdrawal.status = (
+                AdminWithdrawal.Status.SUCCEEDED
+                if event_name == "withdrawal.success"
+                else AdminWithdrawal.Status.FAILED
+            )
+            withdrawal.completed_at = timezone.now()
+            withdrawal.save(
+                update_fields=[
+                    "provider_withdrawal_id",
+                    "provider_reference",
+                    "status",
+                    "completed_at",
+                    "updated_at",
+                ]
+            )
+        return Response({"status": "ok", "external_reference": external_reference})

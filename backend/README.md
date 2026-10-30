@@ -30,6 +30,8 @@ Compte démo :
 | POST | `/api/events/{id}/media/` | JWT (multipart `file`) |
 | POST | `/api/events/{id}/pay/` | JWT (Mobile Money ou carte, 0,50 $ par lien) |
 | GET | `/api/events/{id}/payment-status/` | JWT |
+| GET | `/api/admin/wallet/?page=1` | JWT admin / superuser |
+| POST | `/api/admin/wallet/withdrawals/` | JWT admin / superuser |
 | GET/POST | `/api/events/{id}/guests/` | JWT |
 | PATCH/DELETE | `/api/events/{id}/guests/{id}/` | JWT |
 | POST | `/api/events/{id}/guests/{id}/check-in/` | JWT |
@@ -56,6 +58,26 @@ Compte démo :
 - Les paiements en attente bloquent une nouvelle initiation pour éviter les
   doubles débits. En cas de callback manquant, réconciliez le paiement avec
   KibaWallet avant toute intervention manuelle.
+
+### Portefeuille administrateur et retraits
+
+- Dans Django admin, le superuser configure `payout_share_percent` pour les
+  comptes de rôle `admin` et les superusers. La somme configurée ne peut pas
+  dépasser 100 %.
+- À la confirmation d’un paiement KibaWallet, l’API enregistre `amount_net`
+  et fige les parts de chaque compte actif. Les anciennes transactions sans
+  `amount_net` ne génèrent pas de crédit rétroactif.
+- La page Profil n’affiche le portefeuille qu’aux administrateurs et aux
+  superusers. Un admin voit uniquement ses propres parts et retraits ; le
+  superuser voit aussi les paiements entrants et les soldes de tous les
+  administrateurs.
+- Les retraits USD/CDF sont versés au numéro Mobile Money saisi par le compte.
+  Le solde disponible inclut les retraits en attente et les frais KibaWallet
+  de 1 %. Seul un webhook signé `withdrawal.success` ou `withdrawal.failed`
+  finalise le retrait ou libère la réservation.
+- Le webhook public doit être configuré dans le dashboard KibaWallet vers
+  `POST /api/payments/kibawallet/webhook/`; le même secret HMAC traite les
+  paiements et les retraits.
 
 ## Front Expo
 

@@ -124,6 +124,29 @@ export function ProfileScreen() {
           </View>
         </View>
 
+        {user?.is_superuser || user?.role === 'admin' ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/admin-wallet')}
+            style={({ pressed }) => [
+              styles.walletButton,
+              { backgroundColor: c.surface, borderColor: c.accent },
+              pressed && styles.pressed,
+            ]}
+          >
+            <View style={[styles.walletIcon, { backgroundColor: c.accentMuted }]}>
+              <Ionicons name="wallet-outline" size={20} color={c.accent} />
+            </View>
+            <View style={styles.typeCopy}>
+              <Text style={[styles.typeLabel, { color: c.textPrimary }]}>Portefeuille KibaWallet</Text>
+              <Text style={[styles.typeHint, { color: c.textMuted }]}>
+                Consulter vos transactions et demander un retrait
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={c.accent} />
+          </Pressable>
+        ) : null}
+
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: c.textPrimary }]}>Événement actif</Text>
           <Text style={[styles.sectionHint, { color: c.textMuted }]}>
@@ -299,6 +322,22 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 28,
     paddingHorizontal: spacing.xl,
+  },
+  walletButton: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1.5,
+  },
+  walletIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatar: {
     width: 76,

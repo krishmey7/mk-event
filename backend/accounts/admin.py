@@ -7,11 +7,29 @@ from .models import User
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     ordering = ("email",)
-    list_display = ("email", "full_name", "role", "is_staff", "is_active")
+    list_display = (
+        "email",
+        "full_name",
+        "role",
+        "payout_share_percent",
+        "is_staff",
+        "is_active",
+    )
     search_fields = ("email", "full_name", "phone")
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Profil", {"fields": ("full_name", "phone", "avatar_url", "role")}),
+        (
+            "Profil",
+            {
+                "fields": (
+                    "full_name",
+                    "phone",
+                    "avatar_url",
+                    "role",
+                    "payout_share_percent",
+                )
+            },
+        ),
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Dates", {"fields": ("last_login", "date_joined")}),
     )
@@ -20,8 +38,23 @@ class UserAdmin(DjangoUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "full_name", "password1", "password2", "is_staff", "is_superuser"),
+                "fields": (
+                    "email",
+                    "full_name",
+                    "password1",
+                    "password2",
+                    "role",
+                    "payout_share_percent",
+                    "is_staff",
+                    "is_superuser",
+                ),
             },
         ),
     )
     filter_horizontal = ("groups", "user_permissions")
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = super().get_readonly_fields(request, obj)
+        if request.user.is_superuser:
+            return fields
+        return (*fields, "payout_share_percent")

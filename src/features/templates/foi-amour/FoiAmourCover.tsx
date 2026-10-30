@@ -38,17 +38,21 @@ export function FoiAmourCover({
         <View pointerEvents="none" style={styles.topSprig}>
           <BotanicalSprig color={colors.accent} size={compact ? 100 : 150} />
         </View>
-        <Text style={[styles.verse, compact && styles.compactVerse]}>
+        <Text style={[styles.verse, compact && styles.compactVerse, { color: colors.textMuted }]}>
           « Trois choses demeurent : la foi, l’espérance et l’amour. La plus grande d’entre elles est l’amour. »
         </Text>
-        <Text style={styles.verseReference}>1 CORINTHIENS 13:13</Text>
+        <Text style={[styles.verseReference, { color: colors.accent }]}>1 CORINTHIENS 13:13</Text>
         <View style={styles.monogram}>
-          <Text style={[styles.initial, compact && styles.compactInitial]}>{firstName.charAt(0) || 'A'}</Text>
+          <Text style={[styles.initial, compact && styles.compactInitial, { color: colors.primary }]}>
+            {firstName.charAt(0) || 'A'}
+          </Text>
           <View style={[styles.monogramRule, { backgroundColor: colors.accent }]} />
-          <Text style={[styles.initial, compact && styles.compactInitial]}>{secondName.charAt(0) || 'B'}</Text>
+          <Text style={[styles.initial, compact && styles.compactInitial, { color: colors.primary }]}>
+            {secondName.charAt(0) || 'B'}
+          </Text>
         </View>
         <Text style={[styles.eyebrow, { color: colors.primary }]}>{title || 'NOTRE MARIAGE'}</Text>
-        <View style={[styles.heartRule, { backgroundColor: colors.accent }]}>
+        <View style={styles.heartRule}>
           <Ionicons name="heart" size={11} color={colors.accent} />
         </View>
         <Image source={{ uri: photoUri }} resizeMode="cover" style={styles.heroPhoto} />
@@ -92,7 +96,6 @@ const styles = StyleSheet.create({
   verse: {
     maxWidth: 280,
     marginTop: 16,
-    color: '#626658',
     fontFamily: 'CormorantGaramond_500Medium',
     fontSize: 14,
     letterSpacing: 0.45,
@@ -101,10 +104,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   compactVerse: { fontSize: 9, lineHeight: 13, marginTop: 8 },
-  verseReference: { color: '#777D6D', fontFamily: 'Inter_500Medium', fontSize: 7, letterSpacing: 1.5 },
+  verseReference: { fontFamily: 'Inter_500Medium', fontSize: 7, letterSpacing: 1.5 },
   monogram: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 2 },
   initial: {
-    color: '#34382E',
     fontFamily: 'CormorantGaramond_400Regular',
     fontSize: 82,
     lineHeight: 88,

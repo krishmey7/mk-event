@@ -52,11 +52,8 @@ import {
 } from './neon/data';
 import { NEON_THEME_ORDER, NEON_THEMES } from './neon/themes';
 import { PAPETERIE_IMAGES, PAPETERIE_PROGRAM } from './papeterie/data';
-import { PAPETERIE_THEMES } from './papeterie/themes';
 import { OLIVIER_IMAGES, OLIVIER_PROGRAM } from './olivier/data';
-import { OLIVIER_THEMES } from './olivier/themes';
 import { FOI_AMOUR_IMAGES, FOI_AMOUR_PROGRAM } from './foi-amour/data';
-import { FOI_AMOUR_THEMES } from './foi-amour/themes';
 import type { PhotoFrameOption } from '@/features/invitation/types';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import { ELEGANCE_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
@@ -249,7 +246,7 @@ export const TEMPLATES: TemplateDefinition[] = [
       couple: 'Rafaela & Josué',
       guestLine: 'C’est avec une grande joie que nous vous invitons à célébrer notre union, {{Nom}}.',
     },
-    defaultThemeKey: 'ivoire-sauge',
+    defaultThemeKey: 'sauge',
     coverLayout: 'botanicalInvitation',
     ornaments: 'elegance',
     motions: { coverEnter: true, sectionReveal: true },
@@ -259,7 +256,7 @@ export const TEMPLATES: TemplateDefinition[] = [
       zip: '1234',
       city: 'Lisbonne',
     },
-    themes: FOI_AMOUR_THEMES,
+    themes: eleganceThemes,
     photoFrames: [],
   },
   {
@@ -279,7 +276,7 @@ export const TEMPLATES: TemplateDefinition[] = [
       couple: 'Léa & Gabriel',
       guestLine: 'Nous serions très heureux de partager cette journée avec vous, {{Nom}}.',
     },
-    defaultThemeKey: 'olive',
+    defaultThemeKey: 'sauge',
     coverLayout: 'oliveInvitation',
     ornaments: 'elegance',
     motions: { coverEnter: true, sectionReveal: true },
@@ -289,7 +286,7 @@ export const TEMPLATES: TemplateDefinition[] = [
       zip: '84100',
       city: 'Orange',
     },
-    themes: OLIVIER_THEMES,
+    themes: eleganceThemes,
     photoFrames: [],
   },
   {
@@ -309,7 +306,7 @@ export const TEMPLATES: TemplateDefinition[] = [
       couple: 'Olivia & Ethan',
       guestLine: 'Nous serions heureux de célébrer ce jour avec vous, {{Nom}}.',
     },
-    defaultThemeKey: 'ivoire',
+    defaultThemeKey: 'champagne',
     coverLayout: 'editorial',
     ornaments: 'elegance',
     motions: { coverEnter: true, sectionReveal: true },
@@ -321,7 +318,7 @@ export const TEMPLATES: TemplateDefinition[] = [
       lat: 48.8989,
       lng: 2.0938,
     },
-    themes: PAPETERIE_THEMES,
+    themes: eleganceThemes,
     photoFrames: [],
   },
   {

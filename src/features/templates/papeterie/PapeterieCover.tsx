@@ -38,18 +38,18 @@ export function PapeterieCover({
     <View style={[styles.content, compact && styles.compactContent]}>
       <View style={styles.top}>
         <Text style={styles.together}>AVEC LEURS FAMILLES</Text>
-        <View style={styles.topRule} />
+        <View style={[styles.topRule, { backgroundColor: colors.accent }]} />
       </View>
       <View style={styles.identity}>
         <Text style={[styles.title, compact && styles.compactTitle]}>{title || 'RÉSERVEZ LA DATE'}</Text>
         <View style={styles.heartRule}>
-          <View style={styles.rule} />
-          <Ionicons name="heart" size={12} color="#F6E8D0" />
-          <View style={styles.rule} />
+          <View style={[styles.rule, { backgroundColor: colors.accent }]} />
+          <Ionicons name="heart" size={12} color={colors.accent} />
+          <View style={[styles.rule, { backgroundColor: colors.accent }]} />
         </View>
         <Text style={[styles.names, compact && styles.compactNames]}>{couple}</Text>
         <Text style={styles.invitation}>{fillGuestNameToken(guestSentence, guest.firstName)}</Text>
-        <Text style={styles.date}>{dateLabel}</Text>
+        <Text style={[styles.date, { color: colors.accent }]}>{dateLabel}</Text>
         {[venueName, venueCity].filter(Boolean).length ? (
           <Text style={styles.place}>{[venueName, venueCity].filter(Boolean).join(' · ')}</Text>
         ) : null}
@@ -68,7 +68,7 @@ export function PapeterieCover({
         ) : null}
       </View>
       <View pointerEvents="none" style={styles.sprig}>
-        <BotanicalSprig color="rgba(255,255,255,0.72)" size={compact ? 72 : 116} />
+        <BotanicalSprig color={colors.accent} size={compact ? 72 : 116} />
       </View>
     </View>
   );
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   compactContent: { paddingHorizontal: 12, paddingTop: 16, paddingBottom: 12 },
   top: { alignItems: 'center', gap: 9 },
   together: { color: 'rgba(255,255,255,0.83)', fontFamily: 'Inter_500Medium', fontSize: 9, letterSpacing: 2 },
-  topRule: { height: 1, width: 30, backgroundColor: 'rgba(255,255,255,0.56)' },
+  topRule: { height: 1, width: 30 },
   identity: { alignItems: 'center', gap: 13, paddingBottom: 20 },
   title: {
     color: '#FFFFFF',
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   },
   compactTitle: { fontSize: 22, lineHeight: 25, letterSpacing: 2.4 },
   heartRule: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  rule: { width: 38, height: 1, backgroundColor: 'rgba(246,232,208,0.7)' },
+  rule: { width: 38, height: 1 },
   names: {
     color: '#FFFFFF',
     fontFamily: 'CormorantGaramond_400Regular',
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textTransform: 'uppercase',
   },
-  date: { color: '#F0E4D2', fontFamily: 'Inter_500Medium', fontSize: 11, letterSpacing: 2 },
+  date: { fontFamily: 'Inter_500Medium', fontSize: 11, letterSpacing: 2 },
   place: {
     color: 'rgba(255,255,255,0.78)',
     fontFamily: 'Inter_400Regular',

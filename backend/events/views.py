@@ -1,6 +1,7 @@
 import os
 import hashlib
 import hmac
+import logging
 import uuid
 from decimal import Decimal, InvalidOperation
 import requests
@@ -33,6 +34,28 @@ from .serializers import (
     TableSerializer,
     sanitize_public_studio_config,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _kibawallet_error_message(response):
+    try:
+        payload = response.json()
+    except ValueError:
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+
+    for key in ("detail", "message", "error", "description"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()[:300]
+        if isinstance(value, dict):
+            for nested_key in ("message", "detail", "description"):
+                nested_value = value.get(nested_key)
+                if isinstance(nested_value, str) and nested_value.strip():
+                    return nested_value.strip()[:300]
+    return ""
 
 
 def annotate_events(qs):
@@ -639,8 +662,22 @@ class EventPayView(APIView):
                     else "failed"
                 )
                 event.save(update_fields=["payment_status", "updated_at"])
+            provider_error = _kibawallet_error_message(response)
+            logger.warning(
+                "KibaWallet rejected payment initialization: method=%s status=%s reference=%s message=%s",
+                payment_method,
+                response.status_code,
+                external_reference,
+                provider_error or "no provider message",
+            )
             return Response(
-                {"detail": "Échec de l’initialisation du paiement KibaWallet."},
+                {
+                    "detail": (
+                        f"Échec de l’initialisation KibaWallet "
+                        f"(HTTP {response.status_code})."
+                        + (f" {provider_error}" if provider_error else "")
+                    )
+                },
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 

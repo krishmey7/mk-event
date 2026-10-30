@@ -496,6 +496,30 @@ class EventPaymentFlowTests(TestCase):
         self.assertEqual(sent["payment_method"], "card")
         self.assertIn("/pay/success?eventId=", sent["return_url"])
 
+    def test_card_payment_reports_kibawallet_rejection_reason(self):
+        provider_response = Mock(
+            ok=False,
+            status_code=400,
+            json=Mock(return_value={"message": "Card payments are not enabled"}),
+        )
+        with patch.dict(
+            "os.environ",
+            {"KIBA_PUBLIC_KEY": "pk_test", "KIBA_SECRET_KEY": "sk_test"},
+        ), patch("events.views.requests.post", return_value=provider_response):
+            response = self.client.post(
+                f"/api/events/{self.event.id}/pay/",
+                {"guest_quota": 2, "payment_method": "card"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 502)
+        self.assertIn("HTTP 400", response.data["detail"])
+        self.assertIn("Card payments are not enabled", response.data["detail"])
+        payment = EventPayment.objects.get(event=self.event)
+        self.assertEqual(payment.status, EventPayment.Status.FAILED)
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.payment_status, "failed")
+
     def test_signed_webhook_publishes_and_allocates_links_idempotently(self):
         guests = [
             Guest.objects.create(event=self.event, full_name=f"Invité {index}")

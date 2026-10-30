@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+Disallow: /admin-wallet
+Disallow: /dashboard
+Disallow: /editor
+Disallow: /forgot-password
+Disallow: /invitations
+Disallow: /inv/
+Disallow: /invitation/
+Disallow: /login
+Disallow: /modeles
+Disallow: /onboarding
+Disallow: /pay
+Disallow: /profil
+Disallow: /register
+Disallow: /reponses
+Disallow: /reset-password
+Disallow: /setup
+
+Sitemap: https://mk-event-five.vercel.app/sitemap.xml

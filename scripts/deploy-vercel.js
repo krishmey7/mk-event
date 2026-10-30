@@ -9,6 +9,7 @@ const { execSync } = require('child_process');
 const root = path.resolve(__dirname, '..');
 const dist = path.join(root, 'dist');
 const out = path.join(root, `deploy-web-${Date.now()}`);
+const DEFAULT_SITE_URL = 'https://mk-event-five.vercel.app';
 
 /* Charge .env pour EXPO_PUBLIC_* (Google OAuth, API URL, etc.). */
 try {
@@ -16,6 +17,25 @@ try {
 } catch {
   /* dotenv optionnel si déjà injecté dans l’environnement */
 }
+
+function getSiteUrl(value) {
+  if (!value) return DEFAULT_SITE_URL;
+
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error('MK_EVENT_SITE_URL doit être une URL HTTPS valide, par exemple https://mkevent.com');
+  }
+
+  if (url.protocol !== 'https:' || url.pathname !== '/' || url.search || url.hash) {
+    throw new Error('MK_EVENT_SITE_URL doit contenir uniquement le domaine HTTPS, sans chemin ni paramètres');
+  }
+
+  return url.origin;
+}
+
+const siteUrl = getSiteUrl(process.env.MK_EVENT_SITE_URL);
 
 function rimraf(p) {
   try {
@@ -71,6 +91,14 @@ for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
   }
 }
 copyDir(dist, out);
+
+/* Adapte les URL SEO au domaine configuré pour ce déploiement. */
+for (const name of ['index.html', 'robots.txt', 'sitemap.xml']) {
+  const file = path.join(out, name);
+  if (!fs.existsSync(file)) continue;
+  const text = fs.readFileSync(file, 'utf8');
+  fs.writeFileSync(file, text.replaceAll(DEFAULT_SITE_URL, siteUrl));
+}
 
 /* PWA — fond plein écran (plum) sous status bar / home indicator. */
 const THEME = '#2A1824';

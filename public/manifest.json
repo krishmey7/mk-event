@@ -1,7 +1,7 @@
 {
   "short_name": "MK Events",
   "name": "MK Events — Invitations",
-  "description": "Créez et envoyez des invitations numériques élégantes.",
+  "description": "Créez vos invitations numériques et gérez les RSVP, les invités et le check-in QR.",
   "lang": "fr",
   "dir": "ltr",
   "start_url": "/",

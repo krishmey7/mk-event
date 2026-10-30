@@ -616,7 +616,7 @@ class EventPayView(APIView):
         event.save(update_fields=["payment_status", "updated_at"])
 
         payload = {
-            "amount": str(amount),
+            "amount": float(amount),
             "currency": "USD",
             "external_reference": external_reference,
         }

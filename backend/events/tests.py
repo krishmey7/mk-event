@@ -465,7 +465,8 @@ class EventPaymentFlowTests(TestCase):
         sent = send.call_args.kwargs["json"]
         self.assertEqual(sent["mobilenumber"], "+243900000000")
         self.assertNotIn("payment_method", sent)
-        self.assertEqual(sent["amount"], "2.50")
+        self.assertEqual(sent["amount"], 2.5)
+        self.assertIsInstance(sent["amount"], float)
 
     def test_mobile_money_requires_a_number(self):
         response = self.client.post(

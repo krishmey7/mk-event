@@ -1,6 +1,10 @@
 module.exports = {
   globDirectory: 'dist/',
   globPatterns: ['**/*.{js,css,html,png,ico,json,woff,woff2,ttf,svg,webp,jpg,jpeg}'],
+  // vercel.json n'est pas servi par Vercel (404) : le précacher ferait échouer
+  // l'installation du service worker en production. Les valeurs par défaut de
+  // Workbox sont répétées car globIgnores les remplace intégralement.
+  globIgnores: ['**/node_modules/**/*', 'sw.js', 'workbox-*.js', 'vercel.json', '**/*.map'],
   swDest: 'dist/sw.js',
   // Le bundle d'entrée web (~3,2 Mo) doit être précaché pour l'offline.
   maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,

@@ -1,73 +1,82 @@
-# MK Events — Architecture & Arborescence
+# MK Events — Architecture du projet
 
-SaaS haut de gamme de gestion d'événements et d'invitations numériques interactives.
-**Frontend :** React Native + Expo (Expo Router v6, Reanimated, Ionicons) — iOS, Android, Web.
-**Backend :** Django REST Framework (JWT), implémenté dans `backend/` — le frontend consomme l’API via `src/services/` avec les types dans `src/types/`.
+MK Events est une application de création et de gestion d’invitations numériques.
+Le dépôt contient le frontend Expo, l’API Django et la configuration de déploiement.
 
-## Arborescence cible
+## Architecture
 
-```
-mk-event/
-├── app/                          # EXPO ROUTER — l'arborescence de fichiers = navigation
-│   ├── _layout.tsx               # ✅ Root layout (Stack, StatusBar, futurs providers)
-│   ├── index.tsx                 # ✅ Landing (Dark Luxury) — placeholder étape 1
-│   ├── onboarding.tsx            # Diaporama 3 étapes (maquettes 1→3)
-│   ├── (auth)/
-│   │   ├── login.tsx             # Connexion (email/téléphone + Google)
-│   │   └── register.tsx          # Inscription
-│   ├── (app)/                    # Espace organisateur authentifié (groupe protégé)
-│   │   ├── _layout.tsx           # Tabs mobile (Accueil, Invitations, Modèles, Profil) / Sidebar desktop
-│   │   ├── index.tsx             # Tableau de bord (stats RSVP, progression, accès rapide)
-│   │   ├── invitations/
-│   │   │   ├── index.tsx         # Mes invitations
-│   │   │   ├── new.tsx           # Création — stepper : Modèle → Personnalisation → Invités → Finalisation
-│   │   │   ├── [id]/edit.tsx     # Outil de modification (Texte, Couleurs, Images, Éléments)
-│   │   │   ├── [id]/preview.tsx  # Aperçu de l'invitation (compte à rebours J-42)
-│   │   │   └── [id]/share.tsx    # Partage du lien + suivi des invités
-│   │   ├── guests/               # Invités & RSVP (liste, import, filtres)
-│   │   ├── tables/               # Tables & plans de salle
-│   │   └── settings.tsx
-│   └── inv/[slug]/               # ESPACE INVITÉ (public, sans auth) : mkevent.app/inv/{slug}
-│       ├── index.tsx             # Invitation reçue (QR, Voir l'invitation)
-│       ├── rsvp.tsx              # Confirmer ma présence (Oui/Non/Peut-être, adultes/enfants)
-│       └── index.tabs.tsx        # QR code, plan, playlist, cadeaux, e-bar, photos, livre d'or
-├── src/
-│   ├── components/               # UI génériques réutilisables (Button, Card, Badge, Input, Stepper…)
-│   │   ├── ui/                   # Atomes & molécules
-│   │   └── layout/               # Container responsive, Sidebar, TabBar, Header
-│   ├── features/                 # Modules métier (un dossier par domaine : écrans + hooks + logique)
-│   │   ├── auth/  events/  invitations/  guests/  rsvp/  guest-experience/
-│   ├── services/                 # Couche API REST Django
-│   │   ├── apiClient.ts          # fetch wrapper : base URL, JWT access/refresh, gestion erreurs
-│   │   ├── auth.service.ts       # login, register, refresh
-│   │   ├── events.service.ts     # CRUD événements + publication
-│   │   ├── templates.service.ts  # catalogue des modèles
-│   │   └── guests.service.ts     # invités, import, RSVP
-│   ├── hooks/                    # useTheme, useBreakpoint, useDebounce, useRsvpSummary…
-│   ├── constants/                # ✅ theme.ts (design system), config API, labels
-│   ├── types/                    # ✅ index.ts (contrat de données Django, strict TypeScript)
-│   ├── utils/                    # formatage dates FR, troncature, slug…
-│   └── store/                    # État global léger (Context/Zustand) : auth, thème
-├── assets/                       # Icônes, splash (à fournir)
-├── app.json  tsconfig.json  package.json  STRUCTURE.md
-└── Maquette 1.png / Maquette 2.png
+- **Frontend** : React Native, Expo SDK 54, Expo Router et TypeScript. Les routes
+  sont déclarées dans `app/`; les écrans et composants métier sont dans `src/`.
+- **API** : Django REST Framework avec authentification JWT, dans `backend/`.
+  Les domaines de comptes et d’événements sont séparés dans `backend/accounts/`
+  et `backend/events/`.
+- **Production** : frontend sur Vercel (`dist/`), API sur Render, PostgreSQL
+  externe via `DATABASE_URL`, et stockage de médias compatible S3 configuré
+  par variables d’environnement.
+
+## Parcours principaux
+
+- **Public** : page d’accueil, modèles, pages légales et invitations publiées.
+- **Compte** : inscription, connexion par e-mail ou téléphone, connexion Google
+  si elle est configurée, et réinitialisation du mot de passe.
+- **Organisateur** : configuration du profil, création et édition d’événements,
+  gestion des invités, RSVP, tables, médias, check-in et livre d’or.
+- **Publication et paiement** : publication gratuite en mode vitrine ou paiement
+  KibaWallet en USD à 0,50 $ par lien invité. Les crédits sont confirmés par
+  webhook signé ; les liens individuels consomment les crédits disponibles.
+- **Administration** : portefeuille KibaWallet accessible aux comptes admin et
+  superuser, avec gains, soldes et demandes de retrait.
+
+## Répertoires à connaître
+
+```text
+app/                         Routes Expo Router
+src/components/              Composants d’interface partagés
+src/context/                 Session, événement actif et thème
+src/features/                Écrans et logique organisés par domaine
+src/services/                Client API et services frontend
+src/types/                   Contrats TypeScript de l’API
+backend/accounts/            Authentification, utilisateurs et parts admin
+backend/events/              Événements, invités, paiements et retraits
+backend/config/              Configuration Django et routes racine
+public/                      Shell web, manifeste PWA et ressources SEO
+scripts/deploy-vercel.js     Préparation et déploiement Vercel
+render.yaml                  Blueprint de déploiement API Render
 ```
 
-## Conventions
+## Contrats et configuration
 
-1. **Zéro crash text node** — toute chaîne (même ponctuation/emoji) vit dans un `<Text>`.
-2. **Compat web & mobile** — pas de `calc()` dans les styles ; ombres via `shadows.*` (`Platform.select` : `boxShadow` web / `elevation` natif) ; layouts flexibles.
-3. **Responsive** — mobile = flux vertical ; ≥768px (tablet) et ≥1200px (desktop) = sidebar + grilles multi-colonnes (`breakpoints` + `getBreakpoint`).
-4. **Imports** — alias `@/*` → `src/*` (app/ et src/).
-5. **API** — modèles snake_case (DRF), dates ISO 8601, listes paginées `{ count, next, previous, results }`. Écrans toujours préparés pour les 3 états : chargement / erreur / vide.
+- L’API utilise les champs `snake_case`, les dates ISO 8601 et la pagination DRF.
+- Le frontend consomme l’API à travers `src/services/apiClient.ts`. L’URL est
+  configurée par `EXPO_PUBLIC_API_URL`.
+- Les secrets KibaWallet, Django, Resend, Google OAuth, base de données et
+  stockage doivent rester dans l’environnement backend ou l’hébergeur, jamais
+  dans le bundle frontend.
+- Pour préparer un futur domaine web, `MK_EVENT_SITE_URL` se configure dans le
+  `.env` à la racine ; les détails figurent dans `README.md`.
+- Les invitations personnelles et les écrans authentifiés ne doivent pas être
+  considérés comme des pages publiques indexables.
 
-## Roadmap
+## Commandes de développement et validation
 
-- **✅ Étape 1 — Fondations** : scaffolding Expo Router, `theme.ts`, `types/index.ts`.
-- **Étape 2 — Design System UI** : Button, Card, Badge, Input, Header + hook `useTheme` + polices (Playfair Display, Inter via expo-font).
-- **Étape 3 — Auth & Navigation** : onboarding, login, inscription, groupe protégé `(app)`.
-- **Étape 4 — Organisateur** : tableau de bord, création d'invitation (stepper 4 étapes), éditeur, aperçu, partage.
-- **Étape 5 — Invités & RSVP** : liste, import, statuts, notifications.
-- **Étape 6 — Expérience invité** : invitation publique, RSVP, plan, playlist, cadeaux, QR, e-bar, photos, livre d'or.
-- **Étape 7 — Intégration API Django** : client HTTP, services REST, synchronisation d'état et parcours d'authentification.
-- **Paiement invité** : parcours KibaWallet à 0,50 $ par lien individuel, confirmation webhook signée et crédits de liens.
+Depuis la racine :
+
+```bash
+npm run web
+npm run typecheck
+npm run build:web
+npm run deploy:web
+```
+
+Depuis `backend/` :
+
+```bash
+uv sync
+uv run python manage.py migrate
+uv run python manage.py test
+uv run python manage.py check
+```
+
+`npm run deploy:web` est une action de production. Vérifier l’état Git et les
+variables d’environnement avant de l’utiliser. Ne jamais exécuter `seed_demo`
+en production : il crée un compte de démonstration avec un mot de passe fixe.

@@ -79,6 +79,51 @@ Compte démo :
   `POST /api/payments/kibawallet/webhook/`; le même secret HMAC traite les
   paiements et les retraits.
 
+### Export et conservation des données
+
+- L’organisateur peut exporter depuis la gestion d’un événement une archive
+  JSON privée contenant l’événement, les invités, les tables, les RSVP, le
+  livre d’or, les références média et l’historique de paiement, ainsi qu’une
+  liste CSV des invités.
+- À partir de 60 jours après la date de l’événement, la commande de rétention
+  envoie un préavis. L’événement n’est éligible à la suppression qu’après
+  90 jours révolus et au moins 30 jours après l’envoi réussi du préavis.
+- Les données événementielles comprennent la liste et les coordonnées des
+  invités, les réponses, le livre d’or, les tables, le contenu de l’invitation
+  et ses médias. Les médias stockés sous `events/{id}/` sont également supprimés.
+- Les événements avec un paiement en attente sont exclus jusqu’à sa résolution.
+- Les lignes financières terminées de plus d’un an sont supprimées après
+  agrégation des soldes de portefeuille. Cette agrégation conserve le solde
+  calculable, mais pas le détail historique supprimé.
+- Il n’y a pas d’ordonnanceur configuré : toutes les commandes sont manuelles.
+  Depuis `backend/`, commencer par la prévisualisation sans option destructive :
+
+  ```bash
+  uv run python manage.py process_data_retention
+  ```
+
+- Après vérification, envoyer les préavis :
+
+  ```bash
+  uv run python manage.py process_data_retention --send-notices
+  ```
+
+- Une purge est une action irréversible. Avant de l’exécuter, confirmer la
+  configuration du stockage, vérifier la prévisualisation, et choisir un dossier
+  d’export privé, protégé et sauvegardé. La commande refuse d’écraser une archive
+  existante :
+
+  ```bash
+  uv run python manage.py process_data_retention --purge --confirm --export-dir <dossier-prive-securise>
+  ```
+
+- Les préavis nécessitent `RESEND_API_KEY`. La commande de purge exporte les
+  données événementielles en JSON et les fichiers média en dossier associé
+  avant suppression. L’export depuis l’application contient les références des
+  médias, pas leur contenu binaire. Les archives contiennent des données
+  personnelles et ne doivent pas être placées dans le dépôt Git, un dossier
+  public ou un espace non contrôlé.
+
 ## Front Expo
 
 Dans `src/constants/config.ts` :

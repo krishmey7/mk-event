@@ -106,6 +106,11 @@ class Event(models.Model):
         unique=True,
         help_text="Référence externe du paiement KibaWallet associée à cet événement.",
     )
+    retention_notice_sent_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Date du préavis envoyé avant la suppression des données événementielles.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -135,7 +140,13 @@ class EventPayment(models.Model):
         MOBILE_MONEY = "mobile_money", "Mobile Money"
         CARD = "card", "Carte"
 
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="payments")
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments",
+    )
     external_reference = models.CharField(max_length=100, unique=True)
     provider_payment_id = models.CharField(
         max_length=255,
@@ -197,6 +208,28 @@ class AdminEarning(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_id} · {self.amount} {self.currency}"
+
+
+class AdminWalletCarryForward(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="payout_carry_forwards",
+    )
+    currency = models.CharField(max_length=3)
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "currency"],
+                name="unique_admin_wallet_carry_forward",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user_id} · {self.balance} {self.currency}"
 
 
 class AdminWithdrawal(models.Model):

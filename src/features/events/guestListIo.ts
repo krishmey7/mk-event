@@ -245,11 +245,14 @@ function downloadOnWeb(filename: string, content: string, mime: string): boolean
 export async function exportGuestListFiles(
   state: EventManageState,
   eventName?: string,
+  eventArchive?: unknown,
 ): Promise<'downloaded' | 'shared'> {
   const bundle = buildExportBundle(state, eventName);
   const stamp = new Date().toISOString().slice(0, 10);
   const base = `mk-event-${state.eventId}-invites-${stamp}`;
-  const json = bundleToJson(bundle);
+  const json = eventArchive === undefined
+    ? bundleToJson(bundle)
+    : JSON.stringify(eventArchive, null, 2);
   const csv = guestsToCsv(bundle.guests);
 
   if (downloadOnWeb(`${base}.json`, json, 'application/json;charset=utf-8')) {

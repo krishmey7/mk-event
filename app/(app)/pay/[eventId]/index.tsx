@@ -18,7 +18,6 @@ import { ApiError } from '@/services/apiClient';
 import {
   paymentsService,
   type EventPaymentStatus,
-  type PaymentMethod,
 } from '@/services/paymentsService';
 
 const POLL_INTERVAL_MS = 3_000;
@@ -45,7 +44,6 @@ export default function EventPaymentScreen() {
   const eventId = Number(Array.isArray(params.eventId) ? params.eventId[0] : params.eventId);
   const quotaParam = Array.isArray(params.guestQuota) ? params.guestQuota[0] : params.guestQuota;
   const quota = Number(quotaParam);
-  const [method, setMethod] = useState<PaymentMethod>('mobile_money');
   const [mobileNumber, setMobileNumber] = useState('');
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
@@ -109,7 +107,7 @@ export default function EventPaymentScreen() {
   }, [eventId, paymentId, router, validEvent, waiting]);
 
   const startPayment = async () => {
-    if (!validEvent || !validQuota || (method === 'mobile_money' && !mobileNumber.trim())) {
+    if (!validEvent || !validQuota || !mobileNumber.trim()) {
       setError('Vérifiez le nombre d’invités et les informations de paiement.');
       return;
     }
@@ -118,8 +116,8 @@ export default function EventPaymentScreen() {
     try {
       const initiated = await paymentsService.createPayment(eventId, {
         guest_quota: quota,
-        payment_method: method,
-        ...(method === 'mobile_money' ? { mobilenumber: mobileNumber.trim() } : {}),
+        payment_method: 'mobile_money',
+        mobilenumber: mobileNumber.trim(),
       });
       setPaymentId(initiated.payment_id);
       setCheckoutUrl(initiated.checkout_url);
@@ -184,42 +182,17 @@ export default function EventPaymentScreen() {
 
         {!waiting ? (
           <>
-            <Text style={[styles.sectionLabel, { color: c.textPrimary }]}>Moyen de paiement</Text>
-            <View style={styles.methodRow}>
-              {([
-                ['mobile_money', 'Mobile Money', 'phone-portrait-outline'],
-                ['card', 'Carte bancaire', 'card-outline'],
-              ] as const).map(([value, label, icon]) => (
-                <Pressable
-                  key={value}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: method === value }}
-                  onPress={() => setMethod(value)}
-                  style={[
-                    styles.method,
-                    { borderColor: method === value ? c.accent : c.border },
-                    method === value && { backgroundColor: c.accentMuted },
-                  ]}
-                >
-                  <Ionicons name={icon} size={19} color={method === value ? c.accent : c.textMuted} />
-                  <Text style={[styles.methodLabel, { color: c.textPrimary }]}>{label}</Text>
-                </Pressable>
-              ))}
-            </View>
-            {method === 'mobile_money' ? (
-              <>
-                <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Numéro Mobile Money</Text>
-                <TextInput
-                  accessibilityLabel="Numéro Mobile Money"
-                  keyboardType="phone-pad"
-                  value={mobileNumber}
-                  onChangeText={setMobileNumber}
-                  placeholder="+243..."
-                  placeholderTextColor={c.textMuted}
-                  style={[styles.input, { color: c.textPrimary, borderColor: c.border }]}
-                />
-              </>
-            ) : null}
+            <Text style={[styles.sectionLabel, { color: c.textPrimary }]}>Paiement Mobile Money</Text>
+            <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Numéro Mobile Money</Text>
+            <TextInput
+              accessibilityLabel="Numéro Mobile Money"
+              keyboardType="phone-pad"
+              value={mobileNumber}
+              onChangeText={setMobileNumber}
+              placeholder="+243..."
+              placeholderTextColor={c.textMuted}
+              style={[styles.input, { color: c.textPrimary, borderColor: c.border }]}
+            />
           </>
         ) : (
           <View style={[styles.waiting, { backgroundColor: c.accentMuted }]}>
@@ -251,11 +224,11 @@ export default function EventPaymentScreen() {
           <Pressable
             accessibilityRole="button"
             onPress={() => void startPayment()}
-            disabled={submitting || !validQuota || (method === 'mobile_money' && !mobileNumber.trim())}
+            disabled={submitting || !validQuota || !mobileNumber.trim()}
             style={({ pressed }) => [
               styles.button,
               { backgroundColor: c.accent },
-              (pressed || submitting || !validQuota || (method === 'mobile_money' && !mobileNumber.trim())) && styles.disabled,
+              (pressed || submitting || !validQuota || !mobileNumber.trim()) && styles.disabled,
             ]}
           >
             {submitting ? <ActivityIndicator color={c.onAccent} /> : null}
@@ -281,9 +254,6 @@ const styles = StyleSheet.create({
   amountLabel: { fontFamily: fontFamilies.sans, fontSize: 14 },
   amount: { fontFamily: fontFamilies.sansSemiBold, fontSize: 18 },
   sectionLabel: { fontFamily: fontFamilies.sansSemiBold, fontSize: 13, marginTop: 4 },
-  methodRow: { flexDirection: 'row', gap: 10 },
-  method: { flex: 1, minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 8 },
-  methodLabel: { fontFamily: fontFamilies.sansMedium, fontSize: 12 },
   fieldLabel: { fontFamily: fontFamilies.sansMedium, fontSize: 12 },
   input: { minHeight: 46, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, fontFamily: fontFamilies.sans, fontSize: 14 },
   waiting: { borderRadius: 14, padding: 16, alignItems: 'center', gap: 10 },

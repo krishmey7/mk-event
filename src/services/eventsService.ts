@@ -151,6 +151,14 @@ export const eventsService = {
     return apiClient.get<Event>(`/events/${id}/`);
   },
 
+  /** GET /api/events/{id}/export/ — archive complet privé avant rétention. */
+  exportEvent(id: number): Promise<unknown> {
+    if (SIMULATE_BACKEND) {
+      throw new Error('L’export complet est disponible uniquement avec le serveur.');
+    }
+    return apiClient.get<unknown>(`/events/${id}/export/`);
+  },
+
   /**
    * POST /api/events/ — création d'une invitation (stepper 4 étapes).
    * En simulation : génère un brouillon (`status: 'draft'`, 0 invité,

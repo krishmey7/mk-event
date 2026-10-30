@@ -32,6 +32,7 @@ from .models import (
     make_studio_key,
 )
 from .payouts import AdminWalletView, AdminWithdrawalView
+from .retention import build_event_archive
 from .serializers import (
     EventDraftSerializer,
     EventSerializer,
@@ -324,6 +325,12 @@ class EventViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @action(detail=True, methods=["get"], url_path="export")
+    def export_data(self, request, pk=None):
+        """Export privé complet d’un événement avant la purge de ses données."""
+        event = self.get_object()
+        return Response(build_event_archive(event))
+
 
 class EventNestedMixin:
     def get_event(self) -> Event:
@@ -587,23 +594,6 @@ class EventPayView(APIView):
 
     def post(self, request, pk):
         event = get_object_or_404(Event, pk=pk, organizer=request.user)
-        if event.status == Event.Status.ARCHIVED:
-            return Response(
-                {"detail": "Un événement archivé ne peut pas recevoir de paiement."},
-                status=status.HTTP_409_CONFLICT,
-            )
-        pending_payment = event.payments.filter(
-            status=EventPayment.Status.PENDING,
-        ).first()
-        if pending_payment:
-            return Response(
-                {
-                    "detail": "Un paiement est déjà en cours pour cet événement.",
-                    "payment_id": pending_payment.provider_payment_id,
-                },
-                status=status.HTTP_409_CONFLICT,
-            )
-
         serializer = EventPaySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         guest_quota = serializer.validated_data["guest_quota"]
@@ -617,16 +607,41 @@ class EventPayView(APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
-        external_reference = f"inv-{event.id}-{uuid.uuid4().hex}"
-        payment = EventPayment.objects.create(
-            event=event,
-            external_reference=external_reference,
-            payment_method=payment_method,
-            guest_quota=guest_quota,
-            amount=amount,
-        )
-        event.payment_status = "pending"
-        event.save(update_fields=["payment_status", "updated_at"])
+        with transaction.atomic():
+            event = get_object_or_404(
+                Event.objects.select_for_update(),
+                pk=pk,
+                organizer=request.user,
+            )
+            if event.status == Event.Status.ARCHIVED:
+                return Response(
+                    {"detail": "Un événement archivé ne peut pas recevoir de paiement."},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            pending_payment = EventPayment.objects.filter(
+                event=event,
+                status=EventPayment.Status.PENDING,
+            ).first()
+            if pending_payment:
+                return Response(
+                    {
+                        "detail": "Un paiement est déjà en cours pour cet événement.",
+                        "payment_id": pending_payment.provider_payment_id,
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            external_reference = f"inv-{event.id}-{uuid.uuid4().hex}"
+            payment = EventPayment.objects.create(
+                event=event,
+                external_reference=external_reference,
+                payment_method=payment_method,
+                guest_quota=guest_quota,
+                amount=amount,
+            )
+            event.payment_status = "pending"
+            event.save(update_fields=["payment_status", "updated_at"])
 
         payload = {
             "amount": float(amount),
@@ -940,9 +955,14 @@ class KibaWalletWebhookView(APIView):
 
         with transaction.atomic():
             payment = EventPayment.objects.select_for_update().get(pk=payment.pk)
-            event = Event.objects.select_for_update().get(pk=payment.event_id)
             if payment.status != EventPayment.Status.PENDING:
-                return Response({"status": "ok", "event_id": event.id})
+                return Response({"status": "ok", "event_id": payment.event_id})
+            if payment.event_id is None:
+                return Response(
+                    {"detail": "L’événement associé à ce paiement n’existe plus."},
+                    status=status.HTTP_410_GONE,
+                )
+            event = Event.objects.select_for_update().get(pk=payment.event_id)
 
             if provider_id and not payment.provider_payment_id:
                 payment.provider_payment_id = provider_id

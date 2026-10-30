@@ -35,7 +35,7 @@ export function VenuePlaceEditor({
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [manualOpen, setManualOpen] = useState(!venueHasCoords(venue) && Boolean(venue.name || venue.city));
+  const [manualOpen, setManualOpen] = useState(!venueHasCoords(venue));
   const seq = useRef(0);
 
   useEffect(() => {
@@ -103,7 +103,7 @@ export function VenuePlaceEditor({
     <View style={styles.root}>
       <Text style={[styles.heading, { color: c.textPrimary }]}>Lieu</Text>
       <Text style={[styles.lead, { color: c.textMuted }]}>
-        Recherchez un lieu — la carte se place automatiquement.
+        Recherchez une adresse ou saisissez un nom et un repère manuellement. La carte est facultative.
       </Text>
 
       <EditorInput
@@ -140,6 +140,19 @@ export function VenuePlaceEditor({
             </Pressable>
           ))}
         </View>
+      ) : null}
+
+      {query.trim().length >= 3 && !searching && hits.length === 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setManualOpen(true)}
+          style={({ pressed }) => [styles.manualFallback, pressed && styles.pressed]}
+        >
+          <Text style={[styles.noResults, { color: c.accent }]}>
+            Aucun résultat ? Saisir le lieu manuellement
+          </Text>
+          <Ionicons name="create-outline" size={16} color={c.accent} />
+        </Pressable>
       ) : null}
 
       {venueHasCoords(venue) ? (
@@ -180,7 +193,7 @@ export function VenuePlaceEditor({
         hitSlop={8}
       >
         <Text style={[styles.manualToggleLabel, { color: c.textMuted }]}>
-          {manualOpen ? 'Masquer l’adresse' : 'Modifier l’adresse'}
+          {manualOpen ? 'Masquer la saisie manuelle' : 'Saisir le lieu manuellement'}
         </Text>
         <Ionicons
           name={manualOpen ? 'chevron-up' : 'chevron-down'}
@@ -193,27 +206,30 @@ export function VenuePlaceEditor({
         <View style={styles.manual}>
           <EditorInput
             value={venue.name}
-            onChangeText={(value) => onChange({ name: value })}
-            placeholder="Nom du lieu"
+            onChangeText={(value) => onChange({ name: value, lat: null, lng: null })}
+            placeholder="Nom du lieu ou repère"
           />
           <View style={styles.gap} />
           <EditorInput
             value={venue.street}
-            onChangeText={(value) => onChange({ street: value })}
-            placeholder="Rue"
+            onChangeText={(value) => onChange({ street: value, lat: null, lng: null })}
+            placeholder="Adresse, quartier ou repère (facultatif)"
           />
           <View style={styles.gap} />
           <EditorInput
             value={venue.zip}
-            onChangeText={(value) => onChange({ zip: value })}
+            onChangeText={(value) => onChange({ zip: value, lat: null, lng: null })}
             placeholder="Code postal"
           />
           <View style={styles.gap} />
           <EditorInput
             value={venue.city}
-            onChangeText={(value) => onChange({ city: value })}
+            onChangeText={(value) => onChange({ city: value, lat: null, lng: null })}
             placeholder="Ville"
           />
+          <Text style={[styles.manualHint, { color: c.textMuted }]}>
+            Un nom et une courte indication suffisent. Sans coordonnées, le lieu sera affiché sur l’invitation et le bouton d’itinéraire recherchera le texte saisi.
+          </Text>
         </View>
       ) : null}
 
@@ -268,6 +284,9 @@ const styles = StyleSheet.create({
   },
   manualToggleLabel: { fontFamily: fontFamilies.sansMedium, fontSize: 13 },
   manual: { marginTop: 8 },
+  manualFallback: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 8 },
+  noResults: { fontFamily: fontFamilies.sansMedium, fontSize: 12.5, lineHeight: 18 },
+  manualHint: { fontFamily: fontFamilies.sans, fontSize: 12, lineHeight: 17, marginTop: 8 },
   gap: { height: 10 },
   error: { fontFamily: fontFamilies.sansMedium, fontSize: 12.5, marginTop: 8, color: '#A45A45' },
   pressed: { opacity: 0.85 },

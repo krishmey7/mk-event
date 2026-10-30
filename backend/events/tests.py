@@ -4,13 +4,16 @@ import hashlib
 import hmac
 from io import BytesIO
 import json
+from pathlib import Path
 import shutil
 import tempfile
+from io import StringIO
 from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
 from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
 from PIL import Image
@@ -24,13 +27,18 @@ from events.media_upload import (
 )
 from events.models import (
     AdminEarning,
+    AdminWalletCarryForward,
     AdminWithdrawal,
     Event,
     EventPayment,
     Guest,
     GuestbookEntry,
     InvitationTemplate,
+    RSVPResponse,
+    Table,
 )
+from events.payouts import _ledger_balance
+from events.management.commands.process_data_retention import Command as DataRetentionCommand
 
 
 User = get_user_model()
@@ -420,6 +428,205 @@ class GuestPublishSyncTests(TestCase):
         self.event.refresh_from_db()
         self.assertEqual(self.event.status, Event.Status.DRAFT)
 
+    def test_event_archive_export_is_private_and_contains_event_data(self):
+        guest = Guest.objects.create(
+            event=self.event,
+            full_name="Alice Export",
+            email="alice@example.test",
+        )
+        response = self.client.get(f"/api/events/{self.event.id}/export/")
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["format"], "mk-event-archive")
+        self.assertEqual(response.data["guests"][0]["email"], guest.email)
+
+        other = User.objects.create_user(
+            email="other-export@test.app",
+            password="Strong-Password-892!",
+            full_name="Autre organisateur",
+        )
+        self.client.force_authenticate(user=other)
+        denied = self.client.get(f"/api/events/{self.event.id}/export/")
+        self.assertEqual(denied.status_code, 404)
+
+
+class EventDataRetentionTests(TempMediaRootMixin, TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="retention@test.app",
+            password="Strong-Password-892!",
+            full_name="Alex Rétention",
+        )
+        self.event = Event.objects.create(
+            organizer=self.user,
+            name="Événement terminé",
+            status=Event.Status.PUBLISHED,
+            event_date=timezone.now() - timedelta(days=100),
+            retention_notice_sent_at=timezone.now() - timedelta(days=31),
+            slug="evenement-termine",
+            studio_config={"story": [{"text": "Souvenir"}]},
+        )
+
+    def test_purge_exports_then_deletes_event_data_but_keeps_payment_ledger(self):
+        admin_user = User.objects.create_user(
+            email="retention-admin@test.app",
+            password="Strong-Password-892!",
+            full_name="Admin de paiement",
+            role=User.Role.ADMIN,
+        )
+        table = Table.objects.create(event=self.event, name="Table 1")
+        guest = Guest.objects.create(
+            event=self.event,
+            full_name="Alice Export",
+            email="alice@example.test",
+            table=table,
+            has_personal_link=True,
+        )
+        RSVPResponse.objects.create(
+            event=self.event,
+            guest=guest,
+            answer=RSVPResponse.Answer.YES,
+            message="À bientôt",
+        )
+        GuestbookEntry.objects.create(
+            event=self.event,
+            guest=guest,
+            author_name="Alice",
+            message="Félicitations !",
+        )
+        media_path = save_event_image(self.event.id, _jpeg_file())
+        payment = EventPayment.objects.create(
+            event=self.event,
+            external_reference="retention-payment",
+            payment_method=EventPayment.Method.MOBILE_MONEY,
+            guest_quota=1,
+            amount=Decimal("0.50"),
+            amount_net=Decimal("0.47"),
+            status=EventPayment.Status.SUCCEEDED,
+            paid_at=timezone.now(),
+        )
+        AdminEarning.objects.create(
+            user=admin_user,
+            payment=payment,
+            share_percent=Decimal("10.00"),
+            amount=Decimal("0.05"),
+            currency="USD",
+        )
+
+        with tempfile.TemporaryDirectory(prefix="mk-retention-export-") as export_dir:
+            call_command(
+                "process_data_retention",
+                "--purge",
+                "--confirm",
+                "--export-dir",
+                export_dir,
+                stdout=StringIO(),
+            )
+            archive_path = Path(export_dir) / f"mk-event-{self.event.id}-archive.json"
+            archive = json.loads(archive_path.read_text(encoding="utf-8"))
+            media_archive_path = (
+                Path(export_dir)
+                / f"mk-event-{self.event.id}-media"
+                / media_path
+            )
+            self.assertTrue(media_archive_path.exists())
+
+        self.assertEqual(archive["format"], "mk-event-archive")
+        self.assertEqual(archive["event"]["name"], "Événement terminé")
+        self.assertEqual(archive["guests"][0]["email"], "alice@example.test")
+        self.assertEqual(archive["rsvps"][0]["message"], "À bientôt")
+        self.assertEqual(archive["guestbook"][0]["message"], "Félicitations !")
+        self.assertFalse(Event.objects.filter(pk=self.event.pk).exists())
+        self.assertFalse(Guest.objects.filter(pk=guest.pk).exists())
+        self.assertFalse(default_storage.exists(media_path))
+        payment.refresh_from_db()
+        self.assertIsNone(payment.event_id)
+        self.assertTrue(AdminEarning.objects.filter(payment=payment).exists())
+
+    def test_purge_waits_for_notice_grace_period_and_pending_payments(self):
+        self.event.retention_notice_sent_at = timezone.now() - timedelta(days=29)
+        self.event.save(update_fields=["retention_notice_sent_at"])
+        self.assertFalse(
+            DataRetentionCommand.events_due_for_purge(timezone.now()).filter(
+                pk=self.event.pk,
+            ).exists()
+        )
+
+        self.event.retention_notice_sent_at = timezone.now() - timedelta(days=31)
+        self.event.save(update_fields=["retention_notice_sent_at"])
+        EventPayment.objects.create(
+            event=self.event,
+            external_reference="retention-pending",
+            payment_method=EventPayment.Method.MOBILE_MONEY,
+            guest_quota=1,
+            amount=Decimal("0.50"),
+            status=EventPayment.Status.PENDING,
+        )
+        self.assertFalse(
+            DataRetentionCommand.events_due_for_purge(timezone.now()).filter(
+                pk=self.event.pk,
+            ).exists()
+        )
+
+    def test_old_financial_rows_are_pruned_without_changing_wallet_balance(self):
+        admin_user = User.objects.create_user(
+            email="carry@test.app",
+            password="Strong-Password-892!",
+            full_name="Admin Carry",
+            role=User.Role.ADMIN,
+        )
+        old_payment = EventPayment.objects.create(
+            event=self.event,
+            external_reference="old-ledger-payment",
+            payment_method=EventPayment.Method.MOBILE_MONEY,
+            guest_quota=20,
+            amount=Decimal("10.00"),
+            amount_net=Decimal("9.50"),
+            status=EventPayment.Status.SUCCEEDED,
+        )
+        EventPayment.objects.filter(pk=old_payment.pk).update(
+            updated_at=timezone.now() - timedelta(days=366),
+        )
+        AdminEarning.objects.create(
+            user=admin_user,
+            payment=old_payment,
+            share_percent=Decimal("100.00"),
+            amount=Decimal("10.00"),
+            currency="USD",
+        )
+        old_withdrawal = AdminWithdrawal.objects.create(
+            user=admin_user,
+            external_reference="old-ledger-withdrawal",
+            account="+243900000000",
+            amount=Decimal("3.00"),
+            fee=Decimal("0.03"),
+            amount_debited=Decimal("3.03"),
+            currency="USD",
+            status=AdminWithdrawal.Status.SUCCEEDED,
+        )
+        AdminWithdrawal.objects.filter(pk=old_withdrawal.pk).update(
+            updated_at=timezone.now() - timedelta(days=366),
+        )
+        AdminWalletCarryForward.objects.create(
+            user=admin_user,
+            currency="USD",
+            balance=Decimal("2.00"),
+        )
+
+        removed_count = DataRetentionCommand.purge_financial_ledger(
+            timezone.now() - timedelta(days=365),
+        )
+
+        self.assertEqual(removed_count, 1)
+        self.assertFalse(EventPayment.objects.filter(pk=old_payment.pk).exists())
+        self.assertFalse(AdminEarning.objects.filter(user=admin_user).exists())
+        self.assertFalse(AdminWithdrawal.objects.filter(pk=old_withdrawal.pk).exists())
+        self.assertEqual(
+            AdminWalletCarryForward.objects.get(user=admin_user, currency="USD").balance,
+            Decimal("8.97"),
+        )
+        self.assertEqual(_ledger_balance(admin_user.pk, "USD"), Decimal("8.97"))
+
 
 @override_settings(KIBA_WEBHOOK_SECRET="test-webhook-secret")
 class EventPaymentFlowTests(TestCase):
@@ -508,6 +715,50 @@ class EventPaymentFlowTests(TestCase):
         sent = send.call_args.kwargs["json"]
         self.assertEqual(sent["payment_method"], "card")
         self.assertIn("/pay/success?eventId=", sent["return_url"])
+
+    def test_overlapping_payment_initialization_is_rejected(self):
+        provider_response = Mock(
+            ok=True,
+            json=Mock(return_value={"id": "kiba-payment-2", "status": "PENDING"}),
+        )
+        nested_responses = []
+
+        def initialize_provider_payment(*args, **kwargs):
+            nested_responses.append(
+                self.client.post(
+                    f"/api/events/{self.event.id}/pay/",
+                    {
+                        "guest_quota": 3,
+                        "payment_method": "mobile_money",
+                        "mobilenumber": "+243900000000",
+                    },
+                    format="json",
+                )
+            )
+            return provider_response
+
+        with patch.dict(
+            "os.environ",
+            {"KIBA_PUBLIC_KEY": "pk_test", "KIBA_SECRET_KEY": "sk_test"},
+        ), patch(
+            "events.views.requests.post",
+            side_effect=initialize_provider_payment,
+        ) as send:
+            response = self.client.post(
+                f"/api/events/{self.event.id}/pay/",
+                {
+                    "guest_quota": 2,
+                    "payment_method": "mobile_money",
+                    "mobilenumber": "+243900000000",
+                },
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(len(nested_responses), 1)
+        self.assertEqual(nested_responses[0].status_code, 409)
+        self.assertEqual(send.call_count, 1)
+        self.assertEqual(EventPayment.objects.filter(event=self.event).count(), 1)
 
     def test_card_payment_reports_kibawallet_rejection_reason(self):
         provider_response = Mock(

@@ -41,6 +41,9 @@ backend/db.sqlite3
 backend/media/
 backend/staticfiles/
 .vercel
-
 .tools-vercel/
 
+# Exports contenant des données personnelles et des médias d’événements
+retention-exports/
+mk-event-*-archive.json
+mk-event-*-media/

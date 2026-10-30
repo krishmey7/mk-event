@@ -506,14 +506,21 @@ function InvitesTab({
   const handleExport = useCallback(async () => {
     try {
       const state = getEventManageState(eventId);
-      const result = await exportGuestListFiles(state, eventName);
+      const archive = SIMULATE_BACKEND
+        ? undefined
+        : await eventsService.exportEvent(eventId);
+      const result = await exportGuestListFiles(state, eventName, archive);
       setIoMessage(
         result === 'downloaded'
-          ? 'Export téléchargé (JSON complet + CSV Excel).'
-          : 'Export partagé (JSON avec tous les détails).',
+          ? 'Export téléchargé (archive JSON et liste CSV).'
+          : 'Export partagé (archive JSON).',
       );
-    } catch {
-      setIoMessage('Export impossible.');
+    } catch (exportError) {
+      setIoMessage(
+        exportError instanceof ApiError
+          ? exportError.message
+          : 'Export impossible. Vérifiez votre connexion puis réessayez.',
+      );
     }
   }, [eventId, eventName]);
 

@@ -5,8 +5,8 @@
 
 export const LEGAL_CONTACT_EMAIL = 'mkeventscopyright@gmail.com';
 export const LEGAL_SITE_URL = 'https://mk-event-five.vercel.app';
-export const LEGAL_UPDATED_AT = '5 octobre 2026';
-export const LEGAL_VERSION = '1.0';
+export const LEGAL_UPDATED_AT = '30 octobre 2026';
+export const LEGAL_VERSION = '1.2';
 
 export interface LegalSection {
   title: string;
@@ -56,7 +56,17 @@ export const TERMS_OF_USE: LegalDocument = {
       ],
     },
     {
-      title: '4. Données des invités et responsabilités',
+      title: '4. Tarifs et paiements',
+      paragraphs: [
+        'La création et la publication de la page d’événement de base sont gratuites. L’activation des liens personnels d’invitation, des pass QR et des RSVP individuels est facturée 0,50 $ USD par invité couvert. Le montant total et le nombre de liens concernés sont affichés avant la validation du paiement.',
+        'À la date de mise à jour des présentes CGU, seul le paiement par Mobile Money via KibaWallet est proposé dans l’application. Le paiement par carte bancaire n’y est pas disponible. Les moyens proposés peuvent évoluer ; ceux affichés au moment du paiement font foi.',
+        'La demande de paiement reste en attente jusqu’à la confirmation du prestataire. Les fonctionnalités payantes et les liens correspondants ne sont activés qu’après confirmation effective du paiement.',
+        'Les liens payés mais non encore attribués restent utilisables comme crédits pour l’événement concerné. La modification d’un invité ne consomme pas un nouveau crédit ; la suppression d’un invité déjà couvert ne déclenche pas automatiquement un remboursement. Toute demande de remboursement est examinée conformément aux règles légales applicables ; vous pouvez contacter '
+        + `${LEGAL_CONTACT_EMAIL}.`,
+      ],
+    },
+    {
+      title: '5. Données des invités et responsabilités',
       paragraphs: [
         'Lorsque vous saisissez des coordonnées d’invités (nom, e-mail, téléphone, etc.), vous agissez en tant que responsable du traitement de ces données pour votre événement.',
         'Vous vous engagez à ne collecter que les données nécessaires, à disposer d’une base légale adaptée (souvent l’intérêt légitime ou le consentement dans le cadre privé de l’événement), et à informer vos invités de l’usage qui en est fait.',
@@ -64,21 +74,21 @@ export const TERMS_OF_USE: LegalDocument = {
       ],
     },
     {
-      title: '5. Usages interdits',
+      title: '6. Usages interdits',
       paragraphs: [
         'Il est interdit d’utiliser MK Events pour diffuser des contenus illicites, diffamatoires, haineux, contrefaisants, ou portant atteinte à la vie privée de tiers.',
         'Il est interdit de tenter d’accéder sans autorisation aux comptes, invitations ou données d’autres utilisateurs, de perturber le service, ou d’en automatiser l’usage de façon abusive (spam, scraping massif, surcharge).',
       ],
     },
     {
-      title: '6. Propriété intellectuelle',
+      title: '7. Propriété intellectuelle',
       paragraphs: [
         'La marque MK Events, l’interface, les modèles graphiques et le code du service restent la propriété de leurs titulaires.',
         'Les contenus que vous importez (photos, textes, fichiers audio) restent votre propriété. Vous concédez à MK Events une licence limitée, non exclusive, pour les héberger et les afficher aux destinataires de votre invitation.',
       ],
     },
     {
-      title: '7. Disponibilité et limitation de responsabilité',
+      title: '8. Disponibilité et limitation de responsabilité',
       paragraphs: [
         'Le service est fourni « en l’état ». MK Events s’efforce d’assurer une disponibilité raisonnable, sans garantie d’absence d’interruption ou d’erreur.',
         'Dans les limites autorisées par la loi, MK Events ne saurait être responsable des dommages indirects, pertes de données liées à un usage non conforme, ou contenus publiés par les organisateurs ou les invités.',
@@ -86,7 +96,7 @@ export const TERMS_OF_USE: LegalDocument = {
       ],
     },
     {
-      title: '8. Résiliation',
+      title: '9. Résiliation',
       paragraphs: [
         'Vous pouvez cesser d’utiliser le service à tout moment. Sur demande à '
         + `${LEGAL_CONTACT_EMAIL}, la suppression de votre compte pourra être traitée sous réserve des obligations légales de conservation.`,
@@ -94,13 +104,13 @@ export const TERMS_OF_USE: LegalDocument = {
       ],
     },
     {
-      title: '9. Droit applicable',
+      title: '10. Droit applicable',
       paragraphs: [
         'Les présentes CGU sont régies par le droit français. En cas de litige, et à défaut de résolution amiable, les tribunaux français compétents seront saisis.',
       ],
     },
     {
-      title: '10. Évolution des CGU',
+      title: '11. Évolution des CGU',
       paragraphs: [
         `La version en vigueur est la version ${LEGAL_VERSION}, mise à jour le ${LEGAL_UPDATED_AT}.`,
         'En cas de modification substantielle, une information pourra être affichée dans l’application. La poursuite d’utilisation après mise à jour vaut acceptation des nouvelles conditions, sous réserve des droits qui vous sont reconnus par la loi.',
@@ -157,7 +167,9 @@ export const PRIVACY_POLICY: LegalDocument = {
       title: '5. Durées de conservation',
       paragraphs: [
         'Compte organisateur : pendant la durée d’utilisation du service, puis suppression ou anonymisation après demande ou inactivité prolongée, sous réserve d’obligations légales.',
-        'Événements et invités : conservés tant que l’organisateur maintient l’événement / le compte, ou jusqu’à suppression demandée.',
+        'Événements publiés ou archivés, contenus associés, listes d’invités, RSVP, livre d’or et médias : conservation pendant 90 jours après la date de l’événement. Un préavis est adressé à l’organisateur au plus tôt 30 jours avant l’échéance ; il peut exporter les données avant leur suppression. Les événements avec un paiement encore en attente ne sont pas purgés tant que ce paiement n’est pas résolu.',
+        'Données financières (références, montants, devises, statuts, gains et retraits) : conservation pendant un an après leur dernière mise à jour, puis suppression des lignes détaillées. Un solde agrégé peut être conservé si nécessaire pour préserver le calcul du portefeuille.',
+        'La procédure de préavis et de suppression est opérée manuellement ; l’exécution peut donc avoir lieu après les délais indiqués. Les archives générées pour la purge contiennent des données personnelles et doivent être transmises de façon sécurisée à l’organisateur, puis supprimées du dossier opérateur.',
         'Journaux techniques : durée limitée, proportionnée aux besoins de sécurité et de diagnostic.',
       ],
     },

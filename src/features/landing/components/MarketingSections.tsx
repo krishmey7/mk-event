@@ -661,6 +661,26 @@ const FAQS = [
     a: 'Non. Chaque invitation s’ouvre depuis un lien personnel, directement dans le navigateur.',
   },
   {
+    q: 'Combien coûte l’envoi des liens invités ?',
+    a: 'La publication gratuite met votre page événement en ligne, sans lien personnel, pass QR ni RSVP individuel. Pour activer ces fonctions, le tarif est de 0,50 $ USD par invité. Vous choisissez le nombre de liens à couvrir et le montant total s’affiche avant de payer.',
+  },
+  {
+    q: 'Quels moyens de paiement sont proposés ?',
+    a: 'Actuellement, seul le paiement par Mobile Money via KibaWallet est accepté : saisissez votre numéro et validez la demande sur votre téléphone. Le paiement par carte bancaire n’est pas proposé dans l’application.',
+  },
+  {
+    q: 'Quand mon événement et mes liens sont-ils activés ?',
+    a: 'La demande reste en attente jusqu’à la confirmation du paiement par KibaWallet. Après confirmation, l’événement est publié et les liens couverts par votre paiement sont activés. Ne relancez pas un paiement déjà en attente ; si son statut tarde à changer, contactez-nous avant de réessayer.',
+  },
+  {
+    q: 'Que se passe-t-il si je paie pour plus d’invités que je n’en ai ajouté ?',
+    a: 'Les liens payés mais pas encore attribués restent en crédit pour cet événement. Vous pourrez les utiliser en ajoutant des invités plus tard. Si vous ajoutez plus d’invités que votre quota restant, seuls les liens couverts par vos crédits peuvent être activés ; il faudra payer les liens supplémentaires.',
+  },
+  {
+    q: 'Dois-je payer à nouveau si je modifie un invité ?',
+    a: 'Non. Modifier les informations d’un invité ne consomme pas un nouveau crédit. Le crédit est consommé quand son lien personnel est attribué. La suppression d’un invité déjà couvert ne donne pas lieu à un remboursement automatique.',
+  },
+  {
     q: 'Puis-je modifier l’invitation après sa publication ?',
     a: 'Oui. Vous pouvez ajuster le contenu puis republier pour rendre les changements visibles.',
   },

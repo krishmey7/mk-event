@@ -13,7 +13,7 @@ from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import AdminEarning, AdminWithdrawal, EventPayment
+from .models import AdminEarning, AdminWalletCarryForward, AdminWithdrawal, EventPayment
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -53,6 +53,10 @@ def _provider_message(response):
 
 
 def _ledger_balance(user_id, currency):
+    carry_forward = AdminWalletCarryForward.objects.filter(
+        user_id=user_id,
+        currency=currency,
+    ).values_list("balance", flat=True).first() or Decimal("0.00")
     earned = AdminEarning.objects.filter(
         user_id=user_id,
         currency=currency,
@@ -63,7 +67,7 @@ def _ledger_balance(user_id, currency):
     ).exclude(status=AdminWithdrawal.Status.FAILED).aggregate(
         total=Sum("amount_debited"),
     )["total"] or Decimal("0.00")
-    return max(Decimal("0.00"), earned - reserved)
+    return max(Decimal("0.00"), carry_forward + earned - reserved)
 
 
 class AdminWalletView(APIView):
@@ -124,7 +128,7 @@ class AdminWalletView(APIView):
                     "external_reference": earning.payment.external_reference,
                     "provider_reference": earning.payment.provider_payment_id or "",
                     "account": "",
-                    "event_name": earning.payment.event.name,
+                    "event_name": earning.payment.event.name if earning.payment.event else "",
                 }
             )
         for withdrawal in withdrawal_qs[:end]:
@@ -155,8 +159,12 @@ class AdminWalletView(APIView):
                         "type": "incoming_payment",
                         "created_at": payment.created_at,
                         "status": payment.status,
-                        "user_id": payment.event.organizer_id,
-                        "user_name": payment.event.organizer.full_name,
+                        "user_id": payment.event.organizer_id if payment.event else 0,
+                        "user_name": (
+                            payment.event.organizer.full_name
+                            if payment.event
+                            else "Événement supprimé"
+                        ),
                         "amount": str(payment.amount_net or payment.amount),
                         "fee": "0.00",
                         "amount_debited": "0.00",
@@ -165,7 +173,7 @@ class AdminWalletView(APIView):
                         "external_reference": payment.external_reference,
                         "provider_reference": payment.provider_payment_id or "",
                         "account": "",
-                        "event_name": payment.event.name,
+                        "event_name": payment.event.name if payment.event else "",
                     }
                 )
         transactions.sort(key=lambda item: (item["created_at"], item["id"]), reverse=True)

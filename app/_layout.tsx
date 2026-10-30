@@ -36,6 +36,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { AuthProvider } from '@/context/AuthContext';
 import { ActiveEventProvider } from '@/context/ActiveEventContext';
 import { ThemePreferenceProvider, useAppTheme } from '@/context/ThemePreferenceContext';
+import { OfflineScreen } from '@/features/pwa/OfflineScreen';
 import { PwaInstallPrompt } from '@/features/pwa/PwaInstallPrompt';
 
 /**
@@ -230,7 +231,7 @@ function RootChrome() {
         }}
       />
       <PwaInstallPrompt />
+      <OfflineScreen />
     </>
   );
 }
-

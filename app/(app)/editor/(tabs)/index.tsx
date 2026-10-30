@@ -45,7 +45,7 @@ export default function EditorInfosScreen() {
   const labels = studioFieldLabels(template.coverLayout);
   const film = template.coverLayout === 'filmStrip';
   const neon = studio.neonScript;
-  const hint = studioStepHint('index', eventType);
+  const hint = studioStepHint('index', eventType, template.key);
 
   const importCouplePhoto = async () => {
     const uri = await pickLibraryImage();

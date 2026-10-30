@@ -19,7 +19,7 @@ export function EditorTabBar({ state, navigation }: BottomTabBarProps) {
   const { type: activeType } = useActiveEvent();
   /** Le modèle ouvert prime : évite un type ActiveEvent obsolète. */
   const eventType = template.category || activeType;
-  const steps = getStudioSteps(eventType);
+  const steps = getStudioSteps(eventType, template.key);
   const { theme } = useAppTheme();
   const c = theme.colors;
   const currentKey = state.routes[state.index]?.name;

@@ -27,9 +27,9 @@ export function StudioGuidedFooter({ state, navigation }: BottomTabBarProps) {
   const c = theme.colors;
 
   const currentKey = state.routes[state.index]?.name ?? 'index';
-  const steps = getStudioSteps(eventType);
-  const prev = prevStudioStep(currentKey, eventType);
-  const next = nextStudioStep(currentKey, eventType);
+  const steps = getStudioSteps(eventType, template.key);
+  const prev = prevStudioStep(currentKey, eventType, template.key);
+  const next = nextStudioStep(currentKey, eventType, template.key);
   const isLast = !next && steps.some((step) => step.route === currentKey);
 
   const goTo = (routeName: string) => {

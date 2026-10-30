@@ -17,6 +17,7 @@ import { TemplateOrnaments, type OrnamentKey } from '@/features/templates/orname
 import type { CoverLayout } from '@/features/templates/registry';
 import { PELLICULE_WEDDING } from '@/features/templates/pellicule/data';
 import { NEON_WEDDING } from '@/features/templates/neon/data';
+import { PapeterieCover } from '@/features/templates/papeterie/PapeterieCover';
 
 export function TemplateCover({
   layout = 'classic',
@@ -94,6 +95,27 @@ export function TemplateCover({
           closing={closing || 'see you!'}
           celebrant={couple}
           compact={compact}
+        />
+      </View>
+    );
+  }
+
+  if (layout === 'editorial') {
+    return (
+      <View style={styles.fill}>
+        <PapeterieCover
+          colors={colors}
+          photoUri={coverUri}
+          guest={guest}
+          title={title}
+          dateLabel={dateLabel}
+          couple={couple}
+          guestSentence={guestSentence}
+          venueName={venueName}
+          venueCity={venueCity}
+          compact={compact}
+          hint={hint}
+          onHintPress={onHintPress}
         />
       </View>
     );

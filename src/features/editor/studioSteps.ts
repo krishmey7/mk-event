@@ -98,6 +98,33 @@ const BIRTHDAY_STEPS: StudioStepDef[] = [
   },
 ];
 
+const PAPETERIE_STEPS: StudioStepDef[] = [
+  {
+    route: 'index',
+    title: 'Invitation',
+    headerTitle: 'Invitation & détails',
+    hint: 'Photo, noms, date, lieu et tenue.',
+  },
+  {
+    route: 'programme',
+    title: 'Programme',
+    headerTitle: 'Déroulé de la journée',
+    hint: 'Organisez les moments de votre journée dans l’ordre.',
+  },
+  {
+    route: 'plus',
+    title: 'Réponses',
+    headerTitle: 'RSVP & choix',
+    hint: 'Configurez les boissons proposées aux invités qui confirment leur présence.',
+  },
+  {
+    route: 'publier',
+    title: 'Publier',
+    headerTitle: 'Aperçu & publier',
+    hint: 'Vérifiez votre papeterie numérique, puis publiez.',
+  },
+];
+
 const CONFERENCE_STEPS: StudioStepDef[] = [
   {
     route: 'index',
@@ -131,7 +158,11 @@ const CONFERENCE_STEPS: StudioStepDef[] = [
   },
 ];
 
-export function getStudioSteps(type: EventType | null | undefined): StudioStepDef[] {
+export function getStudioSteps(
+  type: EventType | null | undefined,
+  templateKey?: string,
+): StudioStepDef[] {
+  if (templateKey === 'papeterie') return PAPETERIE_STEPS;
   switch (type) {
     case 'birthday':
       return BIRTHDAY_STEPS;
@@ -146,15 +177,17 @@ export function getStudioSteps(type: EventType | null | undefined): StudioStepDe
 export function isStudioRouteVisible(
   route: string,
   type: EventType | null | undefined,
+  templateKey?: string,
 ): boolean {
-  return getStudioSteps(type).some((step) => step.route === route);
+  return getStudioSteps(type, templateKey).some((step) => step.route === route);
 }
 
 export function studioStepMeta(
   route: string,
   type: EventType | null | undefined,
+  templateKey?: string,
 ): StudioStepDef | null {
-  const steps = getStudioSteps(type);
+  const steps = getStudioSteps(type, templateKey);
   const index = steps.findIndex((step) => step.route === route);
   if (index < 0) return null;
   return steps[index];
@@ -163,30 +196,34 @@ export function studioStepMeta(
 export function studioStepNumber(
   route: string,
   type: EventType | null | undefined,
+  templateKey?: string,
 ): number {
-  const index = getStudioSteps(type).findIndex((step) => step.route === route);
+  const index = getStudioSteps(type, templateKey).findIndex((step) => step.route === route);
   return index >= 0 ? index + 1 : 1;
 }
 
 export function studioStepIndex(
   route: string,
   type: EventType | null | undefined,
+  templateKey?: string,
 ): number {
-  return getStudioSteps(type).findIndex((step) => step.route === route);
+  return getStudioSteps(type, templateKey).findIndex((step) => step.route === route);
 }
 
 export function studioStepHint(
   route: string,
   type: EventType | null | undefined,
+  templateKey?: string,
 ): string | null {
-  return studioStepMeta(route, type)?.hint ?? null;
+  return studioStepMeta(route, type, templateKey)?.hint ?? null;
 }
 
 export function nextStudioStep(
   route: string,
   type: EventType | null | undefined,
+  templateKey?: string,
 ): StudioStepDef | null {
-  const steps = getStudioSteps(type);
+  const steps = getStudioSteps(type, templateKey);
   const index = steps.findIndex((step) => step.route === route);
   if (index < 0 || index >= steps.length - 1) return null;
   return steps[index + 1];
@@ -195,8 +232,9 @@ export function nextStudioStep(
 export function prevStudioStep(
   route: string,
   type: EventType | null | undefined,
+  templateKey?: string,
 ): StudioStepDef | null {
-  const steps = getStudioSteps(type);
+  const steps = getStudioSteps(type, templateKey);
   const index = steps.findIndex((step) => step.route === route);
   if (index <= 0) return null;
   return steps[index - 1];

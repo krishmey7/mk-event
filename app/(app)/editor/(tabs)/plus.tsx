@@ -20,7 +20,8 @@ export default function PlusTabScreen() {
   const eventType = activeType || template.category;
   const { theme } = useAppTheme();
   const c = theme.colors;
-  const hint = studioStepHint('plus', eventType);
+  const hint = studioStepHint('plus', eventType, template.key);
+  const papeterie = template.key === 'papeterie';
 
   return (
     <ScrollView
@@ -28,7 +29,9 @@ export default function PlusTabScreen() {
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={[styles.title, { color: c.textPrimary }]}>Boissons</Text>
+      <Text style={[styles.title, { color: c.textPrimary }]}>
+        {papeterie ? 'RSVP & choix' : 'Boissons'}
+      </Text>
       {hint ? <EditorHint>{hint}</EditorHint> : null}
       <RsvpEditorPanel />
     </ScrollView>

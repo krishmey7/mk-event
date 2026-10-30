@@ -31,19 +31,19 @@ export default function EditorTabsLayout() {
   const tabNavigationRef = useRef<BottomTabBarProps['navigation'] | null>(null);
 
   const eventType = activeType || template.category;
-  const steps = getStudioSteps(eventType);
+  const steps = getStudioSteps(eventType, template.key);
   const c = theme.colors;
   const key = pathname.split('/').filter(Boolean).pop() ?? 'index';
   const resolvedKey = steps.some((step) => step.route === key) ? key : steps[0]?.route ?? 'index';
-  const stepIndex = studioStepIndex(resolvedKey, eventType);
+  const stepIndex = studioStepIndex(resolvedKey, eventType, template.key);
   const title =
     steps.find((step) => step.route === resolvedKey)?.headerTitle
     ?? steps[0]?.headerTitle
     ?? 'Studio';
 
   const hrefFor = useMemo(
-    () => (route: string) => (isStudioRouteVisible(route, eventType) ? undefined : null),
-    [eventType],
+    () => (route: string) => (isStudioRouteVisible(route, eventType, template.key) ? undefined : null),
+    [eventType, template.key],
   );
 
   const renderTabBar = (props: BottomTabBarProps) => {

@@ -20,6 +20,7 @@ export default function ProgrammeTabScreen({ embedded = false }: { embedded?: bo
   const { program, programStyle, removeProgramStep, template } = useEditor();
   const colors = useStudioChrome();
   const isConference = template.category === 'corporate';
+  const isPapeterie = template.key === 'papeterie';
   const [sheetIndex, setSheetIndex] = useState<number | null>(null);
 
   /* 4 layouts — le choix met à jour la liste instantanément. */
@@ -109,9 +110,12 @@ export default function ProgrammeTabScreen({ embedded = false }: { embedded?: bo
       {embedded ? null : (
         <EditorHint>
           {isConference
-            ? (studioStepHint('programme', 'corporate')
+            ? (studioStepHint('programme', 'corporate', template.key)
               ?? 'Construisez l’agenda : horaires, sessions et salles.')
-            : 'Modifiez ou supprimez chaque moment. Le crayon ouvre le détail, la corbeille l’enlève.'}
+            : isPapeterie
+              ? (studioStepHint('programme', template.category, template.key)
+                ?? 'Organisez les moments de votre journée dans l’ordre.')
+              : 'Modifiez ou supprimez chaque moment. Le crayon ouvre le détail, la corbeille l’enlève.'}
         </EditorHint>
       )}
       <Text style={[styles.heading, { color: colors.text }]}>

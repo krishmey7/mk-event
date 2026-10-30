@@ -70,6 +70,17 @@ export function templateStudio(layout: CoverLayout): TemplateStudioCapabilities 
         neonScript: false,
         galleryFeedsCover: true,
       };
+    case 'editorial':
+      return {
+        backgroundPhoto: true,
+        couplePhoto: true,
+        coupleFrames: false,
+        accroche: true,
+        coverTitle: true,
+        heure: false,
+        neonScript: false,
+        galleryFeedsCover: false,
+      };
     case 'neonScript':
       return {
         backgroundPhoto: true,
@@ -142,6 +153,13 @@ export function studioFieldLabels(layout: CoverLayout): {
         titlePlaceholder: 'Save the Date',
         accroche: 'Phrase d’accueil',
         accrochePlaceholder: 'Cérémonie à 10h',
+      };
+    case 'editorial':
+      return {
+        title: 'Titre de couverture',
+        titlePlaceholder: 'Réservez la date',
+        accroche: 'Invitation',
+        accrochePlaceholder: 'Nous serions heureux de célébrer ce jour avec vous…',
       };
     default:
       return {

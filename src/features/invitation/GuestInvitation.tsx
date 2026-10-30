@@ -94,6 +94,8 @@ import { BirthdayPoster } from '@/features/templates/birthday/BirthdayPoster';
 import { ConferenceInvitation } from '@/features/templates/conference/ConferenceInvitation';
 import { CONFERENCE_SPEAKERS } from '@/features/templates/conference/data';
 import { BIRTHDAY_DEMO } from '@/features/templates/birthday/themes';
+import { BotanicalSprig } from '@/features/templates/papeterie/BotanicalSprig';
+import { PapeterieCover } from '@/features/templates/papeterie/PapeterieCover';
 import { SIMULATE_BACKEND } from '@/constants/config';
 import { guestsService } from '@/services/guestsService';
 import { guestbookService } from '@/services/guestbookService';
@@ -203,6 +205,7 @@ export function GuestInvitation({ slug, config, guest }: {
   const aurore = layout === 'splitPanel';
   const pellicule = layout === 'filmStrip';
   const neon = layout === 'neonScript';
+  const editorial = layout === 'editorial';
   const branded = aurore || pellicule || neon;
   const voix = {
     ...DEFAULT_VOIX,
@@ -221,6 +224,79 @@ export function GuestInvitation({ slug, config, guest }: {
       hosts: pageCover.couple,
     },
   });
+
+  if (editorial) {
+    return (
+      <RevealBusContext.Provider value={bus}>
+        <View style={[styles.fill, { backgroundColor: theme.colors.bg }]}>
+          <StatusBar style="dark" />
+          <InvitationAudioChrome
+            needsGesture={audio.needsGesture}
+            muted={audio.muted}
+            onEnable={() => { void audio.enableFromGesture(); }}
+            onToggleMute={() => { void audio.toggleMute(); }}
+            accent={theme.colors.primary}
+          />
+          <ScrollView
+            ref={scrollRef}
+            style={styles.scroll}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 26 }}
+            showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+          >
+            <View style={{ height: Dimensions.get('window').height }}>
+              <PapeterieCover
+                colors={theme.colors}
+                photoUri={pageCover.photoUri || template.coverImage}
+                guest={guest}
+                title={pageCover.title}
+                dateLabel={pageCover.dateLabel}
+                couple={pageCover.couple}
+                guestSentence={pageCover.guestLine}
+                venueName={config.venue.name}
+                venueCity={config.venue.city}
+                hint={<CoverDiscoverHint color="#FFFFFF" />}
+                onHintPress={scrollToStory}
+              />
+            </View>
+            <View onLayout={(event) => { storyY.current = event.nativeEvent.layout.y; }}>
+              <PapeterieDetailsSection
+                theme={theme}
+                dateLabel={pageCover.dateLabel}
+                venue={config.venue}
+                dressCode={config.dressCode}
+              />
+            </View>
+            <PapeterieProgramSection
+              theme={theme}
+              dateLabel={pageCover.dateLabel}
+              program={programItems}
+            />
+            <PapeteriePhotoSection
+              photoUri={couplePhoto.uri || template.couplePhoto.uri}
+              couple={pageCover.couple}
+              theme={theme}
+            />
+            <GuestRsvpSection
+              slug={slug}
+              guest={guest}
+              drinks={config.drinks}
+              theme={theme}
+              winter={false}
+              editorial
+            />
+            <View style={[styles.editorialFooter, { backgroundColor: theme.colors.bg }]}>
+              <BotanicalSprig color={theme.colors.accent} size={36} />
+              <Text style={[styles.editorialFooterText, { color: theme.colors.textMuted }]}>
+                {pageCover.couple} · {pageCover.dateLabel}
+              </Text>
+            </View>
+          </ScrollView>
+        </View>
+      </RevealBusContext.Provider>
+    );
+  }
 
   /* Anniversaire — une seule page affiche. */
   if (layout === 'birthdayPoster') {
@@ -447,6 +523,173 @@ export function GuestInvitation({ slug, config, guest }: {
         <StoryDetailModal story={story} theme={theme} onClose={() => setStory(null)} />
       </View>
     </RevealBusContext.Provider>
+  );
+}
+
+function PapeterieDetailsSection({
+  theme,
+  dateLabel,
+  venue,
+  dressCode,
+}: {
+  theme: TemplateTheme;
+  dateLabel: string;
+  venue: Venue;
+  dressCode: string;
+}) {
+  const c = theme.colors;
+  const address = venueFullAddress(venue);
+  const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+
+  return (
+    <View style={[styles.editorialSection, { backgroundColor: c.bg }]}>
+      <View pointerEvents="none" style={styles.editorialCorner}>
+        <BotanicalSprig color={c.accent} size={86} />
+      </View>
+      <EditorialSectionHeading kicker="AVEC JOIE" title="Les détails" colors={c} />
+      <View style={[styles.editorialDetailsCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+        <View style={styles.editorialDetailRow}>
+          <Ionicons name="calendar-outline" size={21} color={c.primary} />
+          <View style={styles.editorialDetailCopy}>
+            <Text style={[styles.editorialDetailLabel, { color: c.textMuted }]}>DATE</Text>
+            <Text style={[styles.editorialDetailText, { color: c.text }]}>{dateLabel}</Text>
+          </View>
+        </View>
+        <View style={[styles.editorialDivider, { backgroundColor: c.border }]} />
+        <View style={styles.editorialDetailRow}>
+          <Ionicons name="location-outline" size={21} color={c.primary} />
+          <View style={styles.editorialDetailCopy}>
+            <Text style={[styles.editorialDetailLabel, { color: c.textMuted }]}>
+              CÉRÉMONIE & RÉCEPTION
+            </Text>
+            <Text style={[styles.editorialDetailText, { color: c.text }]}>
+              {venue.name || address || 'Lieu à préciser'}
+            </Text>
+            {address && address !== venue.name ? (
+              <Text style={[styles.editorialDetailSubtext, { color: c.textMuted }]}>{address}</Text>
+            ) : null}
+            {address ? (
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => void Linking.openURL(venueDirectionsUrl(venue, platform))}
+                style={styles.editorialDirections}
+              >
+                <Text style={[styles.editorialDirectionsText, { color: c.primary }]}>Voir l’itinéraire</Text>
+                <Ionicons name="arrow-up-outline" size={13} color={c.primary} />
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+        {dressCode.trim() ? (
+          <>
+            <View style={[styles.editorialDivider, { backgroundColor: c.border }]} />
+            <View style={styles.editorialDetailRow}>
+              <Ionicons name="shirt-outline" size={21} color={c.primary} />
+              <View style={styles.editorialDetailCopy}>
+                <Text style={[styles.editorialDetailLabel, { color: c.textMuted }]}>TENUE</Text>
+                <Text style={[styles.editorialDetailText, { color: c.text }]}>{dressCode}</Text>
+              </View>
+            </View>
+          </>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+function PapeterieProgramSection({
+  theme,
+  dateLabel,
+  program,
+}: {
+  theme: TemplateTheme;
+  dateLabel: string;
+  program: ProgramStep[];
+}) {
+  const c = theme.colors;
+  const { effect } = useRevealBus();
+  return (
+    <View style={[styles.editorialSection, { backgroundColor: c.bg }]}>
+      <EditorialSectionHeading kicker="LE JOUR J" title="Le déroulé" subtitle={dateLabel} colors={c} />
+      <View style={[styles.editorialTimeline, { borderColor: c.border }]}>
+        {program.length > 0 ? program.map((step, index) => (
+          <Reveal key={`${step.time}-${step.title}`} effect={effect} delay={index * 80}>
+            <View style={styles.editorialTimelineRow}>
+              <View style={styles.editorialTimelineMark}>
+                <View style={[styles.editorialTimelineDot, { borderColor: c.accent, backgroundColor: c.bg }]} />
+                {index < program.length - 1 ? (
+                  <View style={[styles.editorialTimelineLine, { backgroundColor: c.border }]} />
+                ) : null}
+              </View>
+              <View style={styles.editorialTimelineCopy}>
+                <Text style={[styles.editorialTime, { color: c.primary }]}>{step.time}</Text>
+                <Text style={[styles.editorialProgramTitle, { color: c.text }]}>{step.title}</Text>
+                <Text style={[styles.editorialDetailSubtext, { color: c.textMuted }]}>{step.place}</Text>
+              </View>
+              <Ionicons name={step.icon} size={19} color={c.accent} />
+            </View>
+          </Reveal>
+        )) : (
+          <Text style={[styles.editorialDetailSubtext, { color: c.textMuted }]}>
+            Le programme sera communiqué prochainement.
+          </Text>
+        )}
+      </View>
+      <View style={styles.editorialSprigCenter}>
+        <BotanicalSprig color={c.accent} size={48} />
+      </View>
+    </View>
+  );
+}
+
+function PapeteriePhotoSection({
+  photoUri,
+  couple,
+  theme,
+}: {
+  photoUri: string;
+  couple: string;
+  theme: TemplateTheme;
+}) {
+  const c = theme.colors;
+  return (
+    <ImageBackground
+      source={{ uri: photoUri }}
+      resizeMode="cover"
+      style={styles.editorialPhoto}
+      imageStyle={styles.editorialPhotoImage}
+    >
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(25, 22, 18, 0.3)' }]} />
+      <View style={styles.editorialPhotoCopy}>
+        <Text style={styles.editorialPhotoScript}>Nous avons hâte</Text>
+        <Text style={styles.editorialPhotoText}>DE CÉLÉBRER AVEC VOUS</Text>
+        <View style={[styles.editorialPhotoRule, { backgroundColor: c.surface }]} />
+        <Text style={styles.editorialPhotoNames}>{couple}</Text>
+      </View>
+    </ImageBackground>
+  );
+}
+
+function EditorialSectionHeading({
+  kicker,
+  title,
+  subtitle,
+  colors,
+}: {
+  kicker: string;
+  title: string;
+  subtitle?: string;
+  colors: TemplateTheme['colors'];
+}) {
+  return (
+    <View style={styles.editorialHeading}>
+      <Text style={[styles.editorialKicker, { color: colors.textMuted }]}>{kicker}</Text>
+      <Text style={[styles.editorialHeadingTitle, { color: colors.text }]}>{title}</Text>
+      <Ionicons name="heart-outline" size={15} color={colors.accent} />
+      {subtitle ? (
+        <Text style={[styles.editorialHeadingSubtext, { color: colors.textMuted }]}>{subtitle}</Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -709,15 +952,26 @@ function FallingSnow() {
   );
 }
 
-function SectionShell({ winter, aurore, pellicule, neon, theme, children, style }: {
+function SectionShell({ winter, aurore, pellicule, neon, editorial, theme, children, style }: {
   winter: boolean;
   aurore?: boolean;
   pellicule?: boolean;
   neon?: boolean;
+  editorial?: boolean;
   theme: TemplateTheme;
   children: ReactNode;
   style?: object;
 }) {
+  if (editorial) {
+    return (
+      <View style={[styles.editorialSection, { backgroundColor: theme.colors.bg }, style]}>
+        <View pointerEvents="none" style={styles.editorialCorner}>
+          <BotanicalSprig color={theme.colors.accent} size={76} />
+        </View>
+        {children}
+      </View>
+    );
+  }
   if (aurore) {
     return (
       <AurorePage gold={theme.colors.accent} panel={theme.colors.bg} style={style}>
@@ -762,6 +1016,7 @@ function SectionHead({
   aurore,
   pellicule,
   neon,
+  editorial,
   theme,
   kicker,
   title,
@@ -771,11 +1026,22 @@ function SectionHead({
   aurore?: boolean;
   pellicule?: boolean;
   neon?: boolean;
+  editorial?: boolean;
   theme: TemplateTheme;
   kicker?: string;
   title: string;
   subtitle?: string;
 }) {
+  if (editorial) {
+    return (
+      <EditorialSectionHeading
+        kicker={kicker || 'AVEC JOIE'}
+        title={title}
+        subtitle={subtitle}
+        colors={theme.colors}
+      />
+    );
+  }
   if (aurore) {
     return (
       <AuroreSectionHeader
@@ -1412,7 +1678,7 @@ function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, s
 
 /* ── 5. RSVP — pré-rempli, boissons de l'organisateur, QR pass ── */
 
-function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicule, neon }: {
+function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicule, neon, editorial }: {
   slug: string;
   guest: Guest;
   drinks: string[];
@@ -1421,6 +1687,7 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
   aurore?: boolean;
   pellicule?: boolean;
   neon?: boolean;
+  editorial?: boolean;
 }) {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
@@ -1468,8 +1735,8 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
 
   if (!canRsvp) {
     return (
-      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme}>
-        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme} kicker="RSVP" title="Votre réponse" />
+      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} theme={theme}>
+        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} theme={theme} kicker="RSVP" title="Votre réponse" />
         <Reveal effect={revealEffect} delay={0}>
           <View style={[styles.successCard, { backgroundColor: c.surface, borderColor: c.border }]}>
             <Text style={[styles.successText, { color: c.textMuted }]}>
@@ -1484,8 +1751,8 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
   /* Après validation : le QR pass individuel s'active. */
   if (answer !== null) {
     return (
-      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme}>
-        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme} kicker="RSVP" title="Votre réponse" />
+      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} theme={theme}>
+        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} theme={theme} kicker="RSVP" title="Votre réponse" />
 
         <Reveal effect={revealEffect} delay={0}>
           <View style={[styles.successCard, { backgroundColor: c.surface, borderColor: c.border }]}>
@@ -1538,13 +1805,14 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
   }
 
   return (
-    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
           aurore={aurore}
           pellicule={pellicule}
           neon={neon}
+          editorial={editorial}
           theme={theme}
           kicker="RSVP"
           title={`Confirme ta présence, ${guest.firstName}`}
@@ -1871,6 +2139,83 @@ const styles = StyleSheet.create({
 
   /* Sections */
   section: { paddingHorizontal: 22, paddingVertical: 34 },
+  editorialSection: {
+    position: 'relative',
+    overflow: 'hidden',
+    paddingHorizontal: 26,
+    paddingVertical: 54,
+  },
+  editorialCorner: { position: 'absolute', right: -12, top: 4, opacity: 0.62 },
+  editorialHeading: { alignItems: 'center', gap: 12, marginBottom: 28 },
+  editorialKicker: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 9,
+    letterSpacing: 2.2,
+    textAlign: 'center',
+  },
+  editorialHeadingTitle: {
+    fontFamily: 'CormorantGaramond_400Regular',
+    fontSize: 37,
+    lineHeight: 43,
+    letterSpacing: 3.2,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  editorialHeadingSubtext: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    letterSpacing: 1.4,
+    marginTop: 1,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  editorialDetailsCard: { borderWidth: 1, padding: 21, gap: 19 },
+  editorialDetailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 15 },
+  editorialDetailCopy: { flex: 1, gap: 5 },
+  editorialDetailLabel: { fontFamily: 'Inter_500Medium', fontSize: 8.5, letterSpacing: 1.6 },
+  editorialDetailText: { fontFamily: 'CormorantGaramond_500Medium', fontSize: 20, lineHeight: 25 },
+  editorialDetailSubtext: { fontFamily: 'Inter_400Regular', fontSize: 11.5, lineHeight: 17 },
+  editorialDivider: { height: StyleSheet.hairlineWidth, marginLeft: 36 },
+  editorialDirections: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+  editorialDirectionsText: { fontFamily: 'Inter_500Medium', fontSize: 10.5, letterSpacing: 0.5 },
+  editorialTimeline: { borderLeftWidth: 1, marginLeft: 10, paddingLeft: 21 },
+  editorialTimelineRow: { minHeight: 82, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  editorialTimelineMark: { width: 14, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
+  editorialTimelineDot: { width: 9, height: 9, borderRadius: 5, borderWidth: 1, zIndex: 1 },
+  editorialTimelineLine: { position: 'absolute', top: '50%', bottom: '-50%', width: 1 },
+  editorialTimelineCopy: { flex: 1, gap: 3 },
+  editorialTime: { fontFamily: 'Inter_500Medium', fontSize: 9, letterSpacing: 1.2 },
+  editorialProgramTitle: { fontFamily: 'CormorantGaramond_500Medium', fontSize: 22, lineHeight: 25 },
+  editorialSprigCenter: { alignItems: 'center', marginTop: 28 },
+  editorialPhoto: { width: '100%', minHeight: 440, justifyContent: 'center' },
+  editorialPhotoImage: { width: '100%', height: '100%' },
+  editorialPhotoCopy: { alignItems: 'center', gap: 12, paddingHorizontal: 28 },
+  editorialPhotoScript: {
+    color: '#FFFFFF',
+    fontFamily: 'Allura_400Regular',
+    fontSize: 46,
+    textAlign: 'center',
+  },
+  editorialPhotoText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontFamily: 'Inter_500Medium',
+    fontSize: 8,
+    letterSpacing: 2.2,
+    textAlign: 'center',
+  },
+  editorialPhotoRule: { width: 38, height: 1, marginTop: 3, opacity: 0.8 },
+  editorialPhotoNames: {
+    color: '#FFFFFF',
+    fontFamily: 'CormorantGaramond_400Regular',
+    fontSize: 21,
+    letterSpacing: 1.4,
+  },
+  editorialFooter: { alignItems: 'center', gap: 8, paddingVertical: 22 },
+  editorialFooterText: {
+    fontFamily: 'CormorantGaramond_400Regular_Italic',
+    fontSize: 17,
+    textAlign: 'center',
+  },
   winterStack: { width: '100%', alignItems: 'center' },
   winterGalleryBlock: { width: '100%', alignSelf: 'stretch' },
   winterBreak: {

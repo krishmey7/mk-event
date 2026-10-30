@@ -51,6 +51,8 @@ import {
   NEON_WEDDING,
 } from './neon/data';
 import { NEON_THEME_ORDER, NEON_THEMES } from './neon/themes';
+import { PAPETERIE_IMAGES, PAPETERIE_PROGRAM } from './papeterie/data';
+import { PAPETERIE_THEMES } from './papeterie/themes';
 import type { PhotoFrameOption } from '@/features/invitation/types';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import { ELEGANCE_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
@@ -84,7 +86,8 @@ export type CoverLayout =
   | 'conference'
   | 'splitPanel'
   | 'filmStrip'
-  | 'neonScript';
+  | 'neonScript'
+  | 'editorial';
 
 export interface TemplateDefinition {
   /**
@@ -222,6 +225,38 @@ export const TEMPLATES: TemplateDefinition[] = [
     motions: { coverEnter: true, sectionReveal: true },
     themes: eleganceThemes,
     photoFrames: ELEGANCE_PHOTO_FRAMES,
+  },
+  {
+    key: 'papeterie',
+    name: 'Papier végétal',
+    category: 'wedding',
+    description: 'Papeterie ivoire, photo pleine page, détails raffinés et programme en ligne.',
+    coverImage: PAPETERIE_IMAGES.cover,
+    galleryImages: PAPETERIE_IMAGES.gallery,
+    countdownImage: PAPETERIE_IMAGES.couple,
+    couplePhoto: { uri: PAPETERIE_IMAGES.couple, frame: normalizePhotoFrame('soft') },
+    story: [],
+    program: PAPETERIE_PROGRAM,
+    defaultCover: {
+      title: 'Réservez la date',
+      dateLabel: '14 septembre 2026',
+      couple: 'Olivia & Ethan',
+      guestLine: 'Nous serions heureux de célébrer ce jour avec vous, {{Nom}}.',
+    },
+    defaultThemeKey: 'ivoire',
+    coverLayout: 'editorial',
+    ornaments: 'elegance',
+    motions: { coverEnter: true, sectionReveal: true },
+    defaultVenue: {
+      name: 'Domaine des Roseaux',
+      street: '12 allée des Tilleuls',
+      zip: '78100',
+      city: 'Saint-Germain-en-Laye',
+      lat: 48.8989,
+      lng: 2.0938,
+    },
+    themes: PAPETERIE_THEMES,
+    photoFrames: [],
   },
   {
     key: 'hiver',

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Event, Guest, GuestbookEntry, InvitationTemplate, RSVPResponse, Table
+from .models import Event, EventPayment, Guest, GuestbookEntry, InvitationTemplate, RSVPResponse, Table
 
 
 @admin.register(InvitationTemplate)
@@ -39,3 +39,20 @@ class GuestbookEntryAdmin(admin.ModelAdmin):
     list_display = ("author_name", "event", "is_visible", "created_at")
     list_filter = ("is_visible",)
     search_fields = ("author_name", "message")
+
+
+@admin.register(EventPayment)
+class EventPaymentAdmin(admin.ModelAdmin):
+    list_display = (
+        "external_reference",
+        "event",
+        "payment_method",
+        "guest_quota",
+        "amount",
+        "currency",
+        "status",
+        "created_at",
+    )
+    list_filter = ("status", "payment_method", "currency")
+    search_fields = ("external_reference", "provider_payment_id", "event__name")
+    readonly_fields = ("created_at", "updated_at", "paid_at")

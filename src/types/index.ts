@@ -259,6 +259,11 @@ export interface Event {
   theme_key?: string | null;
   /** Snapshot studio publié — servi aux invités via /api/inv/{slug}/. */
   studio_config?: Record<string, unknown> | null;
+  payment_status?: 'free' | 'pending' | 'succeeded' | 'failed';
+  paid_guest_quota?: number;
+  paid_guest_count?: number;
+  amount_paid_total?: string;
+  currency?: string;
   guests_count: number;
   rsvp_summary: RsvpSummary;
   program: ProgramStep[];
@@ -308,6 +313,8 @@ export interface Guest {
   checked_in_at?: ISODateString | null;
   /** Jeton d'accès personnel (lien/QR de l'invité). */
   access_token: string;
+  has_personal_link?: boolean;
+  payment_batch?: number | null;
   /** Clé studio (INV-1234) pour resynchroniser une publication. */
   studio_key?: string | null;
   responded_at: ISODateString | null;
@@ -339,4 +346,3 @@ export interface RSVPSubmitPayload {
   access_token?: string;
   drink?: string | null;
 }
-

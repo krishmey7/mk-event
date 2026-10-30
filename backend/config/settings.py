@@ -242,6 +242,9 @@ REST_FRAMEWORK = {
         "public_guestbook_write": "10/min",
         # Auth ouverte
         "auth": "20/min",
+        # Paiement KibaWallet
+        "payment": "30/min",
+        "webhook": "60/min",
     },
 }
 
@@ -259,6 +262,9 @@ DEFAULT_FROM_EMAIL = os.getenv(
     "MK Events <onboarding@resend.dev>",
 )
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://mk-event-five.vercel.app").rstrip("/")
+
+# KibaWallet webhook signature secret — required to accept payment callbacks.
+KIBA_WEBHOOK_SECRET = os.getenv("KIBA_WEBHOOK_SECRET", "").strip()
 
 # Client IDs Google OAuth (séparés par des virgules si web + natifs).
 GOOGLE_OAUTH_CLIENT_IDS = os.getenv("GOOGLE_OAUTH_CLIENT_IDS", "").strip()

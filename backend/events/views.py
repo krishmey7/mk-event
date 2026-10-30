@@ -1,3 +1,12 @@
+import os
+import hashlib
+import hmac
+import uuid
+from decimal import Decimal, InvalidOperation
+import requests
+
+from django.conf import settings
+from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -9,10 +18,11 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .media_upload import MediaUploadError, absolute_media_url, save_event_media
-from .models import Event, Guest, GuestbookEntry, RSVPResponse, Table, make_studio_key
+from .models import Event, EventPayment, Guest, GuestbookEntry, RSVPResponse, Table, make_studio_key
 from .serializers import (
     EventDraftSerializer,
     EventSerializer,
+    EventPaySerializer,
     GuestbookCreateSerializer,
     GuestbookEntrySerializer,
     GuestSerializer,
@@ -76,13 +86,10 @@ class EventViewSet(viewsets.ModelViewSet):
         event = annotate_events(Event.objects.filter(pk=event.pk)).get()
         return Response(EventSerializer(event).data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=["post"], url_path="publish")
-    def publish(self, request, pk=None):
-        """Publie l’événement (+ slug optionnel + sync invités studio)."""
+    def _sync_studio(self, event, request, *, publish, free_publication=False):
         from django.db import IntegrityError
         from django.utils.text import slugify
 
-        event = self.get_object()
         slug = (request.data.get("slug") or "").strip()
         if slug:
             base = slugify(slug) or event.slug
@@ -192,8 +199,13 @@ class EventViewSet(viewsets.ModelViewSet):
         if deleted_ids:
             Guest.objects.filter(event=event, pk__in=deleted_ids).delete()
 
-        event.status = Event.Status.PUBLISHED
+        if publish:
+            event.status = Event.Status.PUBLISHED
+            if free_publication:
+                event.payment_status = "free"
         update_fields = ["slug", "status", "updated_at"]
+        if publish and free_publication:
+            update_fields.append("payment_status")
         studio_config = request.data.get("studio_config")
         if isinstance(studio_config, dict):
             # Ne pas persister la liste d'invités dans le snapshot (PII) —
@@ -210,12 +222,55 @@ class EventViewSet(viewsets.ModelViewSet):
             if "theme_key" not in update_fields:
                 update_fields.append("theme_key")
         event.save(update_fields=update_fields)
+        if publish and free_publication:
+            Guest.objects.filter(event=event).update(
+                has_personal_link=False,
+                payment_batch=None,
+            )
         event = annotate_events(Event.objects.filter(pk=event.pk)).get()
         return Response(
             {
                 "event": EventSerializer(event).data,
                 "guests": synced_guests,
             }
+        )
+
+    @action(detail=True, methods=["post"], url_path="prepare")
+    def prepare(self, request, pk=None):
+        """Enregistre le studio et ses invités sans publier l’événement."""
+        event = self.get_object()
+        if event.status != Event.Status.DRAFT:
+            return Response(
+                {"detail": "Seul un brouillon peut être préparé pour publication."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return self._sync_studio(event, request, publish=False)
+
+    @action(detail=True, methods=["post"], url_path="publish")
+    def publish(self, request, pk=None):
+        """Publie une vitrine gratuite ou republie un événement déjà publié."""
+        event = self.get_object()
+        free_publication = (
+            event.status == Event.Status.DRAFT
+            and request.data.get("free_publication") is True
+        )
+        if event.status == Event.Status.DRAFT and not free_publication:
+            return Response(
+                {"detail": "Un brouillon doit être payé ou publié gratuitement."},
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
+        if free_publication and event.payments.filter(
+            status=EventPayment.Status.PENDING,
+        ).exists():
+            return Response(
+                {"detail": "Un paiement est en cours. Attendez son résultat avant de publier gratuitement."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return self._sync_studio(
+            event,
+            request,
+            publish=True,
+            free_publication=free_publication,
         )
 
     @action(detail=True, methods=["post"], url_path="media")
@@ -282,6 +337,33 @@ class GuestViewSet(EventNestedMixin, viewsets.ModelViewSet):
         guest.save(update_fields=["checked_in", "checked_in_at"])
         return Response(GuestSerializer(guest).data)
 
+    @action(detail=True, methods=["post"], url_path="grant-link")
+    def grant_link(self, request, event_id=None, pk=None):
+        event = self.get_event()
+        guest = self.get_object()
+        if event.status != Event.Status.PUBLISHED:
+            return Response(
+                {"detail": "Publiez l’événement avant de partager un lien invité."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        with transaction.atomic():
+            event = Event.objects.select_for_update().get(pk=event.pk)
+            guest = Guest.objects.select_for_update().get(pk=guest.pk, event=event)
+            if not guest.has_personal_link:
+                if event.paid_guest_quota <= event.paid_guest_count:
+                    return Response(
+                        {"detail": "Aucun crédit de lien invité disponible."},
+                        status=status.HTTP_402_PAYMENT_REQUIRED,
+                    )
+                payment = event.payments.filter(status=EventPayment.Status.SUCCEEDED).first()
+                guest.has_personal_link = True
+                guest.payment_batch = payment
+                guest.save(update_fields=["has_personal_link", "payment_batch"])
+                event.paid_guest_count += 1
+                event.save(update_fields=["paid_guest_count", "updated_at"])
+        return Response(GuestSerializer(guest).data)
+
 
 class TableViewSet(EventNestedMixin, viewsets.ModelViewSet):
     serializer_class = TableSerializer
@@ -323,7 +405,7 @@ class PublicInvitationView(APIView):
                 .select_related("table")
                 .first()
             )
-            if guest:
+            if guest and guest.has_personal_link:
                 payload["guest"] = PublicGuestSerializer(guest).data
         return Response(payload)
 
@@ -347,7 +429,7 @@ class PublicRSVPView(APIView):
             )
 
         guest = Guest.objects.filter(event=event, access_token=token).first()
-        if guest is None:
+        if guest is None or not guest.has_personal_link:
             return Response({"detail": "Invité introuvable."}, status=status.HTTP_404_NOT_FOUND)
 
         answer = data["answer"]
@@ -459,3 +541,360 @@ class EventGuestbookViewSet(EventNestedMixin, viewsets.ViewSet):
         entry = get_object_or_404(GuestbookEntry, pk=pk, event=event)
         entry.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EventPayView(APIView):
+    """Create a KibaWallet payment and record its guest-link quota."""
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "payment"
+
+    def post(self, request, pk):
+        event = get_object_or_404(Event, pk=pk, organizer=request.user)
+        if event.status == Event.Status.ARCHIVED:
+            return Response(
+                {"detail": "Un événement archivé ne peut pas recevoir de paiement."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        pending_payment = event.payments.filter(
+            status=EventPayment.Status.PENDING,
+        ).first()
+        if pending_payment:
+            return Response(
+                {
+                    "detail": "Un paiement est déjà en cours pour cet événement.",
+                    "payment_id": pending_payment.provider_payment_id,
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        serializer = EventPaySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        guest_quota = serializer.validated_data["guest_quota"]
+        payment_method = serializer.validated_data["payment_method"]
+        amount = Decimal(guest_quota) * Decimal("0.50")
+        kiba_pk = os.getenv("KIBA_PUBLIC_KEY", "").strip()
+        kiba_sk = os.getenv("KIBA_SECRET_KEY", "").strip()
+        if not kiba_pk or not kiba_sk:
+            return Response(
+                {"detail": "Paiement non configuré sur le serveur."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        external_reference = f"inv-{event.id}-{uuid.uuid4().hex}"
+        payment = EventPayment.objects.create(
+            event=event,
+            external_reference=external_reference,
+            payment_method=payment_method,
+            guest_quota=guest_quota,
+            amount=amount,
+        )
+        event.payment_status = "pending"
+        event.save(update_fields=["payment_status", "updated_at"])
+
+        payload = {
+            "amount": str(amount),
+            "currency": "USD",
+            "external_reference": external_reference,
+        }
+        if payment_method == EventPayment.Method.MOBILE_MONEY:
+            payload["mobilenumber"] = serializer.validated_data["mobilenumber"].strip()
+        else:
+            payload["payment_method"] = payment_method
+            payload["return_url"] = (
+                f"{settings.FRONTEND_URL}/pay/success?eventId={event.id}"
+            )
+
+        try:
+            response = requests.post(
+                "https://kibawallet-api.onrender.com/v1/payments",
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Kiba-Public-Key": kiba_pk,
+                    "Authorization": f"Bearer {kiba_sk}",
+                },
+                json=payload,
+                timeout=30,
+            )
+        except requests.RequestException:
+            return Response(
+                {
+                    "detail": (
+                        "Le prestataire n’a pas répondu. Vérifiez le statut du paiement "
+                        "avant d’en initier un autre."
+                    ),
+                    "external_reference": external_reference,
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        if not response.ok:
+            payment.status = EventPayment.Status.FAILED
+            payment.save(update_fields=["status", "updated_at"])
+            if not event.payments.filter(status=EventPayment.Status.PENDING).exists():
+                event.payment_status = (
+                    "succeeded"
+                    if event.paid_guest_quota > 0
+                    or event.payments.filter(status=EventPayment.Status.SUCCEEDED).exists()
+                    else "failed"
+                )
+                event.save(update_fields=["payment_status", "updated_at"])
+            return Response(
+                {"detail": "Échec de l’initialisation du paiement KibaWallet."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        try:
+            data = response.json()
+        except ValueError:
+            payment.status = EventPayment.Status.FAILED
+            payment.save(update_fields=["status", "updated_at"])
+            if not event.payments.filter(status=EventPayment.Status.PENDING).exclude(
+                pk=payment.pk,
+            ).exists():
+                event.payment_status = "succeeded" if event.paid_guest_quota else "failed"
+                event.save(update_fields=["payment_status", "updated_at"])
+            return Response(
+                {"detail": "Réponse invalide du prestataire de paiement."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        if not isinstance(data, dict):
+            payment.status = EventPayment.Status.FAILED
+            payment.save(update_fields=["status", "updated_at"])
+            if not event.payments.filter(status=EventPayment.Status.PENDING).exclude(
+                pk=payment.pk,
+            ).exists():
+                event.payment_status = "succeeded" if event.paid_guest_quota else "failed"
+                event.save(update_fields=["payment_status", "updated_at"])
+            return Response(
+                {"detail": "Réponse invalide du prestataire de paiement."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        provider_id = data.get("id") or data.get("payment_id")
+        if not provider_id:
+            payment.status = EventPayment.Status.FAILED
+            payment.save(update_fields=["status", "updated_at"])
+            if not event.payments.filter(status=EventPayment.Status.PENDING).exclude(
+                pk=payment.pk,
+            ).exists():
+                event.payment_status = "succeeded" if event.paid_guest_quota else "failed"
+                event.save(update_fields=["payment_status", "updated_at"])
+            return Response(
+                {"detail": "Identifiant de paiement absent de la réponse KibaWallet."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        payment.provider_payment_id = str(provider_id)
+        payment.save(update_fields=["provider_payment_id", "updated_at"])
+        event.payment_reference = str(provider_id)
+        event.save(update_fields=["payment_reference", "updated_at"])
+
+        return Response(
+            {
+                "payment_id": str(provider_id),
+                "reference": data.get("reference"),
+                "external_reference": external_reference,
+                "amount_gross": data.get("amount_gross"),
+                "amount_net": data.get("amount_net"),
+                "currency": data.get("currency", "USD"),
+                "status": data.get("status", "PENDING"),
+                "checkout_url": data.get("checkout_url"),
+                "instructions": data.get("instructions") or data.get("kelpay"),
+                "payment_method": payment_method,
+                "guest_quota": guest_quota,
+                "amount_due": str(amount),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class EventPaymentStatusView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        event = get_object_or_404(Event, pk=pk, organizer=request.user)
+        payment_id = request.query_params.get("payment_id")
+        payment = event.payments.first()
+        if payment_id:
+            payment = event.payments.filter(provider_payment_id=payment_id).first()
+            if payment is None:
+                return Response(
+                    {"detail": "Paiement introuvable."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        total_guests = event.guests.count()
+        pending_count = event.guests.filter(has_personal_link=False).count()
+        available_credits = max(0, event.paid_guest_quota - event.paid_guest_count)
+        amount_due = max(0, pending_count - available_credits) * Decimal("0.50")
+        return Response(
+            {
+                "event_id": event.id,
+                "event_status": event.status,
+                "payment_status": event.payment_status,
+                "total_guests": total_guests,
+                "paid_guest_quota": event.paid_guest_quota,
+                "paid_guest_count": event.paid_guest_count,
+                "available_credits": available_credits,
+                "pending_count": pending_count,
+                "amount_due": str(amount_due),
+                "currency": event.currency or "USD",
+                "payment": (
+                    {
+                        "payment_id": payment.provider_payment_id,
+                        "external_reference": payment.external_reference,
+                        "status": payment.status,
+                        "payment_method": payment.payment_method,
+                        "guest_quota": payment.guest_quota,
+                    }
+                    if payment
+                    else None
+                ),
+            }
+        )
+
+
+class KibaWalletWebhookView(APIView):
+    """Verify and idempotently process KibaWallet payment callbacks."""
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "webhook"
+
+    def post(self, request):
+        secret = getattr(settings, "KIBA_WEBHOOK_SECRET", "")
+        signature = request.headers.get("X-Kiba-Signature", "")
+        if not secret:
+            return Response(
+                {"detail": "Webhook de paiement non configuré."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        expected = hmac.new(
+            secret.encode("utf-8"),
+            request.body,
+            hashlib.sha256,
+        ).hexdigest()
+        if not signature or not hmac.compare_digest(expected, signature):
+            return Response(
+                {"detail": "Signature webhook invalide."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        payload = request.data
+        data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
+        event_name = str(payload.get("event") or "").lower()
+        callback_status = str(data.get("status") or "").upper()
+        if event_name == "payment.success":
+            callback_status = "SUCCEEDED"
+        elif event_name == "payment.failed":
+            callback_status = "FAILED"
+        if callback_status not in {"SUCCEEDED", "FAILED"}:
+            return Response(
+                {"detail": "Statut de paiement inconnu."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        external_reference = str(data.get("external_reference") or "").strip()
+        provider_id = str(
+            data.get("transaction_id") or data.get("id") or data.get("payment_id") or ""
+        ).strip()
+        payment = EventPayment.objects.filter(
+            external_reference=external_reference,
+        ).first()
+        if payment is None and provider_id:
+            payment = EventPayment.objects.filter(
+                provider_payment_id=provider_id,
+            ).first()
+        if payment is None:
+            return Response(
+                {"detail": "Paiement introuvable."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        gross = data.get("amount_gross") or data.get("amount")
+        if gross is not None:
+            try:
+                if Decimal(str(gross)) != payment.amount:
+                    return Response(
+                        {"detail": "Le montant du webhook ne correspond pas au paiement."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            except InvalidOperation:
+                return Response(
+                    {"detail": "Montant invalide dans le webhook."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        currency = str(data.get("currency") or payment.currency).upper()
+        if currency != payment.currency:
+            return Response(
+                {"detail": "La devise du webhook ne correspond pas au paiement."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            payment = EventPayment.objects.select_for_update().get(pk=payment.pk)
+            event = Event.objects.select_for_update().get(pk=payment.event_id)
+            if payment.status != EventPayment.Status.PENDING:
+                return Response({"status": "ok", "event_id": event.id})
+
+            if provider_id and not payment.provider_payment_id:
+                payment.provider_payment_id = provider_id
+            if callback_status == "SUCCEEDED":
+                payment.status = EventPayment.Status.SUCCEEDED
+                payment.paid_at = timezone.now()
+                event.paid_guest_quota += payment.guest_quota
+                event.amount_paid_total += payment.amount
+                event.currency = payment.currency
+                event.payment_status = "succeeded"
+                if event.status == Event.Status.DRAFT:
+                    event.status = Event.Status.PUBLISHED
+                available = max(0, event.paid_guest_quota - event.paid_guest_count)
+                guests = list(
+                    Guest.objects.select_for_update()
+                    .filter(event=event, has_personal_link=False)
+                    .order_by("id")[:available]
+                )
+                for guest in guests:
+                    guest.has_personal_link = True
+                    guest.payment_batch = payment
+                if guests:
+                    Guest.objects.bulk_update(
+                        guests,
+                        ["has_personal_link", "payment_batch"],
+                    )
+                    event.paid_guest_count += len(guests)
+            else:
+                payment.status = EventPayment.Status.FAILED
+                has_other_payment = event.payments.filter(
+                    status=EventPayment.Status.PENDING,
+                ).exclude(pk=payment.pk).exists()
+                if not has_other_payment:
+                    event.payment_status = (
+                        "succeeded"
+                        if event.paid_guest_quota > 0
+                        or event.payments.filter(
+                            status=EventPayment.Status.SUCCEEDED,
+                        ).exclude(pk=payment.pk).exists()
+                        else "failed"
+                    )
+
+            payment.save(
+                update_fields=[
+                    "provider_payment_id",
+                    "status",
+                    "paid_at",
+                    "updated_at",
+                ]
+            )
+            event.save(
+                update_fields=[
+                    "status",
+                    "payment_status",
+                    "paid_guest_quota",
+                    "paid_guest_count",
+                    "amount_paid_total",
+                    "currency",
+                    "updated_at",
+                ]
+            )
+        return Response({"status": "ok", "event_id": event.id})

@@ -1,8 +1,12 @@
 from datetime import timedelta
+from decimal import Decimal
+import hashlib
+import hmac
 from io import BytesIO
+import json
 import shutil
 import tempfile
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.storage import default_storage
@@ -17,7 +21,7 @@ from events.media_upload import (
     save_event_audio,
     save_event_image,
 )
-from events.models import Event, Guest, GuestbookEntry, InvitationTemplate
+from events.models import Event, EventPayment, Guest, GuestbookEntry, InvitationTemplate
 
 
 User = get_user_model()
@@ -308,7 +312,7 @@ class GuestPublishSyncTests(TestCase):
     def _publish(self, **payload):
         return self.client.post(
             f"/api/events/{self.event.id}/publish/",
-            payload,
+            {"free_publication": True, **payload},
             format="json",
         )
 
@@ -372,3 +376,201 @@ class GuestPublishSyncTests(TestCase):
         response = self._publish(deleted_guest_ids=[guest.pk])
         self.assertEqual(response.status_code, 200, response.data)
         self.assertFalse(Guest.objects.filter(pk=guest.pk).exists())
+
+    def test_free_publication_keeps_personal_links_disabled(self):
+        guest = Guest.objects.create(event=self.event, full_name="Vitrine")
+        response = self._publish()
+        self.assertEqual(response.status_code, 200, response.data)
+        guest.refresh_from_db()
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.payment_status, "free")
+        self.assertFalse(guest.has_personal_link)
+        self.assertEqual(
+            self.client.get(f"/api/inv/{self.event.slug}/?guest={guest.access_token}").data["guest"],
+            None,
+        )
+        rsvp = self.client.post(
+            f"/api/inv/{self.event.slug}/rsvp/",
+            {
+                "access_token": guest.access_token,
+                "answer": "yes",
+                "adults_count": 1,
+                "children_count": 0,
+            },
+            format="json",
+        )
+        self.assertEqual(rsvp.status_code, 404)
+
+    def test_unpaid_draft_cannot_be_published_without_free_choice(self):
+        response = self.client.post(
+            f"/api/events/{self.event.id}/publish/",
+            {},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 402)
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.status, Event.Status.DRAFT)
+
+
+@override_settings(KIBA_WEBHOOK_SECRET="test-webhook-secret")
+class EventPaymentFlowTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="payments@test.app",
+            password="test-pass-12345",
+        )
+        self.event = Event.objects.create(
+            organizer=self.user,
+            name="Paiement événement",
+            event_date=timezone.now() + timedelta(days=30),
+            slug="paiement-evenement",
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_mobile_money_payment_records_exact_amount_without_granting_quota(self):
+        provider_response = Mock(
+            ok=True,
+            json=Mock(
+                return_value={
+                    "id": "kiba-payment-1",
+                    "reference": "KIBA-REF-1",
+                    "status": "PENDING",
+                }
+            ),
+        )
+        with patch.dict(
+            "os.environ",
+            {"KIBA_PUBLIC_KEY": "pk_test", "KIBA_SECRET_KEY": "sk_test"},
+        ), patch("events.views.requests.post", return_value=provider_response) as send:
+            response = self.client.post(
+                f"/api/events/{self.event.id}/pay/",
+                {
+                    "guest_quota": 5,
+                    "payment_method": "mobile_money",
+                    "mobilenumber": "+243900000000",
+                },
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data["amount_due"], "2.50")
+        payment = EventPayment.objects.get(event=self.event)
+        self.assertEqual(payment.amount, Decimal("2.50"))
+        self.assertEqual(payment.guest_quota, 5)
+        self.assertEqual(payment.status, EventPayment.Status.PENDING)
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.paid_guest_quota, 0)
+        self.assertEqual(self.event.amount_paid_total, Decimal("0.00"))
+        sent = send.call_args.kwargs["json"]
+        self.assertEqual(sent["mobilenumber"], "+243900000000")
+        self.assertNotIn("payment_method", sent)
+        self.assertEqual(sent["amount"], "2.50")
+
+    def test_mobile_money_requires_a_number(self):
+        response = self.client.post(
+            f"/api/events/{self.event.id}/pay/",
+            {"guest_quota": 1, "payment_method": "mobile_money"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("mobilenumber", response.data)
+        self.assertFalse(EventPayment.objects.exists())
+
+    def test_card_payment_contains_a_return_url(self):
+        provider_response = Mock(
+            ok=True,
+            json=Mock(return_value={"id": "kiba-card-1", "status": "PENDING"}),
+        )
+        with patch.dict(
+            "os.environ",
+            {"KIBA_PUBLIC_KEY": "pk_test", "KIBA_SECRET_KEY": "sk_test"},
+        ), patch("events.views.requests.post", return_value=provider_response) as send:
+            response = self.client.post(
+                f"/api/events/{self.event.id}/pay/",
+                {"guest_quota": 2, "payment_method": "card"},
+                format="json",
+            )
+        self.assertEqual(response.status_code, 201, response.data)
+        sent = send.call_args.kwargs["json"]
+        self.assertEqual(sent["payment_method"], "card")
+        self.assertIn("/pay/success?eventId=", sent["return_url"])
+
+    def test_signed_webhook_publishes_and_allocates_links_idempotently(self):
+        guests = [
+            Guest.objects.create(event=self.event, full_name=f"Invité {index}")
+            for index in range(3)
+        ]
+        payment = EventPayment.objects.create(
+            event=self.event,
+            external_reference="inv-1-test-batch",
+            provider_payment_id="kiba-payment-2",
+            payment_method=EventPayment.Method.MOBILE_MONEY,
+            guest_quota=2,
+            amount=Decimal("1.00"),
+        )
+        payload = {
+            "event": "payment.success",
+            "data": {
+                "transaction_id": "kiba-payment-2",
+                "external_reference": payment.external_reference,
+                "amount_gross": "1.00",
+                "currency": "USD",
+            },
+        }
+        raw_body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        signature = hmac.new(
+            b"test-webhook-secret",
+            raw_body,
+            hashlib.sha256,
+        ).hexdigest()
+
+        def deliver():
+            return self.client.generic(
+                "POST",
+                "/api/payments/kibawallet/webhook/",
+                raw_body,
+                content_type="application/json",
+                HTTP_X_KIBA_SIGNATURE=signature,
+            )
+
+        first = deliver()
+        self.assertEqual(first.status_code, 200, first.data)
+        second = deliver()
+        self.assertEqual(second.status_code, 200, second.data)
+        self.event.refresh_from_db()
+        payment.refresh_from_db()
+        self.assertEqual(self.event.status, Event.Status.PUBLISHED)
+        self.assertEqual(self.event.payment_status, "succeeded")
+        self.assertEqual(self.event.paid_guest_quota, 2)
+        self.assertEqual(self.event.paid_guest_count, 2)
+        self.assertEqual(self.event.amount_paid_total, Decimal("1.00"))
+        self.assertEqual(payment.status, EventPayment.Status.SUCCEEDED)
+        self.assertEqual(
+            [guest.has_personal_link for guest in Guest.objects.filter(pk__in=[g.pk for g in guests]).order_by("id")],
+            [True, True, False],
+        )
+
+    def test_webhook_rejects_an_invalid_signature(self):
+        response = self.client.generic(
+            "POST",
+            "/api/payments/kibawallet/webhook/",
+            b'{"event":"payment.success","data":{}}',
+            content_type="application/json",
+            HTTP_X_KIBA_SIGNATURE="invalid",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_status_reports_uncovered_guest_delta(self):
+        self.event.status = Event.Status.PUBLISHED
+        self.event.paid_guest_quota = 2
+        self.event.paid_guest_count = 1
+        self.event.save()
+        Guest.objects.create(event=self.event, full_name="Couvert", has_personal_link=True)
+        Guest.objects.create(event=self.event, full_name="À couvrir")
+
+        response = self.client.get(f"/api/events/{self.event.id}/payment-status/")
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["pending_count"], 1)
+        self.assertEqual(response.data["available_credits"], 1)
+        self.assertEqual(response.data["amount_due"], "0.00")

@@ -2,7 +2,7 @@
 
 SaaS haut de gamme de gestion d'événements et d'invitations numériques interactives.
 **Frontend :** React Native + Expo (Expo Router v6, Reanimated, Ionicons) — iOS, Android, Web.
-**Backend (à venir) :** Django REST Framework (JWT) — le frontend est conçu pour consommer des API REST (`src/services/`, types dans `src/types/`).
+**Backend :** Django REST Framework (JWT), implémenté dans `backend/` — le frontend consomme l’API via `src/services/` avec les types dans `src/types/`.
 
 ## Arborescence cible
 
@@ -69,4 +69,5 @@ mk-event/
 - **Étape 4 — Organisateur** : tableau de bord, création d'invitation (stepper 4 étapes), éditeur, aperçu, partage.
 - **Étape 5 — Invités & RSVP** : liste, import, statuts, notifications.
 - **Étape 6 — Expérience invité** : invitation publique, RSVP, plan, playlist, cadeaux, QR, e-bar, photos, livre d'or.
-- **Étape 7 — Intégration API Django** : `apiClient`, services, cache d'état.
+- **Étape 7 — Intégration API Django** : client HTTP, services REST, synchronisation d'état et parcours d'authentification.
+- **Paiement invité** : parcours KibaWallet à 0,50 $ par lien individuel, confirmation webhook signée et crédits de liens.

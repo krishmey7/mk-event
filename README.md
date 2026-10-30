@@ -5,7 +5,7 @@ Application SaaS haut de gamme de gestion d'événements et d'**invitations num�
 ## Stack
 
 - **Frontend :** React Native · Expo (SDK 54) · Expo Router · TypeScript strict · Reanimated
-- **Backend (à venir) :** Django REST Framework (JWT)
+- **Backend :** Django REST Framework · API REST authentifiée par JWT (`backend/`)
 - **Design :** Quiet luxury 2026 — papier ivoire, encre chaude, champagne mat, Fraunces + Inter — `src/constants/theme.ts`
 
 ## Démarrage

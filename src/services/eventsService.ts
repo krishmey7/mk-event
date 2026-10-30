@@ -36,6 +36,15 @@ export interface PublishEventResult {
   guests: Guest[];
 }
 
+export interface StudioPublishPayload {
+  slug?: string;
+  guests?: PublishGuestInput[];
+  deleted_guest_keys?: string[];
+  deleted_guest_ids?: number[];
+  studio_config?: Record<string, unknown>;
+  theme_key?: string | null;
+}
+
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** Jeu de données de démonstration (fidèle à la maquette). */
@@ -251,16 +260,7 @@ export const eventsService = {
    */
   async publishEvent(
     id: number,
-    payload: {
-      slug?: string;
-      guests?: PublishGuestInput[];
-      /** Suppressions explicites demandées par le studio. */
-      deleted_guest_keys?: string[];
-      deleted_guest_ids?: number[];
-      /** Contenu édité (cover, story, galerie…) — requis pour l’affichage invité. */
-      studio_config?: Record<string, unknown>;
-      theme_key?: string | null;
-    },
+    payload: StudioPublishPayload & { free_publication?: boolean },
   ): Promise<PublishEventResult> {
     if (SIMULATE_BACKEND) {
       hydrateLibrary(MOCK_EVENTS);
@@ -277,6 +277,7 @@ export const eventsService = {
         ...MOCK_EVENTS[index],
         slug,
         status: 'published',
+        ...(payload.free_publication ? { payment_status: 'free' as const } : {}),
         theme_key: payload.theme_key ?? themeFromConfig ?? MOCK_EVENTS[index].theme_key ?? '',
         studio_config: payload.studio_config ?? MOCK_EVENTS[index].studio_config ?? null,
         guests_count: payload.guests?.length ?? MOCK_EVENTS[index].guests_count,
@@ -296,8 +297,9 @@ export const eventsService = {
         drink: null,
         checked_in: false,
         checked_in_at: null,
-        access_token: `sim-${item.studio_key}-${id}`,
+        access_token: payload.free_publication ? '' : `sim-${item.studio_key}-${id}`,
         studio_key: item.studio_key,
+        has_personal_link: !payload.free_publication,
         responded_at: null,
         created_at: now,
       }));
@@ -305,5 +307,43 @@ export const eventsService = {
       return { event: MOCK_EVENTS[index], guests };
     }
     return apiClient.post<PublishEventResult>(`/events/${id}/publish/`, payload);
+  },
+
+  /** Enregistre la configuration et les invités d’un brouillon sans le publier. */
+  async prepareEvent(
+    id: number,
+    payload: StudioPublishPayload,
+  ): Promise<PublishEventResult> {
+    if (SIMULATE_BACKEND) {
+      hydrateLibrary(MOCK_EVENTS);
+      await delay(320);
+      const event = MOCK_EVENTS.find((item) => item.id === id);
+      if (!event) throw new Error('Invitation introuvable');
+      return {
+        event,
+        guests: (payload.guests ?? []).map((item, index) => ({
+          id: item.guest_id ?? 9000 + index,
+          event: id,
+          full_name: item.full_name,
+          email: item.contact?.includes('@') ? item.contact : null,
+          phone: item.contact && !item.contact.includes('@') ? item.contact : null,
+          avatar_url: null,
+          rsvp_status: 'pending',
+          adults_count: Math.max(1, item.seats ?? 1),
+          children_count: 0,
+          table: null,
+          drink: null,
+          checked_in: false,
+          checked_in_at: null,
+          access_token: '',
+          studio_key: item.studio_key,
+          has_personal_link: false,
+          payment_batch: null,
+          responded_at: null,
+          created_at: new Date().toISOString(),
+        })),
+      };
+    }
+    return apiClient.post<PublishEventResult>(`/events/${id}/prepare/`, payload);
   },
 };

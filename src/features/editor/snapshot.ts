@@ -3,6 +3,7 @@
  */
 
 import type { ProgramStep, StoryMilestone } from '@/features/templates/elegance/data';
+import type { EventStatus } from '@/types';
 import type { GalleryStyleKey, Guest, PhotoFrameKey, RevealEffectKey, Venue } from '@/features/invitation/types';
 import {
   normalizeGalleryStyle,
@@ -11,6 +12,7 @@ import {
 } from '@/features/invitation/types';
 
 export interface EditorSnapshot {
+  eventStatus?: EventStatus;
   templateKey: string;
   dressCode: string;
   cover: {

@@ -108,7 +108,7 @@ interface EditorContextValue {
   /** Change la palette du modèle (studio + événement actif). */
   setThemeKey: (key: string) => void;
   /** Enregistre + publie (slug + sync invités / access_token Django). */
-  saveToLibrary: () => Promise<number>;
+  saveToLibrary: (mode?: 'publish' | 'free' | 'prepare') => Promise<number>;
   saving: boolean;
   /** true si la dernière publication a bien renvoyé des jetons Django. */
   published: boolean;
@@ -480,7 +480,8 @@ export function EditorProvider({
     [publishedSlug, cover.couple],
   );
   const [published, setPublished] = useState(
-    () => Boolean(snap?.guests?.some((guest) => Boolean(guest.accessToken))),
+    () => snap?.eventStatus === 'published'
+      || Boolean(snap?.guests?.some((guest) => Boolean(guest.accessToken))),
   );
 
   /* Effet d'apparition des contenus — testé en direct en prévisualisation. */
@@ -529,7 +530,7 @@ export function EditorProvider({
     [],
   );
 
-  const saveToLibrary = useCallback(async () => {
+  const saveToLibrary = useCallback(async (mode: 'publish' | 'free' | 'prepare' = 'publish') => {
     setSaving(true);
     try {
       const desiredSlug = slugifyCouple(cover.couple);
@@ -661,7 +662,7 @@ export function EditorProvider({
         );
       }
 
-      const publishedResult = await eventsService.publishEvent(event.id, {
+      const publishPayload = {
         slug: desiredSlug,
         guests: guests.map((guest) => ({
           guest_id: guest.serverId,
@@ -674,7 +675,13 @@ export function EditorProvider({
         deleted_guest_ids: removedGuestIds,
         studio_config: studioConfig,
         theme_key: cover.themeKey,
-      });
+      };
+      const publishedResult = mode === 'prepare'
+        ? await eventsService.prepareEvent(event.id, publishPayload)
+        : await eventsService.publishEvent(event.id, {
+            ...publishPayload,
+            ...(mode === 'free' ? { free_publication: true } : {}),
+          });
 
       if (activeEvent.eventId !== event.id || activeEvent.themeKey !== cover.themeKey) {
         activeEvent.setActiveEvent({
@@ -699,17 +706,20 @@ export function EditorProvider({
           ...guest,
           id: publishedGuest?.studio_key?.trim() || guest.id,
           serverId: publishedGuest?.id ?? guest.serverId,
-          accessToken: publishedGuest?.access_token ?? guest.accessToken,
+          accessToken: publishedGuest?.has_personal_link
+            ? publishedGuest.access_token
+            : '',
         };
       });
       setGuests(guestsWithTokens);
       setRemovedGuestKeys([]);
       setRemovedGuestIds([]);
       setPublishedSlug(publishedResult.event.slug);
-      setPublished(true);
+      setPublished(mode !== 'prepare');
 
       eventsService.saveSnapshot(event.id, {
         ...snapshot,
+        eventStatus: mode === 'prepare' ? 'draft' : 'published',
         cover: {
           ...snapshot.cover,
           photoUri: publishedCoverPhoto || snapshot.cover.photoUri,
@@ -910,4 +920,3 @@ export function useEditor(): EditorContextValue {
   }
   return ctx;
 }
-

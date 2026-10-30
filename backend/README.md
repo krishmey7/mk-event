@@ -25,14 +25,37 @@ Compte démo :
 | GET | `/api/auth/me/` | JWT |
 | GET/POST | `/api/events/` | JWT |
 | GET/PATCH | `/api/events/{id}/` | JWT |
-| POST | `/api/events/{id}/publish/` | JWT |
+| POST | `/api/events/{id}/prepare/` | JWT (enregistre le brouillon, sans publication) |
+| POST | `/api/events/{id}/publish/` | JWT (`free_publication: true` pour une vitrine gratuite) |
 | POST | `/api/events/{id}/media/` | JWT (multipart `file`) |
+| POST | `/api/events/{id}/pay/` | JWT (Mobile Money ou carte, 0,50 $ par lien) |
+| GET | `/api/events/{id}/payment-status/` | JWT |
 | GET/POST | `/api/events/{id}/guests/` | JWT |
 | PATCH/DELETE | `/api/events/{id}/guests/{id}/` | JWT |
 | POST | `/api/events/{id}/guests/{id}/check-in/` | JWT |
+| POST | `/api/events/{id}/guests/{id}/grant-link/` | JWT (consomme un crédit payé) |
 | GET/POST | `/api/events/{id}/tables/` | JWT |
+| POST | `/api/payments/kibawallet/webhook/` | signature HMAC `X-Kiba-Signature` |
 | GET | `/api/inv/{slug}/?guest=<access_token>` | public |
 | POST | `/api/inv/{slug}/rsvp/` | public |
+
+### Cycle de paiement des liens invités
+
+- Une publication gratuite utilise `POST /events/{id}/publish/` avec
+  `{"free_publication": true}` : la page publique est visible, mais les
+  invités n’ont pas de lien personnel ni d’accès RSVP individuel.
+- Pour une publication payante, le front enregistre d’abord le brouillon avec
+  `POST /events/{id}/prepare/`, puis initie le paiement avec
+  `guest_quota`, `payment_method` et, pour Mobile Money, `mobilenumber`.
+- Le statut reste en attente jusqu’au webhook KibaWallet signé. Un succès publie
+  le brouillon et attribue les crédits aux invités sans lien ; les crédits
+  restants peuvent être consommés plus tard avec `grant-link`.
+- Configurez `KIBA_PUBLIC_KEY`, `KIBA_SECRET_KEY` et `KIBA_WEBHOOK_SECRET`
+  côté serveur. La signature HMAC SHA-256 porte sur le corps HTTP JSON brut.
+  Le navigateur ne reçoit jamais les clés secrètes.
+- Les paiements en attente bloquent une nouvelle initiation pour éviter les
+  doubles débits. En cas de callback manquant, réconciliez le paiement avec
+  KibaWallet avant toute intervention manuelle.
 
 ## Front Expo
 
@@ -73,7 +96,10 @@ La base Postgres est externe (Supabase) → `DATABASE_URL` à renseigner.
    AWS S3, R2 et MinIO. Sans bucket, les uploads sont perdus à chaque
    redéploiement.
 4. Le build exécute `collectstatic` + `migrate`, puis `gunicorn`.
-5. Seed démo (optionnel, une fois) : `python manage.py seed_demo`.
+5. Configurez `KIBA_PUBLIC_KEY`, `KIBA_SECRET_KEY` et `KIBA_WEBHOOK_SECRET`
+   dans les variables Render avant d’activer les paiements.
+6. `seed_demo` est réservé au développement : son compte de démonstration a
+   un mot de passe fixe, ne l’exécutez pas en production.
 
 ### Vercel (front)
 

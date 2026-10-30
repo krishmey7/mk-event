@@ -75,6 +75,7 @@ class TableSerializer(serializers.ModelSerializer):
 
 class GuestSerializer(serializers.ModelSerializer):
     table_detail = TableSerializer(source="table", read_only=True)
+    access_token = serializers.SerializerMethodField()
 
     class Meta:
         model = Guest
@@ -93,6 +94,8 @@ class GuestSerializer(serializers.ModelSerializer):
             "drink",
             "access_token",
             "studio_key",
+            "has_personal_link",
+            "payment_batch",
             "checked_in",
             "checked_in_at",
             "responded_at",
@@ -102,12 +105,17 @@ class GuestSerializer(serializers.ModelSerializer):
             "id",
             "event",
             "access_token",
+            "has_personal_link",
+            "payment_batch",
             "checked_in",
             "checked_in_at",
             "responded_at",
             "created_at",
             "table_detail",
         )
+
+    def get_access_token(self, obj: Guest) -> str:
+        return obj.access_token if obj.has_personal_link else ""
 
 
 class GuestWriteSerializer(serializers.ModelSerializer):
@@ -158,6 +166,11 @@ class EventSerializer(serializers.ModelSerializer):
             "cover_image_url",
             "theme_key",
             "studio_config",
+            "payment_status",
+            "paid_guest_quota",
+            "paid_guest_count",
+            "amount_paid_total",
+            "currency",
             "guests_count",
             "rsvp_summary",
             "program",
@@ -171,6 +184,11 @@ class EventSerializer(serializers.ModelSerializer):
             "id",
             "organizer",
             "slug",
+            "payment_status",
+            "paid_guest_quota",
+            "paid_guest_count",
+            "amount_paid_total",
+            "currency",
             "guests_count",
             "rsvp_summary",
             "program",
@@ -327,3 +345,27 @@ class GuestbookCreateSerializer(serializers.Serializer):
     message = serializers.CharField(max_length=500, allow_blank=False, trim_whitespace=True)
     access_token = serializers.CharField(required=False, allow_blank=True, default="")
 
+
+class EventPaySerializer(serializers.Serializer):
+    """Payload pour initier un paiement KibaWallet sur un événement."""
+    guest_quota = serializers.IntegerField(
+        min_value=1,
+        help_text="Nombre d'invités pour lesquels payer (0,50 $ chacun).",
+    )
+    payment_method = serializers.ChoiceField(
+        choices=["mobile_money", "card"],
+        default="mobile_money",
+        help_text="Moyen de paiement souhaité.",
+    )
+    mobilenumber = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=32,
+    )
+
+    def validate(self, attrs):
+        if attrs["payment_method"] == "mobile_money" and not attrs.get("mobilenumber", "").strip():
+            raise serializers.ValidationError(
+                {"mobilenumber": "Le numéro Mobile Money est obligatoire."}
+            )
+        return attrs

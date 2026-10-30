@@ -29,6 +29,8 @@ import { useAppTheme } from '@/context/ThemePreferenceContext';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { buildGuestLink, guestAccessKey } from '@/features/invitation/qr';
 import { eventsService } from '@/services/eventsService';
+import { ApiError } from '@/services/apiClient';
+import { paymentsService } from '@/services/paymentsService';
 import type { Event } from '@/types';
 import { EVENT_STATUS_LABELS } from '@/types';
 import {
@@ -380,6 +382,7 @@ function InvitesTab({
   tables: string[];
   theme: AppTheme;
 }) {
+  const router = useRouter();
   const c = theme.colors;
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -409,17 +412,72 @@ function InvitesTab({
     );
   };
 
-  const shareGuestLink = (guest: ManagedGuest) => {
-    void Share.share({
-      message: guestInviteMessage(guest),
-      title: `Invitation pour ${guest.firstName}`,
-    });
+  const ensurePersonalLink = async (guest: ManagedGuest): Promise<ManagedGuest | null> => {
+    if (SIMULATE_BACKEND || guest.hasPersonalLink) return guest;
+    if (guest.apiId == null) {
+      setIoMessage('Cet invité est encore en cours d’enregistrement. Réessayez dans un instant.');
+      return null;
+    }
+
+    try {
+      const linked = await paymentsService.grantGuestLink(eventId, guest.apiId);
+      await loadEventManageFromServer(eventId);
+      return {
+        ...guest,
+        accessToken: linked.access_token,
+        hasPersonalLink: linked.has_personal_link,
+      };
+    } catch (requestError) {
+      if (!(requestError instanceof ApiError) || requestError.status !== 402) {
+        setIoMessage(
+          requestError instanceof ApiError
+            ? requestError.message
+            : 'Impossible d’activer le lien personnel.',
+        );
+        return null;
+      }
+
+      try {
+        const status = await paymentsService.getStatus(eventId);
+        const quota = Math.max(
+          0,
+          Math.ceil(Number(status.amount_due) / 0.5),
+          status.pending_count - status.available_credits,
+        );
+        if (quota < 1) {
+          setIoMessage('Aucun invité ne nécessite actuellement de lien personnel.');
+          return null;
+        }
+        router.push({
+          pathname: '/pay/[eventId]',
+          params: { eventId: String(eventId), guestQuota: String(quota) },
+        });
+      } catch (statusError) {
+        setIoMessage(
+          statusError instanceof ApiError
+            ? statusError.message
+            : 'Impossible de vérifier le quota de liens invités.',
+        );
+      }
+      return null;
+    }
   };
 
-  const shareWhatsApp = (guest: ManagedGuest) => {
+  const shareGuestLink = async (guest: ManagedGuest) => {
+    const linkedGuest = await ensurePersonalLink(guest);
+    if (!linkedGuest) return;
+    void Share.share({
+      message: guestInviteMessage(linkedGuest),
+      title: `Invitation pour ${linkedGuest.firstName}`,
+    }).catch(() => setIoMessage('Impossible d’ouvrir le partage de lien.'));
+  };
+
+  const shareWhatsApp = async (guest: ManagedGuest) => {
+    const linkedGuest = await ensurePersonalLink(guest);
+    if (!linkedGuest) return;
     void Linking.openURL(
-      `https://wa.me/?text=${encodeURIComponent(guestInviteMessage(guest))}`,
-    );
+      `https://wa.me/?text=${encodeURIComponent(guestInviteMessage(linkedGuest))}`,
+    ).catch(() => setIoMessage('Impossible d’ouvrir WhatsApp.'));
   };
 
   const applyImport = useCallback(
@@ -571,6 +629,7 @@ function InvitesTab({
                       {' · '}
                       {guest.seats} place{guest.seats > 1 ? 's' : ''}
                       {guest.table ? ` · ${guest.table}` : ''}
+                      {guest.hasPersonalLink === false ? ' · Lien en attente' : ''}
                       {guest.checkedIn ? ' · Entré' : ''}
                     </Text>
                   </View>

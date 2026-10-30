@@ -29,6 +29,7 @@ export async function resolveEditorBootSnapshot(
     const guests = mapApiGuestsToEditor(apiGuests);
     const fromServer = editorSnapshotFromStudioConfig(event.studio_config, guests);
     if (fromServer) {
+      fromServer.eventStatus = event.status;
       eventsService.saveSnapshot(eventId, fromServer);
       return fromServer;
     }

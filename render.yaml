@@ -48,6 +48,13 @@ services:
         value: MK Events <onboarding@resend.dev>
       - key: GOOGLE_OAUTH_CLIENT_IDS
         sync: false
+      # KibaWallet — identifiants exclusivement côté serveur.
+      - key: KIBA_PUBLIC_KEY
+        sync: false
+      - key: KIBA_SECRET_KEY
+        sync: false
+      - key: KIBA_WEBHOOK_SECRET
+        sync: false
       # Stockage média S3-compatible (Supabase Storage / AWS S3 / R2 / MinIO).
       # Render free n'a pas de disque : sans bucket, les uploads sont perdus.
       # Créer un bucket PUBLIC puis renseigner ces secrets dans le dashboard.

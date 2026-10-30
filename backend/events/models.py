@@ -69,6 +69,43 @@ class Event(models.Model):
         blank=True,
         help_text="Snapshot studio (cover, story, programme, galerie, thème…) servi à l’invité.",
     )
+    # Paiement par invité (0,50 $ / lien personnel)
+    payment_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("free", "Gratuit (0 invité)"),
+            ("pending", "En attente de paiement"),
+            ("succeeded", "Payé"),
+            ("failed", "Échec"),
+        ],
+        default="free",
+    )
+    paid_guest_quota = models.IntegerField(
+        default=0,
+        help_text="Nombre total d'invités pour lesquels le paiement a été effectué (crédit disponible).",
+    )
+    paid_guest_count = models.IntegerField(
+        default=0,
+        help_text="Nombre d'invités auxquels un lien personnel a déjà été attribué.",
+    )
+    amount_paid_total = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Montant total déjà payé pour cet événement (USD).",
+    )
+    currency = models.CharField(
+        max_length=3,
+        default="USD",
+        blank=True,
+    )
+    payment_reference = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        unique=True,
+        help_text="Référence externe du paiement KibaWallet associée à cet événement.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -86,6 +123,44 @@ class Event(models.Model):
                 candidate = f"{base}-{uuid.uuid4().hex[:6]}"
             self.slug = candidate
         super().save(*args, **kwargs)
+
+
+class EventPayment(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "En attente"
+        SUCCEEDED = "succeeded", "Réussi"
+        FAILED = "failed", "Échoué"
+
+    class Method(models.TextChoices):
+        MOBILE_MONEY = "mobile_money", "Mobile Money"
+        CARD = "card", "Carte"
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="payments")
+    external_reference = models.CharField(max_length=100, unique=True)
+    provider_payment_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        unique=True,
+    )
+    payment_method = models.CharField(max_length=20, choices=Method.choices)
+    guest_quota = models.PositiveIntegerField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default="USD")
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    paid_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.event_id} · {self.external_reference}"
 
 
 def make_studio_key() -> str:
@@ -151,6 +226,14 @@ class Guest(models.Model):
         null=True,
         default=make_studio_key,
         help_text="Clé studio stable, générée côté serveur.",
+    )
+    has_personal_link = models.BooleanField(default=False)
+    payment_batch = models.ForeignKey(
+        EventPayment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="guests",
     )
     checked_in = models.BooleanField(default=False)
     checked_in_at = models.DateTimeField(blank=True, null=True)

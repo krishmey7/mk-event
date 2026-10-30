@@ -28,6 +28,7 @@ export interface ManagedGuest {
   /** PK Django (absent en mode démo pur). */
   apiId?: number;
   accessToken?: string;
+  hasPersonalLink?: boolean;
   firstName: string;
   lastName: string;
   contact: string;
@@ -113,6 +114,7 @@ function mapApiGuest(guest: ApiGuest): ManagedGuest {
     id: String(guest.id),
     apiId: guest.id,
     accessToken: guest.access_token,
+    hasPersonalLink: guest.has_personal_link ?? Boolean(guest.access_token),
     firstName,
     lastName,
     contact: guest.email || guest.phone || '',

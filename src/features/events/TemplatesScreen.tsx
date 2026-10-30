@@ -34,6 +34,7 @@ import { normalizePhotoFrame } from '@/features/invitation/types';
 import { TEMPLATES, type TemplateDefinition } from '@/features/templates/registry';
 import { resolveTemplateTheme } from '@/features/templates/resolveTheme';
 import { EVENT_TYPE_LABELS, type EventType } from '@/types';
+import { EventCollectionNotice } from './components/EventCollectionNotice';
 
 const COMING_SOON: { name: string; tint: string; categories: EventType[] }[] = [
   { name: 'Romantique', tint: '#F4E4E0', categories: ['wedding'] },
@@ -78,6 +79,17 @@ export function TemplatesScreen() {
         <Text style={[styles.subtitle, { color: c.textSecondary }]}>
           {EVENT_TYPE_LABELS[type]} · teintés avec votre thème. Changez le type dans Profil.
         </Text>
+        <EventCollectionNotice
+          type={type}
+          colors={{
+            surface: c.surface,
+            border: c.border,
+            accent: c.accent,
+            accentSurface: c.accentMuted,
+            title: c.textPrimary,
+            body: c.textMuted,
+          }}
+        />
 
         <View style={styles.grid}>
           {templates.map((template) => (
@@ -297,6 +309,7 @@ function TemplateThumb({
         {template.name}
       </Text>
       <Text style={[styles.thumbMeta, { color: c.textMuted }]}>
+        {template.key === 'celebration' ? 'Version d’essai · ' : ''}
         {EVENT_TYPE_LABELS[template.category]} · {themed.label}
       </Text>
     </Pressable>

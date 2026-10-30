@@ -21,6 +21,7 @@ import { Logo } from '@/components/ui/Logo';
 import { useActiveEvent } from '@/context/ActiveEventContext';
 import { fontFamilies, radii, spacing } from '@/constants/theme';
 import type { EventType } from '@/types';
+import { EventCollectionNotice } from '@/features/events/components/EventCollectionNotice';
 import { SETUP_EVENT_TYPES, SETUP_THEMES, themeQuestionForEvent, toStoredThemeKey } from './setupOptions';
 
 const ACCENT = '#E07A5F';
@@ -100,6 +101,17 @@ export function EventSetupWizard() {
                 </Pressable>
               );
             })}
+            <EventCollectionNotice
+              type={eventType}
+              colors={{
+                surface: '#FFFCFA',
+                border: '#E8D9CE',
+                accent: ACCENT,
+                accentSurface: '#FCECE7',
+                title: INK,
+                body: MUTED,
+              }}
+            />
           </ScrollView>
           <Pressable
             accessibilityRole="button"

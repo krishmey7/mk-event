@@ -22,6 +22,7 @@ import {
 import { fontFamilies, radii, shadows, spacing } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemePreferenceContext';
 import type { EventType } from '@/types';
+import { EventCollectionNotice } from '@/features/events/components/EventCollectionNotice';
 
 type SheetStep = 'type' | 'theme';
 
@@ -137,29 +138,42 @@ export function EventSwitchSheet({
                 );
               })
             : (
-              <View style={styles.themeGrid}>
-                {SETUP_THEMES.map((item) => {
-                  const on = pickedTheme === item.key;
-                  return (
-                    <Pressable
-                      key={item.key}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: on }}
-                      onPress={() => setPickedTheme(item.key)}
-                      style={[
-                        styles.themeCard,
-                        { borderColor: c.border, backgroundColor: c.background },
-                        on && { borderColor: c.accent, backgroundColor: c.accentMuted },
-                      ]}
-                    >
-                      <View style={[styles.swatch, { backgroundColor: item.swatch }]} />
-                      <Text style={[styles.themeLabel, { color: c.textPrimary }]}>{item.label}</Text>
-                      <Text style={[styles.themeHint, { color: c.textMuted }]} numberOfLines={2}>
-                        {item.hint}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+              <View style={styles.themeStep}>
+                <EventCollectionNotice
+                  type={pickedType}
+                  colors={{
+                    surface: c.surface,
+                    border: c.border,
+                    accent: c.accent,
+                    accentSurface: c.accentMuted,
+                    title: c.textPrimary,
+                    body: c.textMuted,
+                  }}
+                />
+                <View style={styles.themeGrid}>
+                  {SETUP_THEMES.map((item) => {
+                    const on = pickedTheme === item.key;
+                    return (
+                      <Pressable
+                        key={item.key}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: on }}
+                        onPress={() => setPickedTheme(item.key)}
+                        style={[
+                          styles.themeCard,
+                          { borderColor: c.border, backgroundColor: c.background },
+                          on && { borderColor: c.accent, backgroundColor: c.accentMuted },
+                        ]}
+                      >
+                        <View style={[styles.swatch, { backgroundColor: item.swatch }]} />
+                        <Text style={[styles.themeLabel, { color: c.textPrimary }]}>{item.label}</Text>
+                        <Text style={[styles.themeHint, { color: c.textMuted }]} numberOfLines={2}>
+                          {item.hint}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
             )}
         </ScrollView>
@@ -249,6 +263,7 @@ const styles = StyleSheet.create({
   },
   sheetScroll: { flexGrow: 0 },
   sheetScrollContent: { gap: 10, paddingBottom: spacing.sm },
+  themeStep: { gap: spacing.md },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',

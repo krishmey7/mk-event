@@ -330,11 +330,11 @@ const styles = StyleSheet.create({
     ...landingFonts.regular,
     fontSize: 22,
     lineHeight: 28,
-    color: 'rgba(255, 249, 245, 0.32)',
+    color: 'rgba(255, 249, 245, 0.46)',
     flexShrink: 1,
   },
   stickyLabelReached: {
-    color: 'rgba(255, 249, 245, 0.62)',
+    color: 'rgba(255, 249, 245, 0.68)',
   },
   stickyLabelActive: {
     ...landingFonts.medium,
@@ -350,12 +350,12 @@ const styles = StyleSheet.create({
     ...landingFonts.regular,
     fontSize: 26,
     lineHeight: 32,
-    color: 'rgba(255, 249, 245, 0.38)',
+    color: 'rgba(255, 249, 245, 0.46)',
     marginBottom: 14,
     marginTop: 2,
   },
   mobileTitleReached: {
-    color: 'rgba(255, 249, 245, 0.7)',
+    color: 'rgba(255, 249, 245, 0.74)',
   },
   mobileTitleActive: {
     ...landingFonts.medium,
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cardTagActive: {
-    color: LANDING.coral,
+    color: LANDING.coralDeep,
   },
   cardTitle: {
     ...landingFonts.bold,

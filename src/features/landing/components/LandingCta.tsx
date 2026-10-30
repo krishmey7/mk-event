@@ -19,12 +19,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { landingFonts } from '../landingFonts';
 import { LANDING } from '../landingTokens';
 
-type Variant = 'coral' | 'white' | 'ink';
+type Variant = 'coral' | 'white' | 'ink' | 'ghost';
 
 const GLOW = {
   coral: {
-    rest: '0 10px 28px rgba(224, 122, 95, 0.35)',
-    hover: '0 18px 52px rgba(224, 122, 95, 0.58)',
+    rest: '0 10px 28px rgba(180, 85, 63, 0.32)',
+    hover: '0 18px 52px rgba(180, 85, 63, 0.52)',
   },
   white: {
     rest: '0 8px 24px rgba(42, 31, 36, 0.1)',
@@ -33,6 +33,10 @@ const GLOW = {
   ink: {
     rest: '0 10px 28px rgba(42, 31, 36, 0.22)',
     hover: '0 16px 44px rgba(42, 31, 36, 0.32)',
+  },
+  ghost: {
+    rest: '0 8px 24px rgba(12, 7, 12, 0.16)',
+    hover: '0 14px 36px rgba(12, 7, 12, 0.3)',
   },
 } as const;
 
@@ -78,23 +82,31 @@ export function LandingCta({
   };
 
   const shell =
-    variant === 'white' ? styles.shellWhite : variant === 'ink' ? styles.shellInk : styles.shellCoral;
+    variant === 'white'
+      ? styles.shellWhite
+      : variant === 'ink'
+        ? styles.shellInk
+        : variant === 'ghost'
+          ? styles.shellGhost
+          : styles.shellCoral;
   const labelStyle =
     variant === 'white'
       ? styles.labelDark
-      : variant === 'ink'
+      : variant === 'ink' || variant === 'ghost'
         ? styles.labelInk
         : styles.labelLight;
 
   const webScale = pressed ? 0.97 : hovered ? 1.05 : 1;
   const webLift = pressed ? 0 : hovered ? -2 : 0;
   const glow = GLOW[variant];
+  const arrowColor = variant === 'white' ? LANDING.plum : '#FFFFFF';
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       onPress={onPress}
+      hitSlop={compact ? 6 : undefined}
       onHoverIn={() => {
         setHovered(true);
         animateNative(1.05, 4);
@@ -145,7 +157,7 @@ export function LandingCta({
             <Ionicons
               name="arrow-forward"
               size={compact ? 14 : 16}
-              color={variant === 'coral' ? '#FFFFFF' : LANDING.plum}
+              color={arrowColor}
             />
           </Animated.View>
         ) : null}
@@ -165,14 +177,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 26,
   },
   shellCompact: {
-    minHeight: 36,
+    minHeight: 40,
     paddingHorizontal: 14,
   },
   shellCoral: {
-    backgroundColor: LANDING.coral,
+    backgroundColor: LANDING.coralDeep,
     ...(Platform.OS !== 'web'
       ? {
-          shadowColor: LANDING.coral,
+          shadowColor: LANDING.coralDeep,
           shadowOpacity: 0.45,
           shadowRadius: 18,
           shadowOffset: { width: 0, height: 8 },
@@ -185,6 +197,11 @@ const styles = StyleSheet.create({
   },
   shellInk: {
     backgroundColor: LANDING.text,
+  },
+  shellGhost: {
+    backgroundColor: 'rgba(255, 249, 245, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 249, 245, 0.38)',
   },
   label: {
     ...landingFonts.semibold,

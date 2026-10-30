@@ -65,7 +65,12 @@ function SectionIntro({
     <LandingReveal y={20} duration={600}>
       <View style={center ? styles.centerHead : undefined}>
         <Text style={[styles.kicker, center && styles.centerText]}>{kicker}</Text>
-        <Text style={[styles.title, center && styles.centerText]}>{title}</Text>
+        <Text
+          accessibilityRole="header"
+          style={[styles.title, center && styles.centerText]}
+        >
+          {title}
+        </Text>
         {lead ? <Text style={[styles.lead, center && styles.centerText]}>{lead}</Text> : null}
       </View>
     </LandingReveal>
@@ -102,7 +107,7 @@ export function PlatformSection({ onLayout }: { onLayout?: (e: LayoutChangeEvent
                     <Ionicons
                       name={icon as keyof typeof Ionicons.glyphMap}
                       size={17}
-                      color={LANDING.coral}
+                      color={LANDING.coralDeep}
                     />
                   </View>
                   <Text style={styles.miniFeatureLabel}>{label}</Text>
@@ -165,7 +170,9 @@ export function HowItWorksSection({ onLayout }: { onLayout?: (e: LayoutChangeEve
       <LandingReveal y={20} duration={600}>
         <View style={styles.howHead}>
           <Text style={styles.howKicker}>Comment ça marche</Text>
-          <Text style={styles.howTitle}>De l’idée au jour J, en un seul parcours</Text>
+          <Text accessibilityRole="header" style={styles.howTitle}>
+            De l’idée au jour J, en un seul parcours
+          </Text>
           <Text style={styles.howLead}>
             Du modèle choisi à l’accueil des invités — sans fichier à télécharger.
           </Text>
@@ -309,7 +316,7 @@ export function CapabilitiesSection() {
                 <Text style={styles.compareColHeadAvec}>Avec MK</Text>
                 {COMPARISON_ROWS.map((row) => (
                   <View key={row.with} style={styles.compareRow}>
-                    <Ionicons name="checkmark-outline" size={18} color={LANDING.coral} />
+                    <Ionicons name="checkmark-outline" size={18} color={LANDING.coralDeep} />
                     <Text style={styles.compareTextAvec}>{row.with}</Text>
                   </View>
                 ))}
@@ -334,7 +341,7 @@ export function CapabilitiesSection() {
                   <Ionicons
                     name={compareMode === 'avec' ? 'checkmark-outline' : 'close-outline'}
                     size={18}
-                    color={compareMode === 'avec' ? LANDING.coral : LANDING.textFaint}
+                    color={compareMode === 'avec' ? LANDING.coralDeep : LANDING.textFaint}
                   />
                   <Text
                     style={
@@ -373,7 +380,7 @@ export function CapabilitiesSection() {
                   {!isDesktop && active ? (
                     <View style={styles.capExpand}>
                       <View style={styles.capExpandIcon}>
-                        <Ionicons name={item.icon} size={20} color={LANDING.coral} />
+                        <Ionicons name={item.icon} size={20} color={LANDING.coralDeep} />
                       </View>
                       <Text style={styles.capExpandText}>{item.text}</Text>
                     </View>
@@ -386,7 +393,7 @@ export function CapabilitiesSection() {
           {isDesktop ? (
             <View style={styles.capDetail}>
               <View style={styles.capDetailIcon}>
-                <Ionicons name={selected.icon} size={28} color={LANDING.coral} />
+                <Ionicons name={selected.icon} size={28} color={LANDING.coralDeep} />
               </View>
               <Text style={styles.capDetailNum}>
                 {String(activeCap + 1).padStart(2, '0')}
@@ -403,9 +410,29 @@ export function CapabilitiesSection() {
 
 export function TemplatesShowcase({ onLayout }: { onLayout?: (e: LayoutChangeEvent) => void }) {
   const scrollRef = useRef<ScrollView>(null);
+  const { isDesktop } = useBreakpoint();
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
+  const viewportW = useRef(0);
+  const contentW = useRef(0);
+  const scrollX = useRef(0);
+  const maxOffset = useRef(0);
   const showcases = TEMPLATES.filter((t) =>
     ['aurore', 'neon', 'pellicule', 'hiver', 'elegance', 'celebration', 'summit'].includes(t.key),
   );
+
+  const syncBounds = () => {
+    maxOffset.current = Math.max(0, contentW.current - viewportW.current);
+    const x = scrollX.current;
+    setCanGoBack(x > 2);
+    setCanGoForward(x < maxOffset.current - 2);
+  };
+
+  const scrollBy = (dir: -1 | 1) => {
+    const step = Math.min(560, Math.max(320, viewportW.current * 0.72));
+    const next = Math.max(0, Math.min(maxOffset.current, scrollX.current + dir * step));
+    scrollRef.current?.scrollTo({ x: next, animated: true });
+  };
 
   return (
     <SectionShell onLayout={onLayout} padTop={48}>
@@ -414,21 +441,78 @@ export function TemplatesShowcase({ onLayout }: { onLayout?: (e: LayoutChangeEve
         title="Les modèles"
         lead="Chaque univers garde sa mise en page. Vous personnalisez le contenu."
       />
+      {isDesktop ? (
+        <View style={styles.galleryNav}>
+          <Text style={styles.galleryNavHint}>Faire défiler la collection</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Modèles précédents"
+            accessibilityState={{ disabled: !canGoBack }}
+            disabled={!canGoBack}
+            onPress={() => scrollBy(-1)}
+            style={({ pressed }) => [
+              styles.galleryArrow,
+              !canGoBack && styles.galleryArrowDisabled,
+              pressed && canGoBack && styles.pressed,
+            ]}
+          >
+            <Ionicons name="arrow-back" size={18} color={LANDING.text} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Modèles suivants"
+            accessibilityState={{ disabled: !canGoForward }}
+            disabled={!canGoForward}
+            onPress={() => scrollBy(1)}
+            style={({ pressed }) => [
+              styles.galleryArrow,
+              !canGoForward && styles.galleryArrowDisabled,
+              pressed && canGoForward && styles.pressed,
+            ]}
+          >
+            <Ionicons name="arrow-forward" size={18} color={LANDING.text} />
+          </Pressable>
+        </View>
+      ) : null}
       <LandingReveal y={20} duration={600}>
-        <ScrollView
-          ref={scrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.galleryTrack}
-          decelerationRate="fast"
-          snapToInterval={252}
+        <View
+          onLayout={(event) => {
+            viewportW.current = event.nativeEvent.layout.width;
+            syncBounds();
+          }}
         >
-          {showcases.map((template) => (
-            <View key={template.key} style={styles.galleryItem}>
-              <MarketingTemplatePreview template={template} width={232} />
-            </View>
-          ))}
-        </ScrollView>
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.galleryTrack}
+            decelerationRate="fast"
+            snapToInterval={252}
+            scrollEventThrottle={16}
+            onScroll={(event) => {
+              const x = event.nativeEvent.contentOffset.x;
+              scrollX.current = x;
+              setCanGoBack((current) => {
+                const next = x > 2;
+                return current === next ? current : next;
+              });
+              setCanGoForward((current) => {
+                const next = x < maxOffset.current - 2;
+                return current === next ? current : next;
+              });
+            }}
+            onContentSizeChange={(width) => {
+              contentW.current = width;
+              syncBounds();
+            }}
+          >
+            {showcases.map((template) => (
+              <View key={template.key} style={styles.galleryItem}>
+                <MarketingTemplatePreview template={template} width={232} />
+              </View>
+            ))}
+          </ScrollView>
+        </View>
       </LandingReveal>
     </SectionShell>
   );
@@ -488,7 +572,9 @@ export function AudienceSection() {
           <View style={styles.whoBadge}>
             <Text style={styles.whoBadgeLabel}>Pour qui ?</Text>
           </View>
-          <Text style={styles.whoTitle}>À qui s’adresse MK Events ?</Text>
+          <Text accessibilityRole="header" style={styles.whoTitle}>
+            À qui s’adresse MK Events ?
+          </Text>
           <Text style={styles.whoLead}>
             Des parcours adaptés à chaque type d’événement.
           </Text>
@@ -633,7 +719,7 @@ export function FinalCtaSection() {
         <View style={styles.finalCard}>
           <Text style={styles.finalTitle}>Créez votre invitation</Text>
           <Text style={styles.finalText}>Publiez quand vous êtes prêt.</Text>
-          <LandingCta label="Commencer" onPress={() => router.push('/onboarding')} />
+          <LandingCta label="Créer mon invitation" onPress={() => router.push('/onboarding')} />
         </View>
       </LandingReveal>
     </SectionShell>
@@ -648,16 +734,36 @@ export function MarketingFooter() {
       <View style={styles.footerInner}>
         <Text style={styles.footerBrand}>MK Events</Text>
         <View style={styles.footerLinks}>
-          <Pressable onPress={() => router.push('/cgu')} hitSlop={8}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/cgu')}
+            hitSlop={8}
+            style={styles.footerLinkHit}
+          >
             <Text style={styles.footerLink}>CGU</Text>
           </Pressable>
-          <Pressable onPress={() => router.push('/confidentialite')} hitSlop={8}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/confidentialite')}
+            hitSlop={8}
+            style={styles.footerLinkHit}
+          >
             <Text style={styles.footerLink}>Confidentialité</Text>
           </Pressable>
-          <Pressable onPress={() => router.push('/login')} hitSlop={8}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/login')}
+            hitSlop={8}
+            style={styles.footerLinkHit}
+          >
             <Text style={styles.footerLink}>Connexion</Text>
           </Pressable>
-          <Pressable onPress={() => router.push('/onboarding')} hitSlop={8}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/onboarding')}
+            hitSlop={8}
+            style={styles.footerLinkHit}
+          >
             <Text style={styles.footerLink}>Commencer</Text>
           </Pressable>
         </View>
@@ -693,7 +799,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 2.2,
     textTransform: 'uppercase',
-    color: LANDING.coral,
+    color: LANDING.coralDeep,
     marginBottom: 10,
   },
   title: {
@@ -792,7 +898,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
-    color: LANDING.coral,
+    color: LANDING.coralDeep,
     marginBottom: 14,
   },
   howTitle: {
@@ -855,7 +961,7 @@ const styles = StyleSheet.create({
     borderColor: LANDING.border,
   },
   comparePill: {
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: 18,
     borderRadius: 999,
     alignItems: 'center',
@@ -865,12 +971,12 @@ const styles = StyleSheet.create({
     backgroundColor: LANDING.surface,
   },
   comparePillAvec: {
-    backgroundColor: LANDING.coral,
+    backgroundColor: LANDING.coralDeep,
   },
   comparePillLabel: {
     ...landingFonts.medium,
     fontSize: 13,
-    color: LANDING.textFaint,
+    color: LANDING.textMuted,
   },
   comparePillLabelSans: {
     ...landingFonts.semibold,
@@ -907,7 +1013,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
-    color: LANDING.textFaint,
+    color: LANDING.textMuted,
     marginBottom: 4,
   },
   compareColHeadAvec: {
@@ -915,7 +1021,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
-    color: LANDING.coral,
+    color: LANDING.coralInk,
     marginBottom: 4,
   },
   compareRow: {
@@ -971,11 +1077,11 @@ const styles = StyleSheet.create({
     ...landingFonts.semibold,
     fontSize: 13,
     letterSpacing: 1.2,
-    color: LANDING.textFaint,
+    color: LANDING.textMuted,
     minWidth: 28,
   },
   capNumActive: {
-    color: LANDING.coral,
+    color: LANDING.coralDeep,
   },
   capTitle: {
     flex: 1,
@@ -1031,7 +1137,7 @@ const styles = StyleSheet.create({
     ...landingFonts.semibold,
     fontSize: 12,
     letterSpacing: 1.8,
-    color: LANDING.coral,
+    color: LANDING.coralDeep,
     marginBottom: 10,
   },
   capDetailTitle: {
@@ -1047,6 +1153,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 26,
     color: LANDING.textMuted,
+  },
+  galleryNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: -12,
+    marginBottom: 14,
+  },
+  galleryNavHint: {
+    ...landingFonts.medium,
+    fontSize: 12,
+    letterSpacing: 0.2,
+    color: LANDING.textMuted,
+    marginRight: 2,
+  },
+  galleryArrow: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: LANDING.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: LANDING.surface,
+  },
+  galleryArrowDisabled: {
+    opacity: 0.38,
   },
   galleryTrack: {
     paddingRight: 20,
@@ -1071,7 +1205,7 @@ const styles = StyleSheet.create({
     ...landingFonts.semibold,
     fontSize: 12,
     letterSpacing: 0.2,
-    color: LANDING.coral,
+    color: LANDING.coralInk,
   },
   whoTitle: {
     ...landingFonts.bold,
@@ -1150,7 +1284,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   whoTab: {
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: 16,
     borderRadius: 999,
     borderWidth: 1,
@@ -1160,8 +1294,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   whoTabActive: {
-    backgroundColor: LANDING.coral,
-    borderColor: LANDING.coral,
+    backgroundColor: LANDING.coralDeep,
+    borderColor: LANDING.coralDeep,
   },
   whoTabLabel: {
     ...landingFonts.medium,
@@ -1198,7 +1332,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: LANDING.coral,
+    backgroundColor: LANDING.coralDeep,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
@@ -1216,9 +1350,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   whoNavBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: LANDING.borderStrong,
     alignItems: 'center',
@@ -1329,9 +1463,11 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 16,
+    columnGap: 16,
+    rowGap: 8,
   },
   footerBrand: {
     ...landingFonts.bold,
@@ -1340,7 +1476,14 @@ const styles = StyleSheet.create({
   },
   footerLinks: {
     flexDirection: 'row',
-    gap: 20,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    columnGap: 20,
+    rowGap: 2,
+  },
+  footerLinkHit: {
+    minHeight: 44,
+    justifyContent: 'center',
   },
   footerLink: {
     ...landingFonts.medium,

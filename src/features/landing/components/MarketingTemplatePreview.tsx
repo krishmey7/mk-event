@@ -153,6 +153,6 @@ const styles = StyleSheet.create({
   category: {
     ...landingFonts.regular,
     fontSize: 12,
-    color: LANDING.textFaint,
+    color: LANDING.textMuted,
   },
 });

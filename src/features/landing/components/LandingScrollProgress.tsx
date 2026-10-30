@@ -27,8 +27,10 @@ export function LandingScrollProgress({
   progress: number;
   onSelect: (id: LandingSectionId) => void;
 }) {
-  const { isDesktop } = useBreakpoint();
+  const { width } = useBreakpoint();
   const clamped = Math.max(0, Math.min(1, progress));
+  // Le rail n’apparaît que lorsqu’il ne chevauche pas le contenu.
+  const showRail = width >= 1500;
 
   return (
     <>
@@ -36,7 +38,7 @@ export function LandingScrollProgress({
         <View style={[styles.topFill, { width: `${clamped * 100}%` }]} />
       </View>
 
-      {isDesktop ? (
+      {showRail ? (
         <View style={styles.rail}>
           <View style={styles.railLine}>
             <View style={[styles.railFill, { height: `${clamped * 100}%` }]} />
@@ -105,7 +107,7 @@ const styles = StyleSheet.create({
   },
   railLine: {
     width: 2,
-    height: 112,
+    height: 196,
     borderRadius: 99,
     overflow: 'hidden',
     backgroundColor: LANDING.borderStrong,
@@ -118,7 +120,7 @@ const styles = StyleSheet.create({
   },
   items: { gap: 10 },
   item: {
-    height: 20,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -147,9 +149,9 @@ const styles = StyleSheet.create({
   },
   label: {
     ...landingFonts.medium,
-    fontSize: 11,
-    color: LANDING.textFaint,
-    minWidth: 90,
+    fontSize: 12,
+    color: LANDING.textMuted,
+    minWidth: 96,
   },
   labelActive: {
     color: LANDING.text,

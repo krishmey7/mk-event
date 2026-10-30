@@ -30,6 +30,8 @@ export function PwaInstallPrompt() {
 
   useEffect(() => {
     if (!isWebRuntime() || isPwaInstalled() || wasPwaPromptDismissed()) return;
+    // Invite réservée au mobile : jamais par-dessus le hero sur desktop.
+    if (platform !== 'ios' && platform !== 'android') return;
 
     const onBeforeInstall = (event: Event) => {
       event.preventDefault();
@@ -41,13 +43,13 @@ export function PwaInstallPrompt() {
     const timer = window.setTimeout(() => {
       if (isPwaInstalled() || wasPwaPromptDismissed()) return;
       setVisible(true);
-    }, 2200);
+    }, 12000);
 
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener('beforeinstallprompt', onBeforeInstall);
     };
-  }, []);
+  }, [platform]);
 
   const close = useCallback(() => {
     dismissPwaPrompt();

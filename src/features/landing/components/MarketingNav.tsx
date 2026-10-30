@@ -25,22 +25,24 @@ const LINKS: Array<[LandingAnchor, string]> = [
 function NavActions({
   compact,
   onDark,
+  showLogin = true,
   onLogin,
   onStart,
 }: {
   compact?: boolean;
   onDark?: boolean;
+  showLogin?: boolean;
   onLogin: () => void;
   onStart: () => void;
 }) {
   return (
     <View style={[styles.actions, compact && styles.actionsCompact]}>
-      {!compact ? (
+      {!compact && showLogin ? (
         <Pressable
           accessibilityRole="button"
           onPress={onLogin}
           hitSlop={8}
-          style={({ pressed }) => pressed && styles.pressed}
+          style={({ pressed }) => [styles.loginHit, pressed && styles.pressed]}
         >
           <Text style={[styles.login, onDark && styles.loginOnDark]}>Connexion</Text>
         </Pressable>
@@ -70,12 +72,6 @@ export function MarketingNav({
   const topOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (!isDesktop) {
-      floatOpacity.setValue(0);
-      floatY.setValue(-100);
-      topOpacity.setValue(1);
-      return;
-    }
     Animated.parallel([
       Animated.timing(floatOpacity, {
         toValue: scrolled ? 1 : 0,
@@ -96,7 +92,7 @@ export function MarketingNav({
         useNativeDriver: true,
       }),
     ]).start();
-  }, [floatOpacity, floatY, isDesktop, scrolled, topOpacity]);
+  }, [floatOpacity, floatY, scrolled, topOpacity]);
 
   const goLogin = () => router.push('/login');
   const goStart = () => router.push('/onboarding');
@@ -104,12 +100,13 @@ export function MarketingNav({
   return (
     <>
       <Animated.View
-        pointerEvents={isDesktop && scrolled ? 'none' : 'auto'}
+        pointerEvents={scrolled ? 'none' : 'auto'}
+        accessibilityElementsHidden={scrolled}
         style={[
           styles.bar,
           {
             paddingTop: Math.max(insets.top, 12),
-            opacity: isDesktop ? topOpacity : 1,
+            opacity: topOpacity,
           },
         ]}
       >
@@ -121,6 +118,7 @@ export function MarketingNav({
               {LINKS.map(([anchor, label]) => (
                 <Pressable
                   key={anchor}
+                  accessibilityRole="button"
                   onPress={() => onJump(anchor)}
                   hitSlop={8}
                   style={({ pressed }) => pressed && styles.pressed}
@@ -131,35 +129,41 @@ export function MarketingNav({
             </View>
           ) : null}
 
-          <NavActions onDark onLogin={goLogin} onStart={goStart} />
+          <NavActions onDark showLogin={isDesktop} onLogin={goLogin} onStart={goStart} />
         </View>
       </Animated.View>
 
-      {isDesktop ? (
-        <Animated.View
-          pointerEvents={scrolled ? 'auto' : 'none'}
+      <Animated.View
+        pointerEvents={scrolled ? 'auto' : 'none'}
+        style={[
+          styles.floatWrap,
+          {
+            top: Math.max(insets.top, 12) + 4,
+            opacity: floatOpacity,
+            transform: [{ translateY: floatY }],
+          },
+        ]}
+      >
+        <View
           style={[
-            styles.floatWrap,
-            {
-              top: Math.max(insets.top, 12) + 4,
-              opacity: floatOpacity,
-              transform: [{ translateY: floatY }],
-            },
+            styles.floatPill,
+            Platform.OS === 'web' ? styles.floatPillWeb : styles.floatPillNative,
           ]}
         >
-          <View
-            style={[
-              styles.floatPill,
-              Platform.OS === 'web' ? styles.floatPillWeb : styles.floatPillNative,
-            ]}
+          <Pressable
+            onPress={() => onJump('platform')}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="MK Events — aller à la plateforme"
           >
-            <Pressable onPress={() => onJump('platform')} hitSlop={6}>
-              <Logo size="sm" variant="ink" />
-            </Pressable>
+            <Logo size="sm" variant="ink" />
+          </Pressable>
+          {isDesktop ? (
             <View style={styles.floatLinks}>
               {LINKS.map(([anchor, label]) => (
                 <Pressable
                   key={anchor}
+                  accessibilityRole="button"
                   onPress={() => onJump(anchor)}
                   hitSlop={6}
                   style={({ pressed }) => [styles.floatLinkHit, pressed && styles.pressed]}
@@ -168,10 +172,10 @@ export function MarketingNav({
                 </Pressable>
               ))}
             </View>
-            <NavActions compact onLogin={goLogin} onStart={goStart} />
-          </View>
-        </Animated.View>
-      ) : null}
+          ) : null}
+          <NavActions compact showLogin={false} onLogin={goLogin} onStart={goStart} />
+        </View>
+      </Animated.View>
     </>
   );
 }
@@ -210,8 +214,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: LANDING.border,
@@ -240,8 +244,9 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   floatLinkHit: {
+    minHeight: 44,
+    justifyContent: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
     borderRadius: 999,
   },
   floatLink: {
@@ -273,6 +278,11 @@ const styles = StyleSheet.create({
     ...landingFonts.medium,
     fontSize: 14,
     color: LANDING.text,
+  },
+  loginHit: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
   },
   loginOnDark: {
     color: 'rgba(255, 249, 245, 0.82)',

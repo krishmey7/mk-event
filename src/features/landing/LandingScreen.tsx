@@ -20,6 +20,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useBreakpoint } from '@/hooks/useBreakpoint';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { LandingAtmosphere } from './LandingAtmosphere';
 import { MarketingNav } from './components/MarketingNav';
 import { HeroMarquee } from './components/HeroMarquee';
@@ -51,6 +52,7 @@ export function LandingScreen() {
   const insets = useSafeAreaInsets();
   const { height: windowH } = useWindowDimensions();
   const { isTablet, isDesktop } = useBreakpoint();
+  const reducedMotion = useReducedMotion();
   const scrollRef = useRef<ScrollView>(null);
   const [anchors, setAnchors] = useState({
     platform: 0,
@@ -106,7 +108,43 @@ export function LandingScreen() {
     };
   }, []);
 
+  /* Anneau de focus visible + neutralisation CSS des animations décoratives. */
   useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const id = 'mk-landing-a11y';
+    if (document.getElementById(id)) return;
+    const style = document.createElement('style');
+    style.id = id;
+    style.textContent = `
+      #root [role="button"]:focus-visible,
+      #root a:focus-visible,
+      #root button:focus-visible,
+      #root [tabindex]:focus-visible {
+        outline: 2px solid #B4553F;
+        outline-offset: 3px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #root *, #root *::before, #root *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => style.remove();
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      fade.setValue(1);
+      rise.setValue(0);
+      visualFade.setValue(1);
+      visualRise.setValue(0);
+      cueFade.setValue(1);
+      cueRise.setValue(0);
+      return;
+    }
     const ease = Easing.out(Easing.cubic);
     Animated.parallel([
       Animated.timing(fade, {
@@ -150,12 +188,13 @@ export function LandingScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [cueFade, cueRise, fade, rise, visualFade, visualRise]);
+  }, [cueFade, cueRise, fade, reducedMotion, rise, visualFade, visualRise]);
 
   const jump = (anchor: keyof typeof anchors) => {
     const y = anchors[anchor];
     if (y > 0) {
-      scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+      // Laisse respirer la barre flottante (~68 px) au-dessus du titre de section.
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 88), animated: true });
     }
   };
 
@@ -232,7 +271,16 @@ export function LandingScreen() {
             },
           )}
         >
-          <View style={[styles.hero, styles.heroLit, { minHeight: heroMin }]}>
+          <View
+            style={[
+              styles.hero,
+              styles.heroLit,
+              {
+                minHeight: heroMin,
+                paddingHorizontal: isDesktop ? 40 : 20,
+              },
+            ]}
+          >
             <View
               style={[
                 styles.heroBody,
@@ -248,10 +296,13 @@ export function LandingScreen() {
                 <Animated.View
                   style={[
                     styles.heroTitleCol,
+                    !isDesktop && styles.heroColMobile,
                     { opacity: fade, transform: [{ translateY: rise }] },
                   ]}
                 >
+                  <Text style={styles.eyebrow}>Invitations numériques · RSVP · Pass QR</Text>
                   <Text
+                    accessibilityRole="header"
                     style={[
                       styles.title,
                       {
@@ -269,6 +320,7 @@ export function LandingScreen() {
                 <Animated.View
                   style={[
                     styles.heroSideCol,
+                    !isDesktop && styles.heroColMobile,
                     { opacity: visualFade, transform: [{ translateY: visualRise }] },
                   ]}
                 >
@@ -277,12 +329,20 @@ export function LandingScreen() {
                     télécharger.
                   </Text>
                   <View style={styles.heroCtaRow}>
-                  <LandingCta
-                    label="Rejoindre"
-                    withArrow
-                    onPress={() => router.push('/onboarding')}
-                  />
-                </View>
+                    <LandingCta
+                      label="Créer mon invitation"
+                      withArrow
+                      onPress={() => router.push('/onboarding')}
+                    />
+                    <LandingCta
+                      label="Voir les modèles"
+                      variant="ghost"
+                      onPress={() => jump('models')}
+                    />
+                  </View>
+                  <Text style={styles.heroProof}>
+                    Sans application · Lien personnel · RSVP en direct
+                  </Text>
                 </Animated.View>
               </View>
             </View>
@@ -393,11 +453,25 @@ const styles = StyleSheet.create({
   heroTitleCol: {
     flex: 1.15,
     maxWidth: 560,
+    gap: 18,
+  },
+  eyebrow: {
+    ...landingFonts.semibold,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: '#F2A48F',
+  },
+  heroColMobile: {
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: 'auto',
   },
   heroSideCol: {
     flex: 0.85,
-    maxWidth: 360,
-    gap: 22,
+    maxWidth: 420,
+    gap: 20,
     paddingTop: 10,
   },
   title: {
@@ -413,8 +487,15 @@ const styles = StyleSheet.create({
   },
   heroCtaRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 14,
+    gap: 12,
+  },
+  heroProof: {
+    ...landingFonts.regular,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: 'rgba(255, 249, 245, 0.66)',
   },
   heroMarqueeWrap: {
     maxWidth: 1080,

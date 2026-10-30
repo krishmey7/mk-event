@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import { landingFonts } from '../landingFonts';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 /** Uniquement ce que le label introduit : des invitations pour… */
 const ITEMS = ['Mariages', 'Anniversaires', 'Conférences'] as const;
@@ -51,13 +52,14 @@ function ItemRow({ prefix = '' }: { prefix?: string }) {
 export function HeroMarquee() {
   const nativeOffset = useRef(new Animated.Value(0)).current;
   const [trackWidth, setTrackWidth] = useState(0);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     ensureWebKeyframes();
   }, []);
 
   useEffect(() => {
-    if (Platform.OS === 'web' || trackWidth <= 0) return;
+    if (Platform.OS === 'web' || trackWidth <= 0 || reducedMotion) return;
     nativeOffset.setValue(0);
     const anim = Animated.loop(
       Animated.timing(nativeOffset, {
@@ -69,7 +71,7 @@ export function HeroMarquee() {
     );
     anim.start();
     return () => anim.stop();
-  }, [nativeOffset, trackWidth]);
+  }, [nativeOffset, reducedMotion, trackWidth]);
 
   const onTrackLayout = (event: LayoutChangeEvent) => {
     const w = Math.round(event.nativeEvent.layout.width);
@@ -101,17 +103,19 @@ export function HeroMarquee() {
             <View
               style={[
                 styles.track,
-                {
-                  animationName: 'mk-hero-marquee',
-                  animationDuration: '28s',
-                  animationTimingFunction: 'linear',
-                  animationIterationCount: 'infinite',
-                  width: 'max-content',
-                } as object,
+                reducedMotion
+                  ? null
+                  : ({
+                      animationName: 'mk-hero-marquee',
+                      animationDuration: '28s',
+                      animationTimingFunction: 'linear',
+                      animationIterationCount: 'infinite',
+                      width: 'max-content',
+                    } as object),
               ]}
             >
               {webTrack}
-              {webTrack}
+              {reducedMotion ? null : webTrack}
             </View>
           ) : (
             <Animated.View
@@ -137,6 +141,7 @@ export function HeroMarquee() {
             </Animated.View>
           )}
           <View pointerEvents="none" style={styles.fade} />
+          <View pointerEvents="none" style={styles.fadeLeft} />
         </View>
       </View>
     </View>
@@ -209,6 +214,21 @@ const styles = StyleSheet.create({
       ? ({
           backgroundImage:
             'linear-gradient(90deg, rgba(26,15,22,0) 0%, #1A0F16 88%)',
+        } as object)
+      : {
+          backgroundColor: 'rgba(26, 15, 22, 0.45)',
+        }),
+  },
+  fadeLeft: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: 56,
+    ...(Platform.OS === 'web'
+      ? ({
+          backgroundImage:
+            'linear-gradient(90deg, #1A0F16 12%, rgba(26,15,22,0) 100%)',
         } as object)
       : {
           backgroundColor: 'rgba(26, 15, 22, 0.45)',

@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { fontFamilies } from '@/constants/theme';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { landingFonts } from '../landingFonts';
 import { LANDING } from '../landingTokens';
 import { LandingScrollContext } from './LandingReveal';
@@ -56,6 +57,7 @@ function AnimatedHowStep({
   onHoverChange: (hovered: boolean) => void;
 }) {
   const n = String(index + 1).padStart(2, '0');
+  const reducedMotion = useReducedMotion();
   const rise = useRef(new Animated.Value(28)).current;
   const fade = useRef(new Animated.Value(0)).current;
   const dotScale = useRef(new Animated.Value(1)).current;
@@ -65,6 +67,11 @@ function AnimatedHowStep({
   useEffect(() => {
     if (!revealed || playedEntrance.current) return;
     playedEntrance.current = true;
+    if (reducedMotion) {
+      fade.setValue(1);
+      rise.setValue(0);
+      return;
+    }
     const delay = index * 110;
     Animated.parallel([
       Animated.timing(fade, {
@@ -82,9 +89,14 @@ function AnimatedHowStep({
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fade, index, revealed, rise]);
+  }, [fade, index, reducedMotion, revealed, rise]);
 
   useEffect(() => {
+    if (reducedMotion) {
+      dotScale.setValue(1);
+      iconLift.setValue(0);
+      return;
+    }
     if (!active) {
       dotScale.setValue(1);
       Animated.spring(iconLift, {
@@ -119,7 +131,7 @@ function AnimatedHowStep({
       useNativeDriver: true,
     }).start();
     return () => pulse.stop();
-  }, [active, dotScale, iconLift]);
+  }, [active, dotScale, iconLift, reducedMotion]);
 
   const webHover =
     Platform.OS === 'web'
@@ -135,7 +147,11 @@ function AnimatedHowStep({
     transform: [{ translateY: rise }],
   };
 
-  const indexColor = active ? LANDING.coral : passed ? LANDING.plum : 'rgba(107, 58, 92, 0.45)';
+  const indexColor = active
+    ? LANDING.coralDeep
+    : passed
+      ? LANDING.plum
+      : 'rgba(107, 58, 92, 0.62)';
 
   if (isDesktop) {
     return (
@@ -160,7 +176,7 @@ function AnimatedHowStep({
         </View>
         <Text style={[styles.stepIndex, { color: indexColor }]}>{n}</Text>
         <Animated.View style={[styles.iconWrap, { transform: [{ translateY: iconLift }] }]}>
-          <Ionicons name={step.icon} size={18} color={active ? LANDING.coral : LANDING.textMuted} />
+          <Ionicons name={step.icon} size={18} color={active ? LANDING.coralDeep : LANDING.textMuted} />
         </Animated.View>
         <Text style={[styles.stepTitle, active && styles.stepTitleActive]}>{step.title}</Text>
         <Text style={styles.stepText}>{step.text}</Text>
@@ -193,7 +209,7 @@ function AnimatedHowStep({
       <View style={styles.mobileBody}>
         <Text style={[styles.stepIndex, styles.stepIndexMobile, { color: indexColor }]}>{n}</Text>
         <View style={styles.mobileTitleRow}>
-          <Ionicons name={step.icon} size={16} color={active ? LANDING.coral : LANDING.textMuted} />
+          <Ionicons name={step.icon} size={16} color={active ? LANDING.coralDeep : LANDING.textMuted} />
           <Text style={[styles.stepTitle, active && styles.stepTitleActive]}>{step.title}</Text>
         </View>
         <Text style={styles.stepText}>{step.text}</Text>

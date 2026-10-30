@@ -12,6 +12,10 @@ export type LandingTokens = {
   textMuted: string;
   textFaint: string;
   coral: string;
+  /** Corail foncé — fills et textes corail sur fond clair (contraste AA). */
+  coralDeep: string;
+  /** Corail très foncé — texte corail sur fond corail doux (AA). */
+  coralInk: string;
   coralSoft: string;
   plum: string;
   plumSoft: string;
@@ -29,9 +33,11 @@ export const LANDING: LandingTokens = {
   surface: '#FFFFFF',
   surfaceGlass: 'rgba(255, 255, 255, 0.72)',
   text: '#2A1F24',
-  textMuted: 'rgba(42, 31, 36, 0.62)',
-  textFaint: 'rgba(42, 31, 36, 0.42)',
+  textMuted: 'rgba(42, 31, 36, 0.68)',
+  textFaint: 'rgba(42, 31, 36, 0.55)',
   coral: '#E07A5F',
+  coralDeep: '#B4553F',
+  coralInk: '#9C4633',
   coralSoft: 'rgba(224, 122, 95, 0.16)',
   plum: '#6B3A5C',
   plumSoft: 'rgba(107, 58, 92, 0.12)',

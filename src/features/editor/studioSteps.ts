@@ -125,6 +125,39 @@ const PAPETERIE_STEPS: StudioStepDef[] = [
   },
 ];
 
+const OLIVIER_STEPS: StudioStepDef[] = [
+  {
+    route: 'index',
+    title: 'Invitation',
+    headerTitle: 'Invitation & lieu',
+    hint: 'Personnalisez la photo, les noms, la date et les informations du mariage.',
+  },
+  {
+    route: 'photos',
+    title: 'Photos',
+    headerTitle: 'Galerie photo',
+    hint: 'Choisissez les photos qui raconteront votre histoire.',
+  },
+  {
+    route: 'programme',
+    title: 'Programme',
+    headerTitle: 'Les moments de la journée',
+    hint: 'Présentez les horaires et les lieux importants.',
+  },
+  {
+    route: 'plus',
+    title: 'Réponses',
+    headerTitle: 'RSVP & choix',
+    hint: 'Configurez les boissons proposées et les réponses de vos invités.',
+  },
+  {
+    route: 'publier',
+    title: 'Publier',
+    headerTitle: 'Aperçu & publier',
+    hint: 'Vérifiez votre invitation vert d’olive, puis publiez.',
+  },
+];
+
 const CONFERENCE_STEPS: StudioStepDef[] = [
   {
     route: 'index',
@@ -163,6 +196,7 @@ export function getStudioSteps(
   templateKey?: string,
 ): StudioStepDef[] {
   if (templateKey === 'papeterie') return PAPETERIE_STEPS;
+  if (templateKey === 'olivier') return OLIVIER_STEPS;
   switch (type) {
     case 'birthday':
       return BIRTHDAY_STEPS;

@@ -81,6 +81,17 @@ export function templateStudio(layout: CoverLayout): TemplateStudioCapabilities 
         neonScript: false,
         galleryFeedsCover: false,
       };
+    case 'oliveInvitation':
+      return {
+        backgroundPhoto: true,
+        couplePhoto: true,
+        coupleFrames: false,
+        accroche: true,
+        coverTitle: true,
+        heure: false,
+        neonScript: false,
+        galleryFeedsCover: false,
+      };
     case 'neonScript':
       return {
         backgroundPhoto: true,
@@ -160,6 +171,13 @@ export function studioFieldLabels(layout: CoverLayout): {
         titlePlaceholder: 'Réservez la date',
         accroche: 'Invitation',
         accrochePlaceholder: 'Nous serions heureux de célébrer ce jour avec vous…',
+      };
+    case 'oliveInvitation':
+      return {
+        title: 'Titre de l’invitation',
+        titlePlaceholder: 'Invitation au mariage',
+        accroche: 'Message aux invités',
+        accrochePlaceholder: 'Nous serions très heureux de partager cette journée avec vous…',
       };
     default:
       return {

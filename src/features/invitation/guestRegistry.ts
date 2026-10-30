@@ -6,7 +6,7 @@
 
 import type { Guest, Venue } from './types';
 import type { ProgramStep, StoryMilestone } from '@/features/templates/elegance/data';
-import { GALLERY, IMAGES, PROGRAM, STORY, WEDDING } from '@/features/templates/elegance/data';
+import { getTemplate } from '@/features/templates/registry';
 
 export interface InvitationCoverPayload {
   title: string;
@@ -115,33 +115,7 @@ export function publishInvitationConfig(slug: string, config: InvitationConfig):
 
 /** Configuration effective — repli sur la démo si inconnue. */
 export function getInvitationConfig(slug: string): InvitationConfig {
-  return (
-    store.get(slug) ?? {
-      templateKey: 'elegance',
-      guests: DEMO_GUESTS,
-      drinks: DEFAULT_DRINKS,
-      diets: DEFAULT_DIETS,
-      themeKey: 'champagne',
-      revealEffect: 'fade',
-      galleryStyle: 'masonry',
-      venue: DEFAULT_VENUE,
-      couplePhoto: DEFAULT_COUPLE_PHOTO,
-      dressCode: '',
-      cover: {
-        title: 'Save the Date',
-        dateLabel: WEDDING.dateLabel,
-        couple: WEDDING.couple,
-        guestLine: WEDDING.guestSentence,
-        kicker: '',
-        timeLabel: '',
-        photoUri: IMAGES.cover,
-      },
-      story: STORY,
-      program: PROGRAM,
-      gallery: GALLERY.map((item) => ({ uri: item.uri, category: item.category })),
-      countdownImage: IMAGES.countdown,
-    }
-  );
+  return store.get(slug) ?? buildCatalogPreviewConfig(getTemplate(slug));
 }
 
 /** Résout l'invité depuis ?guestId= — repli sur le premier / l’échantillon studio. */

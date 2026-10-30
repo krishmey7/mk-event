@@ -80,8 +80,7 @@ export function PapeterieCover({
       style={[styles.cover, { backgroundColor: colors.primary }]}
       imageStyle={styles.image}
     >
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.coverOverlay }]} />
-      <View style={[styles.lowerShade, { backgroundColor: colors.coverOverlayDeep }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.coverOverlayDeep }]} />
       {content}
     </ImageBackground>
   );
@@ -90,7 +89,6 @@ export function PapeterieCover({
 const styles = StyleSheet.create({
   cover: { flex: 1, width: '100%', minHeight: 420, overflow: 'hidden', justifyContent: 'flex-end' },
   image: { width: '100%', height: '100%' },
-  lowerShade: { ...StyleSheet.absoluteFillObject, top: '48%' },
   content: {
     flex: 1,
     justifyContent: 'space-between',

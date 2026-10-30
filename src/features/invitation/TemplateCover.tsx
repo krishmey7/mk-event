@@ -18,6 +18,7 @@ import type { CoverLayout } from '@/features/templates/registry';
 import { PELLICULE_WEDDING } from '@/features/templates/pellicule/data';
 import { NEON_WEDDING } from '@/features/templates/neon/data';
 import { PapeterieCover } from '@/features/templates/papeterie/PapeterieCover';
+import { OlivierCover } from '@/features/templates/olivier/OlivierCover';
 
 export function TemplateCover({
   layout = 'classic',
@@ -113,6 +114,26 @@ export function TemplateCover({
           guestSentence={guestSentence}
           venueName={venueName}
           venueCity={venueCity}
+          compact={compact}
+          hint={hint}
+          onHintPress={onHintPress}
+        />
+      </View>
+    );
+  }
+
+  if (layout === 'oliveInvitation') {
+    return (
+      <View style={styles.fill}>
+        <OlivierCover
+          colors={colors}
+          photoUri={coverUri}
+          portraitUri={couplePhoto.uri}
+          guest={guest}
+          title={title}
+          dateLabel={dateLabel}
+          couple={couple}
+          guestSentence={guestSentence}
           compact={compact}
           hint={hint}
           onHintPress={onHintPress}

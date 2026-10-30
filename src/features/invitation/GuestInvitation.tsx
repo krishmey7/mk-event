@@ -96,6 +96,7 @@ import { CONFERENCE_SPEAKERS } from '@/features/templates/conference/data';
 import { BIRTHDAY_DEMO } from '@/features/templates/birthday/themes';
 import { BotanicalSprig } from '@/features/templates/papeterie/BotanicalSprig';
 import { PapeterieCover } from '@/features/templates/papeterie/PapeterieCover';
+import { OlivierCover } from '@/features/templates/olivier/OlivierCover';
 import { SIMULATE_BACKEND } from '@/constants/config';
 import { guestsService } from '@/services/guestsService';
 import { guestbookService } from '@/services/guestbookService';
@@ -206,6 +207,7 @@ export function GuestInvitation({ slug, config, guest }: {
   const pellicule = layout === 'filmStrip';
   const neon = layout === 'neonScript';
   const editorial = layout === 'editorial';
+  const olive = layout === 'oliveInvitation';
   const branded = aurore || pellicule || neon;
   const voix = {
     ...DEFAULT_VOIX,
@@ -224,6 +226,92 @@ export function GuestInvitation({ slug, config, guest }: {
       hosts: pageCover.couple,
     },
   });
+
+  if (olive) {
+    return (
+      <RevealBusContext.Provider value={bus}>
+        <View style={[styles.fill, { backgroundColor: theme.colors.bg }]}>
+          <StatusBar style="dark" />
+          <InvitationAudioChrome
+            needsGesture={audio.needsGesture}
+            muted={audio.muted}
+            onEnable={() => { void audio.enableFromGesture(); }}
+            onToggleMute={() => { void audio.toggleMute(); }}
+            accent={theme.colors.primary}
+          />
+          <ScrollView
+            ref={scrollRef}
+            style={styles.scroll}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 26 }}
+            showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+          >
+            <View style={{ height: Dimensions.get('window').height }}>
+              <OlivierCover
+                colors={theme.colors}
+                photoUri={pageCover.photoUri || template.coverImage}
+                portraitUri={couplePhoto.uri || template.couplePhoto.uri}
+                guest={guest}
+                title={pageCover.title}
+                dateLabel={pageCover.dateLabel}
+                couple={pageCover.couple}
+                guestSentence={pageCover.guestLine}
+                hint={<CoverDiscoverHint color="#FFFFFF" />}
+                onHintPress={scrollToStory}
+              />
+            </View>
+            <View onLayout={(event) => { storyY.current = event.nativeEvent.layout.y; }}>
+              <OlivierWelcomeSection
+                theme={theme}
+                guestLine={pageCover.guestLine}
+                guest={guest}
+                dateLabel={pageCover.dateLabel}
+              />
+            </View>
+            <OlivierProgramSection
+              theme={theme}
+              dateLabel={pageCover.dateLabel}
+              venue={config.venue}
+              program={programItems}
+            />
+            <OlivierDetailsSection
+              theme={theme}
+              venue={config.venue}
+              dressCode={config.dressCode}
+            />
+            <GuestGallerySection
+              theme={theme}
+              winter={false}
+              olive
+              styleKey="grid"
+              photos={galleryItems}
+            />
+            <GuestRsvpSection
+              slug={slug}
+              guest={guest}
+              drinks={config.drinks}
+              theme={theme}
+              winter={false}
+              olive
+            />
+            <GuestGuestbookSection
+              slug={slug}
+              guest={guest}
+              theme={theme}
+              winter={false}
+              olive
+            />
+            <OlivierClosingPhoto
+              photoUri={couplePhoto.uri || template.couplePhoto.uri}
+              couple={pageCover.couple}
+              theme={theme}
+            />
+          </ScrollView>
+        </View>
+      </RevealBusContext.Provider>
+    );
+  }
 
   if (editorial) {
     return (
@@ -523,6 +611,186 @@ export function GuestInvitation({ slug, config, guest }: {
         <StoryDetailModal story={story} theme={theme} onClose={() => setStory(null)} />
       </View>
     </RevealBusContext.Provider>
+  );
+}
+
+function OlivierWelcomeSection({
+  theme,
+  guestLine,
+  guest,
+  dateLabel,
+}: {
+  theme: TemplateTheme;
+  guestLine: string;
+  guest: Guest;
+  dateLabel: string;
+}) {
+  const c = theme.colors;
+  return (
+    <View style={[styles.oliveWelcomeSection, { backgroundColor: c.primary }]}>
+      <BotanicalSprig color="rgba(255,255,255,0.42)" size={58} />
+      <View style={[styles.oliveWelcomeCard, { backgroundColor: c.surface }]}>
+        <Text style={[styles.oliveKicker, { color: c.primary }]}>À NOS CHERS PROCHES</Text>
+        <Text style={[styles.oliveWelcomeTitle, { color: c.text }]}>Nous nous marions !</Text>
+        <Text style={[styles.oliveWelcomeText, { color: c.textMuted }]}>
+          {fillGuestNameToken(guestLine, guest.firstName)}
+        </Text>
+        <View style={[styles.oliveDateRule, { backgroundColor: c.accent }]} />
+        <Text style={[styles.oliveWelcomeDate, { color: c.primary }]}>{dateLabel}</Text>
+        <Text style={[styles.oliveGuestName, { color: c.textMuted }]}>
+          NOUS ESPÉRONS VOUS Y RETROUVER, {guest.firstName.toLocaleUpperCase('fr-FR')}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function OlivierProgramSection({
+  theme,
+  dateLabel,
+  venue,
+  program,
+}: {
+  theme: TemplateTheme;
+  dateLabel: string;
+  venue: Venue;
+  program: ProgramStep[];
+}) {
+  const c = theme.colors;
+  const address = venueFullAddress(venue);
+  const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+  const { effect } = useRevealBus();
+  return (
+    <View style={[styles.oliveSection, { backgroundColor: c.bg }]}>
+      <OliveSectionHeading kicker="LE GRAND JOUR" title="Au programme" subtitle={dateLabel} theme={theme} />
+      <View style={[styles.oliveVenueCard, { backgroundColor: c.primary }]}>
+        <View style={styles.oliveVenueHeading}>
+          <Ionicons name="location-outline" size={20} color={c.accent} />
+          <Text style={[styles.oliveVenueName, { color: c.onPrimary }]}>
+            {venue.name || 'Le lieu de notre célébration'}
+          </Text>
+        </View>
+        {address ? (
+          <Text style={styles.oliveVenueAddress}>{address}</Text>
+        ) : null}
+        {address ? (
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => void Linking.openURL(venueDirectionsUrl(venue, platform))}
+            style={[styles.oliveMapButton, { borderColor: c.accent }]}
+          >
+            <Text style={[styles.oliveMapButtonText, { color: c.onPrimary }]}>Voir le lieu</Text>
+            <Ionicons name="arrow-forward" size={13} color={c.onPrimary} />
+          </Pressable>
+        ) : null}
+      </View>
+      <View style={styles.oliveProgramList}>
+        {program.length > 0 ? program.map((step, index) => (
+          <Reveal key={`${step.time}-${step.title}`} effect={effect} delay={index * 70}>
+            <View style={[styles.oliveProgramRow, { borderBottomColor: c.border }]}>
+              <Text style={[styles.oliveProgramTime, { color: c.primary }]}>{step.time}</Text>
+              <View style={styles.oliveProgramCopy}>
+                <Text style={[styles.oliveProgramTitle, { color: c.text }]}>{step.title}</Text>
+                <Text style={[styles.oliveProgramPlace, { color: c.textMuted }]}>{step.place}</Text>
+              </View>
+              <Ionicons name={step.icon} size={19} color={c.accent} />
+            </View>
+          </Reveal>
+        )) : (
+          <Text style={[styles.oliveProgramPlace, { color: c.textMuted }]}>
+            Le programme sera communiqué prochainement.
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function OlivierDetailsSection({
+  theme,
+  venue,
+  dressCode,
+}: {
+  theme: TemplateTheme;
+  venue: Venue;
+  dressCode: string;
+}) {
+  const c = theme.colors;
+  return (
+    <View style={[styles.oliveDetailsSection, { backgroundColor: c.surface }]}>
+      <View style={[styles.oliveDetailsCard, { borderColor: c.border }]}>
+        <BotanicalSprig color={c.accent} size={48} />
+        <OliveSectionHeading kicker="QUELQUES REPÈRES" title="Les détails" theme={theme} />
+        <Text style={[styles.oliveDetailsText, { color: c.textMuted }]}>
+          Nous avons hâte de partager cette journée avec vous. Retrouvez ici les informations utiles pour préparer votre venue.
+        </Text>
+        {dressCode.trim() ? (
+          <View style={[styles.oliveDressCode, { backgroundColor: c.surfaceAlt }]}>
+            <Ionicons name="shirt-outline" size={18} color={c.primary} />
+            <View style={styles.oliveProgramCopy}>
+              <Text style={[styles.oliveKicker, { color: c.primary }]}>TENUE CONSEILLÉE</Text>
+              <Text style={[styles.oliveDressText, { color: c.text }]}>{dressCode}</Text>
+            </View>
+          </View>
+        ) : null}
+        {venue.name ? (
+          <View style={styles.oliveDetailsVenue}>
+            <Ionicons name="navigate-outline" size={17} color={c.primary} />
+            <Text style={[styles.oliveProgramPlace, { color: c.textMuted }]}>
+              {venue.name}{venue.city ? ` · ${venue.city}` : ''}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+function OlivierClosingPhoto({
+  photoUri,
+  couple,
+  theme,
+}: {
+  photoUri: string;
+  couple: string;
+  theme: TemplateTheme;
+}) {
+  return (
+    <ImageBackground
+      source={{ uri: photoUri }}
+      resizeMode="cover"
+      style={styles.oliveClosing}
+      imageStyle={styles.oliveClosingImage}
+    >
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.coverOverlayDeep }]} />
+      <Text style={styles.oliveClosingTitle}>Nous avons hâte de vous retrouver</Text>
+      <View style={[styles.oliveDateRule, { backgroundColor: theme.colors.accent }]} />
+      <Text style={styles.oliveClosingNames}>{couple}</Text>
+      <BotanicalSprig color="rgba(255,255,255,0.75)" size={42} />
+    </ImageBackground>
+  );
+}
+
+function OliveSectionHeading({
+  kicker,
+  title,
+  subtitle,
+  theme,
+}: {
+  kicker: string;
+  title: string;
+  subtitle?: string;
+  theme: TemplateTheme;
+}) {
+  return (
+    <View style={styles.oliveHeading}>
+      <Text style={[styles.oliveKicker, { color: theme.colors.textMuted }]}>{kicker}</Text>
+      <Text style={[styles.oliveHeadingTitle, { color: theme.colors.text }]}>{title}</Text>
+      <View style={[styles.oliveDateRule, { backgroundColor: theme.colors.accent }]} />
+      {subtitle ? (
+        <Text style={[styles.oliveHeadingSubtitle, { color: theme.colors.textMuted }]}>{subtitle}</Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -952,12 +1220,13 @@ function FallingSnow() {
   );
 }
 
-function SectionShell({ winter, aurore, pellicule, neon, editorial, theme, children, style }: {
+function SectionShell({ winter, aurore, pellicule, neon, editorial, olive, theme, children, style }: {
   winter: boolean;
   aurore?: boolean;
   pellicule?: boolean;
   neon?: boolean;
   editorial?: boolean;
+  olive?: boolean;
   theme: TemplateTheme;
   children: ReactNode;
   style?: object;
@@ -968,6 +1237,13 @@ function SectionShell({ winter, aurore, pellicule, neon, editorial, theme, child
         <View pointerEvents="none" style={styles.editorialCorner}>
           <BotanicalSprig color={theme.colors.accent} size={76} />
         </View>
+        {children}
+      </View>
+    );
+  }
+  if (olive) {
+    return (
+      <View style={[styles.oliveSharedSection, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }, style]}>
         {children}
       </View>
     );
@@ -1017,6 +1293,7 @@ function SectionHead({
   pellicule,
   neon,
   editorial,
+  olive,
   theme,
   kicker,
   title,
@@ -1027,6 +1304,7 @@ function SectionHead({
   pellicule?: boolean;
   neon?: boolean;
   editorial?: boolean;
+  olive?: boolean;
   theme: TemplateTheme;
   kicker?: string;
   title: string;
@@ -1041,6 +1319,9 @@ function SectionHead({
         colors={theme.colors}
       />
     );
+  }
+  if (olive) {
+    return <OliveSectionHeading kicker={kicker || 'À CÉLÉBRER ENSEMBLE'} title={title} subtitle={subtitle} theme={theme} />;
   }
   if (aurore) {
     return (
@@ -1678,7 +1959,7 @@ function GuestCountdownSection({ liked, onToggleLike, imageUri, theme, winter, s
 
 /* ── 5. RSVP — pré-rempli, boissons de l'organisateur, QR pass ── */
 
-function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicule, neon, editorial }: {
+function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicule, neon, editorial, olive }: {
   slug: string;
   guest: Guest;
   drinks: string[];
@@ -1688,6 +1969,7 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
   pellicule?: boolean;
   neon?: boolean;
   editorial?: boolean;
+  olive?: boolean;
 }) {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
@@ -1735,8 +2017,8 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
 
   if (!canRsvp) {
     return (
-      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} theme={theme}>
-        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} theme={theme} kicker="RSVP" title="Votre réponse" />
+      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} olive={olive} theme={theme}>
+        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} olive={olive} theme={theme} kicker="RSVP" title="Votre réponse" />
         <Reveal effect={revealEffect} delay={0}>
           <View style={[styles.successCard, { backgroundColor: c.surface, borderColor: c.border }]}>
             <Text style={[styles.successText, { color: c.textMuted }]}>
@@ -1751,8 +2033,8 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
   /* Après validation : le QR pass individuel s'active. */
   if (answer !== null) {
     return (
-      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} theme={theme}>
-        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} theme={theme} kicker="RSVP" title="Votre réponse" />
+      <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} olive={olive} theme={theme}>
+        <SectionHead winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} olive={olive} theme={theme} kicker="RSVP" title="Votre réponse" />
 
         <Reveal effect={revealEffect} delay={0}>
           <View style={[styles.successCard, { backgroundColor: c.surface, borderColor: c.border }]}>
@@ -1805,7 +2087,7 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
   }
 
   return (
-    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} editorial={editorial} olive={olive} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
@@ -1813,6 +2095,7 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
           pellicule={pellicule}
           neon={neon}
           editorial={editorial}
+          olive={olive}
           theme={theme}
           kicker="RSVP"
           title={`Confirme ta présence, ${guest.firstName}`}
@@ -1890,12 +2173,13 @@ function GuestRsvpSection({ slug, guest, drinks, theme, winter, aurore, pellicul
 
 /* ── 6. Galerie — grille / carrousel / maçonnerie ── */
 
-function GuestGallerySection({ theme, winter, aurore, pellicule, neon, styleKey, photos: incoming }: {
+function GuestGallerySection({ theme, winter, aurore, pellicule, neon, olive, styleKey, photos: incoming }: {
   theme: TemplateTheme;
   winter: boolean;
   aurore?: boolean;
   pellicule?: boolean;
   neon?: boolean;
+  olive?: boolean;
   styleKey: GalleryStyleKey;
   photos: { uri: string; category: string }[];
 }) {
@@ -1911,13 +2195,14 @@ function GuestGallerySection({ theme, winter, aurore, pellicule, neon, styleKey,
   const photoReveal: RevealEffectKey = winter ? 'none' : revealEffect;
 
   return (
-    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} olive={olive} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
           aurore={aurore}
           pellicule={pellicule}
           neon={neon}
+          olive={olive}
           theme={theme}
           title="Notre galerie"
           subtitle="Revivez les plus beaux moments de notre histoire…"
@@ -1939,7 +2224,14 @@ function GuestGallerySection({ theme, winter, aurore, pellicule, neon, styleKey,
               <Image
                 source={{ uri: photo.uri }}
                 resizeMode="cover"
-                style={[styles.sliderPhoto, { backgroundColor: c.surfaceAlt }, (aurore || pellicule || neon) && { borderWidth: 1, borderColor: aurore || neon ? c.accent : c.primary }]}
+                style={[
+                  styles.sliderPhoto,
+                  { backgroundColor: c.surfaceAlt },
+                  (aurore || pellicule || neon || olive) && {
+                    borderWidth: 1,
+                    borderColor: aurore || neon || olive ? c.accent : c.primary,
+                  },
+                ]}
               />
             </Reveal>
           ))}
@@ -1959,7 +2251,7 @@ function GuestGallerySection({ theme, winter, aurore, pellicule, neon, styleKey,
                         ? styles.galleryPhotoSquare
                         : { height: photo.height },
                       { backgroundColor: c.surfaceAlt },
-                      (aurore || pellicule || neon) && { borderWidth: 1, borderColor: aurore || neon ? c.accent : c.primary },
+                      (aurore || pellicule || neon || olive) && { borderWidth: 1, borderColor: aurore || neon || olive ? c.accent : c.primary },
                     ]}
                   />
                 </Reveal>
@@ -1982,6 +2274,7 @@ function GuestGuestbookSection({
   aurore,
   pellicule,
   neon,
+  olive,
 }: {
   slug: string;
   guest: Guest;
@@ -1990,6 +2283,7 @@ function GuestGuestbookSection({
   aurore?: boolean;
   pellicule?: boolean;
   neon?: boolean;
+  olive?: boolean;
 }) {
   const c = theme.colors;
   const { effect: revealEffect } = useRevealBus();
@@ -2060,16 +2354,19 @@ function GuestGuestbookSection({
   };
 
   return (
-    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} theme={theme}>
+    <SectionShell winter={winter} aurore={aurore} pellicule={pellicule} neon={neon} olive={olive} theme={theme}>
       <Reveal effect={revealEffect} delay={0}>
         <SectionHead
           winter={winter}
           aurore={aurore}
           pellicule={pellicule}
           neon={neon}
+          olive={olive}
           theme={theme}
-          title="Laisse-nous un petit mot"
-          subtitle="Un message, un vœu, une pensée, tout nous fera chaud au cœur !"
+          title={olive ? 'Le chat des invités' : 'Laisse-nous un petit mot'}
+          subtitle={olive
+            ? 'Laissez un mot doux aux futurs mariés et parcourez les vœux de vos proches.'
+            : 'Un message, un vœu, une pensée, tout nous fera chaud au cœur !'}
         />
       </Reveal>
 
@@ -2216,6 +2513,63 @@ const styles = StyleSheet.create({
     fontSize: 17,
     textAlign: 'center',
   },
+  oliveWelcomeSection: {
+    alignItems: 'center',
+    gap: 18,
+    paddingHorizontal: 26,
+    paddingVertical: 42,
+  },
+  oliveWelcomeCard: {
+    width: '100%',
+    maxWidth: 470,
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 24,
+    paddingVertical: 34,
+  },
+  oliveKicker: { fontFamily: 'Inter_500Medium', fontSize: 8, letterSpacing: 1.8, textAlign: 'center' },
+  oliveWelcomeTitle: {
+    fontFamily: 'CormorantGaramond_400Regular',
+    fontSize: 31,
+    letterSpacing: 1.2,
+    textAlign: 'center',
+  },
+  oliveWelcomeText: { fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 20, textAlign: 'center' },
+  oliveDateRule: { width: 32, height: 1 },
+  oliveWelcomeDate: { fontFamily: 'CormorantGaramond_400Regular', fontSize: 22, letterSpacing: 1.1 },
+  oliveGuestName: { fontFamily: 'Inter_500Medium', fontSize: 7.5, letterSpacing: 1.2, textAlign: 'center' },
+  oliveSection: { paddingHorizontal: 26, paddingVertical: 48 },
+  oliveHeading: { alignItems: 'center', gap: 10, marginBottom: 24 },
+  oliveHeadingTitle: {
+    fontFamily: 'CormorantGaramond_400Regular',
+    fontSize: 34,
+    letterSpacing: 1.8,
+    textAlign: 'center',
+  },
+  oliveHeadingSubtitle: { fontFamily: 'Inter_400Regular', fontSize: 10, letterSpacing: 1, textAlign: 'center' },
+  oliveVenueCard: { alignItems: 'center', gap: 12, padding: 22, marginBottom: 24 },
+  oliveVenueHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  oliveVenueName: { fontFamily: 'CormorantGaramond_500Medium', fontSize: 22, textAlign: 'center' },
+  oliveVenueAddress: { color: 'rgba(255,255,255,0.78)', fontFamily: 'Inter_400Regular', fontSize: 10, textAlign: 'center' },
+  oliveMapButton: { flexDirection: 'row', alignItems: 'center', gap: 7, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
+  oliveMapButtonText: { fontFamily: 'Inter_500Medium', fontSize: 9, letterSpacing: 0.6 },
+  oliveProgramList: { gap: 2 },
+  oliveProgramRow: { minHeight: 73, flexDirection: 'row', alignItems: 'center', gap: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  oliveProgramTime: { width: 58, fontFamily: 'Inter_500Medium', fontSize: 9, letterSpacing: 0.5 },
+  oliveProgramCopy: { flex: 1, gap: 4 },
+  oliveProgramTitle: { fontFamily: 'CormorantGaramond_500Medium', fontSize: 21 },
+  oliveProgramPlace: { fontFamily: 'Inter_400Regular', fontSize: 10, lineHeight: 16 },
+  oliveDetailsSection: { paddingHorizontal: 24, paddingVertical: 38 },
+  oliveDetailsCard: { width: '100%', maxWidth: 520, alignSelf: 'center', alignItems: 'center', gap: 16, borderWidth: 1, padding: 24 },
+  oliveDetailsText: { fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 18, textAlign: 'center' },
+  oliveDressCode: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15 },
+  oliveDressText: { fontFamily: 'CormorantGaramond_500Medium', fontSize: 18 },
+  oliveDetailsVenue: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  oliveSharedSection: { paddingHorizontal: 26, paddingVertical: 48, borderTopWidth: StyleSheet.hairlineWidth },
+  oliveClosing: { minHeight: 430, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 28 },
+  oliveClosingImage: { width: '100%', height: '100%' },
+  oliveClosingTitle: { color: '#FFFFFF', fontFamily: 'CormorantGaramond_400Regular', fontSize: 29, textAlign: 'center' },
+  oliveClosingNames: { color: '#FFFFFF', fontFamily: 'CormorantGaramond_400Regular', fontSize: 21, letterSpacing: 1.6 },
   winterStack: { width: '100%', alignItems: 'center' },
   winterGalleryBlock: { width: '100%', alignSelf: 'stretch' },
   winterBreak: {

@@ -53,6 +53,8 @@ import {
 import { NEON_THEME_ORDER, NEON_THEMES } from './neon/themes';
 import { PAPETERIE_IMAGES, PAPETERIE_PROGRAM } from './papeterie/data';
 import { PAPETERIE_THEMES } from './papeterie/themes';
+import { OLIVIER_IMAGES, OLIVIER_PROGRAM } from './olivier/data';
+import { OLIVIER_THEMES } from './olivier/themes';
 import type { PhotoFrameOption } from '@/features/invitation/types';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import { ELEGANCE_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
@@ -87,7 +89,8 @@ export type CoverLayout =
   | 'splitPanel'
   | 'filmStrip'
   | 'neonScript'
-  | 'editorial';
+  | 'editorial'
+  | 'oliveInvitation';
 
 export interface TemplateDefinition {
   /**
@@ -225,6 +228,36 @@ export const TEMPLATES: TemplateDefinition[] = [
     motions: { coverEnter: true, sectionReveal: true },
     themes: eleganceThemes,
     photoFrames: ELEGANCE_PHOTO_FRAMES,
+  },
+  {
+    key: 'olivier',
+    name: 'Vert d’olive',
+    category: 'wedding',
+    description: 'Invitation végétale, galerie photo, programme et livre d’or dans des tons olive et ivoire.',
+    coverImage: OLIVIER_IMAGES.cover,
+    galleryImages: OLIVIER_IMAGES.gallery,
+    countdownImage: OLIVIER_IMAGES.couple,
+    couplePhoto: { uri: OLIVIER_IMAGES.couple, frame: normalizePhotoFrame('soft') },
+    story: [],
+    program: OLIVIER_PROGRAM,
+    defaultCover: {
+      title: 'Invitation au mariage',
+      dateLabel: '12 octobre 2026',
+      couple: 'Léa & Gabriel',
+      guestLine: 'Nous serions très heureux de partager cette journée avec vous, {{Nom}}.',
+    },
+    defaultThemeKey: 'olive',
+    coverLayout: 'oliveInvitation',
+    ornaments: 'elegance',
+    motions: { coverEnter: true, sectionReveal: true },
+    defaultVenue: {
+      name: 'Domaine des Oliviers',
+      street: '12 chemin des Oliviers',
+      zip: '84100',
+      city: 'Orange',
+    },
+    themes: OLIVIER_THEMES,
+    photoFrames: [],
   },
   {
     key: 'papeterie',

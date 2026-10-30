@@ -34,6 +34,7 @@ class Command(BaseCommand):
             ("pellicule", "Pellicule", "wedding"),
             ("neon", "Néon", "wedding"),
             ("papeterie", "Papier végétal", "wedding"),
+            ("olivier", "Vert d’olive", "wedding"),
             ("celebration", "Célébration", "birthday"),
             ("summit", "Summit", "corporate"),
             ("moderne", "Moderne", "birthday"),

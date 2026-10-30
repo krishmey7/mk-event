@@ -55,6 +55,8 @@ import { PAPETERIE_IMAGES, PAPETERIE_PROGRAM } from './papeterie/data';
 import { PAPETERIE_THEMES } from './papeterie/themes';
 import { OLIVIER_IMAGES, OLIVIER_PROGRAM } from './olivier/data';
 import { OLIVIER_THEMES } from './olivier/themes';
+import { FOI_AMOUR_IMAGES, FOI_AMOUR_PROGRAM } from './foi-amour/data';
+import { FOI_AMOUR_THEMES } from './foi-amour/themes';
 import type { PhotoFrameOption } from '@/features/invitation/types';
 import { normalizePhotoFrame } from '@/features/invitation/types';
 import { ELEGANCE_PHOTO_FRAMES, HIVER_PHOTO_FRAMES } from './photoFrames';
@@ -90,7 +92,8 @@ export type CoverLayout =
   | 'filmStrip'
   | 'neonScript'
   | 'editorial'
-  | 'oliveInvitation';
+  | 'oliveInvitation'
+  | 'botanicalInvitation';
 
 export interface TemplateDefinition {
   /**
@@ -228,6 +231,36 @@ export const TEMPLATES: TemplateDefinition[] = [
     motions: { coverEnter: true, sectionReveal: true },
     themes: eleganceThemes,
     photoFrames: ELEGANCE_PHOTO_FRAMES,
+  },
+  {
+    key: 'foi-amour',
+    name: 'Foi & Amour',
+    category: 'wedding',
+    description: 'Invitation ivoire et feuillage, cérémonie, itinéraire, places réservées et confirmation.',
+    coverImage: FOI_AMOUR_IMAGES.cover,
+    galleryImages: FOI_AMOUR_IMAGES.gallery,
+    countdownImage: FOI_AMOUR_IMAGES.couple,
+    couplePhoto: { uri: FOI_AMOUR_IMAGES.couple, frame: normalizePhotoFrame('soft') },
+    story: [],
+    program: FOI_AMOUR_PROGRAM,
+    defaultCover: {
+      title: 'Notre mariage',
+      dateLabel: 'Vendredi 14 avril 2028',
+      couple: 'Rafaela & Josué',
+      guestLine: 'C’est avec une grande joie que nous vous invitons à célébrer notre union, {{Nom}}.',
+    },
+    defaultThemeKey: 'ivoire-sauge',
+    coverLayout: 'botanicalInvitation',
+    ornaments: 'elegance',
+    motions: { coverEnter: true, sectionReveal: true },
+    defaultVenue: {
+      name: 'Villa des Fleurs',
+      street: '45 allée du Jardin',
+      zip: '1234',
+      city: 'Lisbonne',
+    },
+    themes: FOI_AMOUR_THEMES,
+    photoFrames: [],
   },
   {
     key: 'olivier',

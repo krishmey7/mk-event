@@ -22,6 +22,7 @@ export default function ProgrammeTabScreen({ embedded = false }: { embedded?: bo
   const isConference = template.category === 'corporate';
   const isPapeterie = template.key === 'papeterie';
   const isOlivier = template.key === 'olivier';
+  const isFoiAmour = template.key === 'foi-amour';
   const [sheetIndex, setSheetIndex] = useState<number | null>(null);
 
   /* 4 layouts — le choix met à jour la liste instantanément. */
@@ -113,14 +114,14 @@ export default function ProgrammeTabScreen({ embedded = false }: { embedded?: bo
           {isConference
             ? (studioStepHint('programme', 'corporate', template.key)
               ?? 'Construisez l’agenda : horaires, sessions et salles.')
-            : isPapeterie || isOlivier
+            : isPapeterie || isOlivier || isFoiAmour
               ? (studioStepHint('programme', template.category, template.key)
                 ?? 'Organisez les moments de votre journée dans l’ordre.')
               : 'Modifiez ou supprimez chaque moment. Le crayon ouvre le détail, la corbeille l’enlève.'}
         </EditorHint>
       )}
       <Text style={[styles.heading, { color: colors.text }]}>
-        {isConference ? 'Agenda' : isOlivier ? 'Les moments de la journée' : 'Programme de la journée'}
+        {isConference ? 'Agenda' : isOlivier ? 'Les moments de la journée' : isFoiAmour ? 'Lieux & itinéraire' : 'Programme de la journée'}
       </Text>
 
       {program.length === 0 ? (

@@ -97,6 +97,7 @@ import { BIRTHDAY_DEMO } from '@/features/templates/birthday/themes';
 import { BotanicalSprig } from '@/features/templates/papeterie/BotanicalSprig';
 import { PapeterieCover } from '@/features/templates/papeterie/PapeterieCover';
 import { OlivierCover } from '@/features/templates/olivier/OlivierCover';
+import { FoiAmourCover } from '@/features/templates/foi-amour/FoiAmourCover';
 import { SIMULATE_BACKEND } from '@/constants/config';
 import { guestsService } from '@/services/guestsService';
 import { guestbookService } from '@/services/guestbookService';
@@ -176,6 +177,7 @@ export function GuestInvitation({ slug, config, guest }: {
 
   const scrollRef = useRef<ScrollView>(null);
   const storyY = useRef(0);
+  const rsvpY = useRef(0);
   const scrollYRef = useRef(0);
   const listenersRef = useRef(new Set<(scrollY: number) => void>());
   const [liked, setLiked] = useState(false);
@@ -208,6 +210,7 @@ export function GuestInvitation({ slug, config, guest }: {
   const neon = layout === 'neonScript';
   const editorial = layout === 'editorial';
   const olive = layout === 'oliveInvitation';
+  const botanical = layout === 'botanicalInvitation';
   const branded = aurore || pellicule || neon;
   const voix = {
     ...DEFAULT_VOIX,
@@ -226,6 +229,188 @@ export function GuestInvitation({ slug, config, guest }: {
       hosts: pageCover.couple,
     },
   });
+
+  if (botanical) {
+    const scrollToRsvp = () => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, rsvpY.current - 16), animated: true });
+    };
+    const eventPlaces = [...new Set(programItems.slice(0, 2).map((item) => item.place).filter(Boolean))];
+    const address = venueFullAddress(config.venue);
+    const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+
+    return (
+      <RevealBusContext.Provider value={bus}>
+        <View style={[styles.fill, { backgroundColor: theme.colors.bg }]}>
+          <StatusBar style="dark" />
+          <InvitationAudioChrome
+            needsGesture={audio.needsGesture}
+            muted={audio.muted}
+            onEnable={() => { void audio.enableFromGesture(); }}
+            onToggleMute={() => { void audio.toggleMute(); }}
+            accent={theme.colors.primary}
+          />
+          <ScrollView
+            ref={scrollRef}
+            style={styles.scroll}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+            showsVerticalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+          >
+            <View style={{ minHeight: Dimensions.get('window').height }}>
+              <FoiAmourCover
+                colors={theme.colors}
+                photoUri={pageCover.photoUri || template.coverImage}
+                guest={guest}
+                title={pageCover.title}
+                dateLabel={pageCover.dateLabel}
+                couple={pageCover.couple}
+                guestSentence={pageCover.guestLine}
+                hint={<CoverDiscoverHint color={theme.colors.primary} />}
+                onHintPress={scrollToStory}
+              />
+            </View>
+            <View onLayout={(event) => { storyY.current = event.nativeEvent.layout.y; }}>
+              <View style={[styles.faithWelcome, { backgroundColor: theme.colors.primary }]}>
+                <Text style={styles.faithWelcomeTitle}>À nos chers proches</Text>
+                <Text style={styles.faithWelcomeText}>
+                  {fillGuestNameToken(pageCover.guestLine, guest.firstName)}
+                </Text>
+                <Text style={styles.faithWelcomeNames}>{pageCover.couple}</Text>
+              </View>
+            </View>
+            <View style={[styles.faithSection, { backgroundColor: theme.colors.surface }]}>
+              <OliveSectionHeading
+                kicker="NOUS SERIONS HEUREUX DE VOUS ACCUEILLIR"
+                title="Lieux de célébration"
+                theme={theme}
+              />
+              {eventPlaces.map((place, index) => (
+                <View key={`${place}-${index}`} style={[styles.faithPlaceCard, { borderColor: theme.colors.border }]}>
+                  <Text style={[styles.faithPlaceTime, { color: theme.colors.primary }]}>
+                    {programItems[index]?.time || ''}
+                  </Text>
+                  <Text style={[styles.faithPlaceTitle, { color: theme.colors.text }]}>{place}</Text>
+                  <Text style={[styles.oliveProgramPlace, { color: theme.colors.textMuted }]}>
+                    {index === 0 ? 'Cérémonie religieuse' : 'Réception'}
+                  </Text>
+                  {address ? (
+                    <Text style={[styles.oliveProgramPlace, { color: theme.colors.textMuted }]}>{address}</Text>
+                  ) : null}
+                  {address ? (
+                    <Pressable
+                      accessibilityRole="link"
+                      onPress={() => void Linking.openURL(venueDirectionsUrl(config.venue, platform))}
+                      style={[styles.oliveMapButton, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}
+                    >
+                      <Text style={[styles.oliveMapButtonText, { color: theme.colors.onPrimary }]}>Voir le lieu</Text>
+                      <Ionicons name="location-outline" size={14} color={theme.colors.onPrimary} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+            <View style={[styles.faithItinerary, { backgroundColor: theme.colors.surfaceAlt }]}>
+              <OliveSectionHeading kicker="LE DÉROULÉ" title="Itinéraire de la journée" theme={theme} />
+              {programItems.map((step, index) => (
+                <View key={`${step.time}-${step.title}`} style={[styles.faithItineraryRow, { borderLeftColor: theme.colors.accent }]}>
+                  <View style={[styles.faithItineraryDot, { backgroundColor: theme.colors.primary, borderColor: theme.colors.surfaceAlt }]} />
+                  <Ionicons name={step.icon} size={19} color={theme.colors.primary} />
+                  <View style={styles.oliveProgramCopy}>
+                    <Text style={[styles.oliveProgramTime, { color: theme.colors.primary }]}>{step.time}</Text>
+                    <Text style={[styles.oliveProgramTitle, { color: theme.colors.text }]}>{step.title}</Text>
+                    <Text style={[styles.oliveProgramPlace, { color: theme.colors.textMuted }]}>{step.place}</Text>
+                  </View>
+                  {index === 0 ? (
+                    <Ionicons name="location-outline" size={14} color={theme.colors.accent} />
+                  ) : null}
+                </View>
+              ))}
+            </View>
+            <View style={[styles.faithSection, { backgroundColor: theme.colors.surface }]}>
+              <View style={[styles.faithReservedCard, { borderColor: theme.colors.border }]}>
+                <Ionicons name="people-outline" size={28} color={theme.colors.primary} />
+                <View style={styles.oliveProgramCopy}>
+                  <Text style={[styles.faithPlaceTitle, { color: theme.colors.text }]}>Des places vous sont réservées</Text>
+                  <Text style={[styles.oliveProgramPlace, { color: theme.colors.textMuted }]}>
+                    {guest.seats} place{guest.seats === 1 ? '' : 's'} pour {guest.firstName}
+                  </Text>
+                </View>
+                <View style={[styles.faithSeatCount, { borderColor: theme.colors.border }]}>
+                  <Text style={[styles.faithSeatCountText, { color: theme.colors.primary }]}>{guest.seats}</Text>
+                </View>
+              </View>
+              <View style={[styles.faithGiftCard, { backgroundColor: theme.colors.surfaceAlt }]}>
+                <Ionicons name="gift-outline" size={24} color={theme.colors.primary} />
+                <Text style={[styles.faithPlaceTitle, { color: theme.colors.text }]}>Une attention pour les mariés</Text>
+                <Text style={[styles.oliveProgramPlace, { color: theme.colors.textMuted }]}>
+                  Votre présence est le plus beau des cadeaux. Si vous souhaitez nous témoigner une attention,
+                  une contribution à notre voyage nous touchera beaucoup.
+                </Text>
+              </View>
+            </View>
+            <View onLayout={(event) => { rsvpY.current = event.nativeEvent.layout.y; }}>
+              <View style={[styles.faithConfirmation, { backgroundColor: theme.colors.primary }]}>
+                <Ionicons name="chatbubble-ellipses-outline" size={26} color={theme.colors.onPrimary} />
+                <Text style={styles.faithWelcomeTitle}>Confirmation</Text>
+                <Text style={styles.faithWelcomeText}>
+                  Merci de nous répondre avant le 1er mars 2028.
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={scrollToRsvp}
+                  style={[styles.faithConfirmButton, { backgroundColor: theme.colors.surface }]}
+                >
+                  <Text style={[styles.faithConfirmButtonText, { color: theme.colors.primary }]}>Confirmer ma présence</Text>
+                  <Ionicons name="arrow-down" size={15} color={theme.colors.primary} />
+                </Pressable>
+              </View>
+              <GuestRsvpSection
+                slug={slug}
+                guest={guest}
+                drinks={config.drinks}
+                theme={theme}
+                winter={false}
+                olive
+              />
+            </View>
+            <View style={[styles.faithAdults, { backgroundColor: theme.colors.surface }]}>
+              <Text style={[styles.faithKicker, { color: theme.colors.textMuted }]}>CÉLÉBRATION RÉSERVÉE AUX ADULTES</Text>
+              <Text style={[styles.oliveProgramPlace, { color: theme.colors.textMuted }]}>
+                Merci de votre compréhension ; nous avons hâte de célébrer cette journée avec vous.
+              </Text>
+              <View style={styles.faithSprigs}>
+                <BotanicalSprig color={theme.colors.accent} size={70} />
+              </View>
+            </View>
+            <GuestGallerySection
+              theme={theme}
+              winter={false}
+              olive
+              styleKey="grid"
+              photos={galleryItems}
+            />
+            <GuestGuestbookSection
+              slug={slug}
+              guest={guest}
+              theme={theme}
+              winter={false}
+              olive
+            />
+            <ImageBackground
+              source={{ uri: couplePhoto.uri || template.couplePhoto.uri }}
+              resizeMode="cover"
+              style={styles.faithClosingPhoto}
+            >
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.coverOverlayDeep }]} />
+              <Text style={styles.oliveClosingTitle}>Nous avons hâte de célébrer avec vous</Text>
+              <Text style={styles.oliveClosingNames}>{pageCover.couple}</Text>
+            </ImageBackground>
+          </ScrollView>
+        </View>
+      </RevealBusContext.Provider>
+    );
+  }
 
   if (olive) {
     return (
@@ -250,7 +435,6 @@ export function GuestInvitation({ slug, config, guest }: {
             <View style={{ height: Dimensions.get('window').height }}>
               <OlivierCover
                 colors={theme.colors}
-                photoUri={pageCover.photoUri || template.coverImage}
                 portraitUri={couplePhoto.uri || template.couplePhoto.uri}
                 guest={guest}
                 title={pageCover.title}
@@ -2570,6 +2754,28 @@ const styles = StyleSheet.create({
   oliveClosingImage: { width: '100%', height: '100%' },
   oliveClosingTitle: { color: '#FFFFFF', fontFamily: 'CormorantGaramond_400Regular', fontSize: 29, textAlign: 'center' },
   oliveClosingNames: { color: '#FFFFFF', fontFamily: 'CormorantGaramond_400Regular', fontSize: 21, letterSpacing: 1.6 },
+  faithWelcome: { alignItems: 'center', gap: 12, paddingHorizontal: 28, paddingVertical: 38 },
+  faithWelcomeTitle: { color: '#FFFFFF', fontFamily: 'CormorantGaramond_400Regular', fontSize: 27, letterSpacing: 1.2, textAlign: 'center' },
+  faithWelcomeText: { maxWidth: 430, color: 'rgba(255,255,255,0.82)', fontFamily: 'Inter_400Regular', fontSize: 11, lineHeight: 18, textAlign: 'center' },
+  faithWelcomeNames: { color: '#FFFFFF', fontFamily: 'GreatVibes_400Regular', fontSize: 31, textAlign: 'center' },
+  faithSection: { gap: 12, paddingHorizontal: 24, paddingVertical: 36 },
+  faithPlaceCard: { alignItems: 'center', gap: 8, borderWidth: 1, paddingHorizontal: 18, paddingVertical: 18, marginBottom: 8 },
+  faithPlaceTime: { fontFamily: 'Inter_500Medium', fontSize: 9, letterSpacing: 1.2 },
+  faithPlaceTitle: { fontFamily: 'CormorantGaramond_500Medium', fontSize: 21, textAlign: 'center' },
+  faithItinerary: { paddingHorizontal: 26, paddingVertical: 38 },
+  faithItineraryRow: { position: 'relative', minHeight: 74, flexDirection: 'row', alignItems: 'center', gap: 13, borderLeftWidth: 1, paddingLeft: 17, marginLeft: 12 },
+  faithItineraryDot: { position: 'absolute', left: -5, width: 9, height: 9, borderRadius: 5, borderWidth: 2 },
+  faithReservedCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, padding: 18 },
+  faithSeatCount: { minWidth: 34, alignItems: 'center', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 5 },
+  faithSeatCountText: { fontFamily: 'CormorantGaramond_500Medium', fontSize: 18, textAlign: 'center' },
+  faithGiftCard: { alignItems: 'center', gap: 10, padding: 20, marginTop: 10 },
+  faithConfirmation: { alignItems: 'center', gap: 11, paddingHorizontal: 24, paddingVertical: 30 },
+  faithConfirmButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, marginTop: 4 },
+  faithConfirmButtonText: { fontFamily: 'Inter_500Medium', fontSize: 10, letterSpacing: 0.3 },
+  faithAdults: { alignItems: 'center', gap: 12, paddingHorizontal: 26, paddingVertical: 26 },
+  faithKicker: { fontFamily: 'Inter_500Medium', fontSize: 8, letterSpacing: 1.7, textAlign: 'center' },
+  faithSprigs: { alignItems: 'center', height: 44, overflow: 'hidden' },
+  faithClosingPhoto: { minHeight: 380, alignItems: 'center', justifyContent: 'center', gap: 15, paddingHorizontal: 28 },
   winterStack: { width: '100%', alignItems: 'center' },
   winterGalleryBlock: { width: '100%', alignSelf: 'stretch' },
   winterBreak: {

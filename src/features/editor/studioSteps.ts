@@ -158,6 +158,39 @@ const OLIVIER_STEPS: StudioStepDef[] = [
   },
 ];
 
+const FOI_AMOUR_STEPS: StudioStepDef[] = [
+  {
+    route: 'index',
+    title: 'Invitation',
+    headerTitle: 'Invitation & cérémonie',
+    hint: 'Personnalisez le monogramme, la photo, les noms et la date.',
+  },
+  {
+    route: 'photos',
+    title: 'Photos',
+    headerTitle: 'Galerie des mariés',
+    hint: 'Ajoutez vos plus belles photos à la galerie.',
+  },
+  {
+    route: 'programme',
+    title: 'Itinéraire',
+    headerTitle: 'Lieux & déroulé',
+    hint: 'Présentez les horaires, les étapes et les lieux de la célébration.',
+  },
+  {
+    route: 'plus',
+    title: 'Confirmation',
+    headerTitle: 'Confirmation & places',
+    hint: 'Les invités confirmeront leur présence via leur lien personnel.',
+  },
+  {
+    route: 'publier',
+    title: 'Publier',
+    headerTitle: 'Aperçu & publier',
+    hint: 'Vérifiez votre invitation botanique avant de la partager.',
+  },
+];
+
 const CONFERENCE_STEPS: StudioStepDef[] = [
   {
     route: 'index',
@@ -197,6 +230,7 @@ export function getStudioSteps(
 ): StudioStepDef[] {
   if (templateKey === 'papeterie') return PAPETERIE_STEPS;
   if (templateKey === 'olivier') return OLIVIER_STEPS;
+  if (templateKey === 'foi-amour') return FOI_AMOUR_STEPS;
   switch (type) {
     case 'birthday':
       return BIRTHDAY_STEPS;

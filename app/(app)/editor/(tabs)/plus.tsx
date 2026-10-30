@@ -21,7 +21,7 @@ export default function PlusTabScreen() {
   const { theme } = useAppTheme();
   const c = theme.colors;
   const hint = studioStepHint('plus', eventType, template.key);
-  const isInvitationTemplate = template.key === 'papeterie' || template.key === 'olivier';
+  const isInvitationTemplate = ['papeterie', 'olivier', 'foi-amour'].includes(template.key);
 
   return (
     <ScrollView

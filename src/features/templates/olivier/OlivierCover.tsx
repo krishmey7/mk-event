@@ -1,14 +1,14 @@
-import { Image, ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ReactNode } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
 import { fillGuestNameToken } from '@/features/editor/guestNameToken';
 import type { Guest } from '@/features/invitation/types';
 import type { TemplateColors } from '../elegance/themes';
+import { BotanicalSprig } from '../papeterie/BotanicalSprig';
 
 export function OlivierCover({
   colors,
-  photoUri,
   portraitUri,
   guest,
   title,
@@ -20,7 +20,6 @@ export function OlivierCover({
   onHintPress,
 }: {
   colors: TemplateColors;
-  photoUri: string;
   portraitUri: string;
   guest: Guest;
   title: string;
@@ -32,13 +31,16 @@ export function OlivierCover({
   onHintPress?: () => void;
 }) {
   return (
-    <ImageBackground
-      source={{ uri: photoUri }}
-      resizeMode="cover"
-      style={[styles.cover, compact && styles.compactCover, { backgroundColor: colors.primary }]}
-      imageStyle={styles.backgroundImage}
-    >
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.coverOverlayDeep }]} />
+    <View style={[styles.cover, compact && styles.compactCover, { backgroundColor: colors.primary }]}>
+      <View pointerEvents="none" style={styles.frame} />
+      <View pointerEvents="none" style={styles.topSprig}>
+        <BotanicalSprig color="rgba(255,255,255,0.24)" size={compact ? 92 : 142} />
+      </View>
+      <View pointerEvents="none" style={styles.bottomSprig}>
+        <BotanicalSprig color="rgba(255,255,255,0.2)" size={compact ? 78 : 118} />
+      </View>
+      <View pointerEvents="none" style={[styles.orbit, styles.orbitTop]} />
+      <View pointerEvents="none" style={[styles.orbit, styles.orbitBottom]} />
       <View style={[styles.content, compact && styles.compactContent]}>
         <Text style={styles.eyebrow}>NOTRE HISTOIRE, NOTRE JOUR</Text>
         <Text style={[styles.names, compact && styles.compactNames]}>{couple}</Text>
@@ -69,15 +71,28 @@ export function OlivierCover({
           </View>
         )}
       </View>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   cover: { width: '100%', minHeight: 620, flex: 1, justifyContent: 'center', overflow: 'hidden' },
   compactCover: { minHeight: 420 },
-  backgroundImage: { width: '100%', height: '100%' },
-  content: { alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 28, paddingVertical: 46 },
+  frame: {
+    ...StyleSheet.absoluteFillObject,
+    top: 16,
+    right: 16,
+    bottom: 16,
+    left: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  topSprig: { position: 'absolute', top: 26, left: 8, opacity: 0.75, transform: [{ rotate: '4deg' }] },
+  bottomSprig: { position: 'absolute', right: 3, bottom: 14, opacity: 0.7, transform: [{ rotate: '174deg' }] },
+  orbit: { position: 'absolute', width: 220, height: 220, borderRadius: 110, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)' },
+  orbitTop: { top: -144, right: -88 },
+  orbitBottom: { bottom: -156, left: -112 },
+  content: { zIndex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 28, paddingVertical: 46 },
   compactContent: { gap: 10, paddingHorizontal: 14, paddingVertical: 22 },
   eyebrow: { color: 'rgba(255,255,255,0.78)', fontFamily: 'Inter_500Medium', fontSize: 8, letterSpacing: 2.4 },
   names: {

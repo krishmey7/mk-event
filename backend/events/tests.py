@@ -292,6 +292,16 @@ class EventTemplateResolutionTests(TestCase):
         event = Event.objects.get(pk=response.data["id"])
         self.assertEqual(event.template.slug, "olivier")
 
+    def test_create_event_with_foi_amour_template_slug(self):
+        response = self.client.post(
+            "/api/events/",
+            {**self.payload, "template": "foi-amour"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        event = Event.objects.get(pk=response.data["id"])
+        self.assertEqual(event.template.slug, "foi-amour")
+
     def test_create_event_with_legacy_template_id(self):
         response = self.client.post(
             "/api/events/",

@@ -35,6 +35,7 @@ class Command(BaseCommand):
             ("neon", "Néon", "wedding"),
             ("papeterie", "Papier végétal", "wedding"),
             ("olivier", "Vert d’olive", "wedding"),
+            ("foi-amour", "Foi & Amour", "wedding"),
             ("celebration", "Célébration", "birthday"),
             ("summit", "Summit", "corporate"),
             ("moderne", "Moderne", "birthday"),

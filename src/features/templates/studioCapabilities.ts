@@ -92,6 +92,17 @@ export function templateStudio(layout: CoverLayout): TemplateStudioCapabilities 
         neonScript: false,
         galleryFeedsCover: false,
       };
+    case 'botanicalInvitation':
+      return {
+        backgroundPhoto: false,
+        couplePhoto: true,
+        coupleFrames: false,
+        accroche: true,
+        coverTitle: true,
+        heure: false,
+        neonScript: false,
+        galleryFeedsCover: false,
+      };
     case 'neonScript':
       return {
         backgroundPhoto: true,
@@ -178,6 +189,13 @@ export function studioFieldLabels(layout: CoverLayout): {
         titlePlaceholder: 'Invitation au mariage',
         accroche: 'Message aux invités',
         accrochePlaceholder: 'Nous serions très heureux de partager cette journée avec vous…',
+      };
+    case 'botanicalInvitation':
+      return {
+        title: 'Titre de l’invitation',
+        titlePlaceholder: 'Notre mariage',
+        accroche: 'Message aux invités',
+        accrochePlaceholder: 'Nous avons la joie de vous inviter à célébrer notre union…',
       };
     default:
       return {
